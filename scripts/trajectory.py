@@ -308,4 +308,3 @@ if __name__ == "__main__":
     ref = HIVreference(subtype="any")
     aft = patient.get_allele_frequency_trajectories(region)
     trajectories = create_trajectory_list(patient, region, aft, ref)
-    reversions = [traj for traj in trajectories if traj.reversion == True]

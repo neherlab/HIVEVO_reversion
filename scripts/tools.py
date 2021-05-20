@@ -1,26 +1,30 @@
 import numpy as np
 
-def initial_idx_mask(patient, region, aft):
+
+# def get_mutation_positions(patient, region, aft, eps=0.01):
+#     """
+#     Return a 3D (time*letter*genome_position) boolean matrix where True are mutations positions with more
+#     than eps frequency.
+#     Original nucleotides are not considered as mutations.
+#     """
+#     mutation_positions = aft > eps
+#     mutation_positions[initial_idx_mask(patient, region, aft)] = False
+#     return mutation_positions
+
+
+def mutation_positions_mask(patient, region, aft, eps=0.01):
     """
-    Return a 3D (time*letter*genome_position) boolean matrix where True are all the position that correspond
-    to the initial sequence.
+    Return a 1D boolean matrix where True are positions where mutations are seen at some time with more than
+    eps frequency.
     """
     initial_idx = patient.get_initial_indices(region)
-    #TODO: optimize this, it is really slow
-    mask = np.zeros(aft.shape, dtype=bool)
-    for ii in range(aft.shape[2]):
-        mask[:, initial_idx[ii], ii] = np.ones(aft.shape[0], dtype=bool)
-    return mask
+    aft_initial = aft[np.arange(aft.shape[0])[:, np.newaxis, np.newaxis], initial_idx, np.arange(aft.shape[-1])]
+    aft_initial = np.squeeze(aft_initial)
 
-def get_mutation_positions(patient, region, aft, eps=0.01):
-    """
-    Return a 3D (time*letter*genome_position) boolean matrix where True are mutations positions with more
-    than eps frequency.
-    Original nucleotides are not considered as mutations.
-    """
-    mutation_positions = aft > eps
-    mutation_positions[initial_idx_mask(patient, region, aft)] = False
-    return mutation_positions
+    # mutation_positions = aft > eps
+    # mutation_positions[initial_idx_mask(patient, region, aft)] = False
+    # return mutation_positions
+
 
 def get_fixation_positions(patient, region, aft, eps=0.01, timepoint="any"):
     """
@@ -28,11 +32,24 @@ def get_fixation_positions(patient, region, aft, eps=0.01, timepoint="any"):
     frequency at some timepoint / last time point.
     timepoint = ["any", "last"]
     """
-    fixation_positions = get_mutation_positions(patient, region, aft, 1-eps)
+    fixation_positions = get_mutation_positions(patient, region, aft, 1 - eps)
 
     if timepoint == "any":
         return np.sum(fixation_positions, axis=0, dtype=bool)
     elif timepoint == "last":
-        return fixation_positions[-1,:,:]
+        return fixation_positions[-1, :, :]
     else:
         raise ValueError("Condition of fixation is not understood.")
+
+
+if __name__ == "__main__":
+    from hivevo.patients import Patient
+    from hivevo.HIVreference import HIVreference
+    import filenames
+
+    region = "pol"
+    patient = Patient.load("p1")
+    ref = HIVreference(subtype="any")
+    aft = patient.get_allele_frequency_trajectories(region)
+    aft_initial = mutation_positions_mask(patient, region, aft)
+    
