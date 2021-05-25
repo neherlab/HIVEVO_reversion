@@ -150,7 +150,7 @@ def create_trajectory_list(patient, region, ref_subtype, threshold_low=0.01, thr
 
             position = coordinates[0, ii, 1]
             nucleotide = coordinates[0, ii, 0]
-            traj = Trajectory(np.ma.array(freqs), t - t[0], date + t[0], time[-1] - t[0], t_prev_sample,
+            traj = Trajectory(freqs, t - t[0], date + t[0], time[-1] - t[0], t_prev_sample,
                               fixation, threshold_low, threshold_high, patient.name, region,
                               position=position, nucleotide=nucleotide,
                               synonymous=syn_mutations[nucleotide, position],
@@ -179,8 +179,6 @@ def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[])
             subtype = "any"
         else:
             subtype = subtypes[ii]
-        print(patient_name, subtype)
-        aft = patient.get_allele_frequency_trajectories(region)
         trajectories = trajectories + create_trajectory_list(patient, region, subtype)
 
     return trajectories

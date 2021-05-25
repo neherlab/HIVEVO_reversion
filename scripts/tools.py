@@ -123,7 +123,7 @@ def get_fitness_cost(patient, region, aft, subtype="any"):
     from the consensus sequence or without fitness_cost associated are nans.
     """
     if subtype not in ["any", "B"]:  # Fitness was computed only for global consensus and subtype B consensus
-        return np.zeros_like(aft)
+        return np.nans(aft.shape[-1])
     else:
         filename = filenames.get_fitness_filename(region, subtype)
         data = pd.read_csv(filename, skiprows=[0], sep="\t")
