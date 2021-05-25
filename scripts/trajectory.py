@@ -1,40 +1,41 @@
+import pickle
+import filenames
 import numpy as np
 import pandas as pd
-import copy
-import filenames
-from hivevo.patients import Patient
-from hivevo.HIVreference import HIVreference
+
 import tools
-import pickle
+from hivevo.HIVreference import HIVreference
+from hivevo.patients import Patient
 
 
 class Trajectory():
-    def __init__(self, frequencies, t, date, t_last_sample, t_previous_sample, fixation, threshold_low, threshold_high,
-                 patient, region, position, nucleotide, synonymous, reversion, fitness_cost):
+    def __init__(self, frequencies, t, date, t_last_sample, t_previous_sample, fixation, threshold_low,
+                 threshold_high, patient, region, position, nucleotide, synonymous, reversion, fitness_cost):
 
-        self.frequencies = frequencies              # Numpy 1D vector
-        self.t = t                                  # Numpy 1D vector (in days)
-        self.date = date                            # Date at t=0 (int, in days)
+        self.frequencies = frequencies          # Numpy 1D vector
+        self.t = t                              # Numpy 1D vector (in days)
+        self.date = date                        # Date at t=0 (int, in days)
         # Number of days at which last sample was taken for the patient (relative to t[0] = 0)
         self.t_last_sample = t_last_sample
         # Number of days between the first point of the trajectory and the previous sample that was taken
         self.t_previous_sample = t_previous_sample
-        self.fixation = fixation                    # "fixed", "active", "lost" (at the next time point)
-        self.threshold_low = threshold_low          # Value of threshold_low used for extraction
-        self.threshold_high = threshold_high        # Value of threshold_high used for extraction
-        self.patient = patient                      # Patient name (string)
-        self.region = region                        # Region name, string
-        self.position = position                    # Position on the region (int)
-        self.nucleotide = nucleotide                # Nucleotide number according to HIVEVO_access/hivevo/sequence alpha
-        self.synonymous = synonymous                # True if this trajectory is part of synonymous mutation
-        self.reversion = reversion                  # True if the trajectory is a reversion to consensus sequence
-        self.fitness_cost = fitness_cost            # Associated fitness_cost from the HIV_fitness pooled files
+        self.fixation = fixation                # "fixed", "active", "lost" (at the next time point)
+        self.threshold_low = threshold_low      # Value of threshold_low used for extraction
+        self.threshold_high = threshold_high    # Value of threshold_high used for extraction
+        self.patient = patient                  # Patient name (string)
+        self.region = region                    # Region name, string
+        self.position = position                # Position on the region (int)
+        # Nucleotide number according to HIVEVO_access/hivevo/sequence alpha
+        self.nucleotide = nucleotide
+        self.synonymous = synonymous            # True if this trajectory is part of synonymous mutation
+        self.reversion = reversion              # True if the trajectory is a reversion to consensus sequence
+        self.fitness_cost = fitness_cost        # Associated fitness_cost from the HIV_fitness pooled files
 
     def __repr__(self):
         return str(self.__dict__)
 
 
-def create_trajectory_list(patient, region, aft, ref, threshold_low=0.01, threshold_high=0.99,
+def create_trajectory_list(patient, region, ref, threshold_low=0.01, threshold_high=0.99,
                            syn_constrained=False, gap_threshold=0.1):
     """
     Creates a list of trajectories from a patient allele frequency trajectory (aft).
@@ -46,27 +47,26 @@ def create_trajectory_list(patient, region, aft, ref, threshold_low=0.01, thresh
         - masked datapoints (low depth / coverage) are included only if in the middle of a trajectory (ie. [0.2, --, 0.6] is kept, but [--, 0.2, 0] gives [0.2] and [0.5, --, 1] gives [0.5])
     """
     trajectories = []
+    aft = patient.get_allele_frequency_trajectories(region)
+
     # Adding masking for low depth fragments
-    depth = get_depth(patient, region)
+    depth = tools.get_depth(patient, region)
     depth = np.tile(depth, (6, 1, 1))
     depth = np.swapaxes(depth, 0, 1)
     aft.mask = np.logical_or(aft.mask, ~depth)
 
     # Exctract the full time series of af for mutations and place them in a 2D matrix as columns
-    mutation_positions = tools.get_mutation_positions(patient, region, aft, threshold_low)
-    region_mut_pos = np.sum(mutation_positions, axis=0, dtype=bool)
     # Mask to select positions where mutations are seen
-    mask = np.tile(region_mut_pos, (aft.shape[0], 1, 1))
+    mutation_positions_mask = tools.mutation_positions_mask(patient, region, aft, threshold_low)
     # Mask to filter the aft in positions where there is no reference or seen to often gapped
-    reference_mask = np.tile(get_reference_filter(patient, region, aft, ref,
-                                                  gap_threshold), (aft.shape[0], aft.shape[1], 1))
-    mask = np.logical_and(mask, reference_mask)
+    reference_mask = tools.reference_filter_mask(patient, region, aft, ref, gap_threshold)
+    mask = np.logical_and(mutation_positions_mask, reference_mask)
+    mask = np.tile(mask, (aft.shape[0], aft.shape[1], 1))
     mut_frequencies = aft[mask]
     mut_frequencies = np.reshape(mut_frequencies, (aft.shape[0], -1))  # each column is a different mutation
 
     # Map the original position and nucleotide
-    i_idx, j_idx = np.meshgrid(range(mutation_positions.shape[1]), range(
-        mutation_positions.shape[2]), indexing="ij")
+    i_idx, j_idx = np.meshgrid(range(aft.shape[1]), range(aft.shape[2]), indexing="ij")
     coordinates = np.array([i_idx, j_idx])
     coordinates = np.tile(coordinates, (aft.shape[0], 1, 1, 1))
     coordinates = np.swapaxes(coordinates, 1, 3)
@@ -169,70 +169,6 @@ def create_all_patient_trajectories(region, patient_names=[]):
     return trajectories
 
 
-def get_fragment_per_site(patient, region):
-    """
-    Returns a list of fragment associated to each position in the region.
-    """
-    fragment_list = [[]] * len(patient._region_to_indices(region))
-    frag = patient._annotation_to_fragment_indices(region)
-    fragment_names = [*frag][2:]
-
-    for ii in range(len(fragment_list)):
-        for frag_name in fragment_names:
-            if ii in frag[frag_name][0]:
-                fragment_list[ii] = fragment_list[ii] + [frag_name]
-
-    return fragment_list, fragment_names
-
-
-def get_fragment_depth(patient, fragment):
-    "Returns the depth of the fragment for each time point."
-    return [s[fragment] for s in patient.samples]
-
-
-def associate_depth(fragments, fragment_depths, fragment_names):
-    "Associate a bolean array (true where coverage is ok) to each positions of the region."
-    bool_frag_depths = np.array(fragment_depths) == "ok"
-    depths = []
-    for ii in range(len(fragments)):
-        if len(fragments[ii]) == 1:  # Site only belongs to 1 fragment
-            depths += [bool_frag_depths[np.where(np.array(fragment_names) == fragments[ii][0])[0][0]]]
-        elif len(fragments[ii]) == 2:  # Site belongs to 2 fragments => take the best coverage
-            depth1 = bool_frag_depths[np.where(np.array(fragment_names) == fragments[ii][0])[0][0]]
-            depth2 = bool_frag_depths[np.where(np.array(fragment_names) == fragments[ii][1])[0][0]]
-            depths += [np.logical_or(depth1, depth2)]
-        else:
-            raise(ValueError("Number of fragments for each site must be either 1 or 2."))
-
-    return np.swapaxes(np.array(depths), 0, 1)
-
-
-def get_depth(patient, region):
-    """
-    Returns nb_timepoint*nb_site boolean matrix where True are samples where the depth was labeled "ok" in the tsv files.
-    """
-    fragments, fragment_names = get_fragment_per_site(patient, region)
-    fragment_depths = [get_fragment_depth(patient, frag) for frag in fragment_names]
-    return associate_depth(fragments, fragment_depths, fragment_names)
-
-
-def get_reference_filter(patient, region, aft, ref, gap_threshold=0.1):
-    """
-    Returns a 1D boolean vector where False are the positions (in aft.shape[-1]) that are unmapped to reference or too often gapped.
-    """
-    map_to_ref = patient.map_to_external_reference(region)
-    ungapped_genomewide = ref.get_ungapped(gap_threshold)
-    ungapped_region = ungapped_genomewide[map_to_ref[:, 0]]
-
-    # excludes the positions that are not mapped to the reference (i.e. insertions as alignement is unreliable)
-    mask1 = np.in1d(np.arange(aft.shape[-1]), map_to_ref[:, 2])
-
-    # excludes positions that are often gapped in the reference (i.e. where the alignement is unreliable)
-    mask2 = np.in1d(np.arange(aft.shape[-1]), map_to_ref[ungapped_region, 2])
-
-    return np.logical_and(mask1, mask2)
-
-
 def get_reversion_map(patient, region, aft, ref):
     """
     Returns a 2D boolean matrix (nucleotide*patient_sequence_length) where True are the positions that
@@ -303,8 +239,7 @@ def load_trajectory_dict(path="trajectory_dict"):
 
 
 if __name__ == "__main__":
-    region = "pol"
+    region = "env"
     patient = Patient.load("p1")
     ref = HIVreference(subtype="any")
-    aft = patient.get_allele_frequency_trajectories(region)
-    trajectories = create_trajectory_list(patient, region, aft, ref)
+    trajectories = create_trajectory_list(patient, region, ref)
