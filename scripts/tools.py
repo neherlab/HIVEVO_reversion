@@ -122,14 +122,17 @@ def get_fitness_cost(patient, region, aft, subtype="any"):
     Returns a 1D vector (patient_sequence_length) with the fitness coefficient for each sites. Sites missing
     from the consensus sequence or without fitness_cost associated are nans.
     """
-    filename = filenames.get_fitness_filename(region, subtype)
-    data = pd.read_csv(filename, skiprows=[0], sep="\t")
-    fitness_consensus = data["median"]
-    map_to_ref = patient.map_to_external_reference(region)
-    fitness = np.empty(aft.shape[2])
-    fitness[:] = np.nan
-    fitness[map_to_ref[:, 2]] = fitness_consensus[map_to_ref[:, 0] - map_to_ref[0][0]]
-    return fitness
+    if subtype not in ["any", "B"]:  # Fitness was computed only for global consensus and subtype B consensus
+        return np.zeros_like(aft)
+    else:
+        filename = filenames.get_fitness_filename(region, subtype)
+        data = pd.read_csv(filename, skiprows=[0], sep="\t")
+        fitness_consensus = data["median"]
+        map_to_ref = patient.map_to_external_reference(region)
+        fitness = np.empty(aft.shape[2])
+        fitness[:] = np.nan
+        fitness[map_to_ref[:, 2]] = fitness_consensus[map_to_ref[:, 0] - map_to_ref[0][0]]
+        return fitness
 
 
 if __name__ == "__main__":
