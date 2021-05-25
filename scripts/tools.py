@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 import filenames
 from hivevo.HIVreference import HIVreference
@@ -52,14 +53,17 @@ def reference_filter_mask(patient, region, aft, ref, gap_threshold=0.1):
     return np.logical_and(mask1, mask2)
 
 
-def get_depth(patient, region):
+def depth_mask(patient, region):
     """
-    Returns nb_timepoint*nb_site boolean matrix where True are samples where the depth was labeled "ok" in the
+    Returns boolean matrix (same shape as aft) where True are samples where the depth was labeled "ok" in the
     tsv files.
     """
     fragments, fragment_names = get_fragment_per_site(patient, region)
     fragment_depths = [get_fragment_depth(patient, frag) for frag in fragment_names]
-    return associate_depth(fragments, fragment_depths, fragment_names)
+    depth = associate_depth(fragments, fragment_depths, fragment_names)
+    depth = np.tile(depth, (6, 1, 1))  # For the 6 nucleotides (ATGC-N)
+    depth = np.swapaxes(depth, 0, 1)
+    return depth
 
 
 def associate_depth(fragments, fragment_depths, fragment_names):
@@ -100,9 +104,38 @@ def get_fragment_depth(patient, fragment):
     return [s[fragment] for s in patient.samples]
 
 
+def reversion_map(patient, region, aft, ref):
+    """
+    Returns a 2D boolean matrix (nucleotide*patient_sequence_length) where True are the positions that
+    correspond to the reference nucleotide.
+    """
+    reversion_map = np.zeros((aft.shape[1], aft.shape[2]), dtype="bool")
+    map_to_ref = patient.map_to_external_reference(region)
+    ref_idx = ref.get_consensus_indices_in_patient_region(map_to_ref)
+
+    reversion_map[ref_idx, map_to_ref[:, 2]] = True
+    return reversion_map
+
+
+def get_fitness_cost(patient, region, aft, subtype="any"):
+    """
+    Returns a 1D vector (patient_sequence_length) with the fitness coefficient for each sites. Sites missing
+    from the consensus sequence or without fitness_cost associated are nans.
+    """
+    filename = filenames.get_fitness_filename(region, subtype)
+    data = pd.read_csv(filename, skiprows=[0], sep="\t")
+    fitness_consensus = data["median"]
+    map_to_ref = patient.map_to_external_reference(region)
+    fitness = np.empty(aft.shape[2])
+    fitness[:] = np.nan
+    fitness[map_to_ref[:, 2]] = fitness_consensus[map_to_ref[:, 0] - map_to_ref[0][0]]
+    return fitness
+
+
 if __name__ == "__main__":
     region = "env"
     patient = Patient.load("p1")
     ref = HIVreference(subtype="any")
     aft = patient.get_allele_frequency_trajectories(region)
     aft_initial = mutation_positions_mask(patient, region, aft)
+    depth = depth_mask(patient, region)

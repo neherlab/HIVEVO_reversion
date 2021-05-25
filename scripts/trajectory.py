@@ -35,7 +35,7 @@ class Trajectory():
         return str(self.__dict__)
 
 
-def create_trajectory_list(patient, region, ref, threshold_low=0.01, threshold_high=0.99,
+def create_trajectory_list(patient, region, ref_subtype, threshold_low=0.01, threshold_high=0.99,
                            syn_constrained=False, gap_threshold=0.1):
     """
     Creates a list of trajectories from a patient allele frequency trajectory (aft).
@@ -48,11 +48,10 @@ def create_trajectory_list(patient, region, ref, threshold_low=0.01, threshold_h
     """
     trajectories = []
     aft = patient.get_allele_frequency_trajectories(region)
+    ref = HIVreference(subtype=ref_subtype)
 
     # Adding masking for low depth fragments
-    depth = tools.get_depth(patient, region)
-    depth = np.tile(depth, (6, 1, 1))
-    depth = np.swapaxes(depth, 0, 1)
+    depth = tools.depth_mask(patient, region)
     aft.mask = np.logical_or(aft.mask, ~depth)
 
     # Exctract the full time series of af for mutations and place them in a 2D matrix as columns
@@ -60,20 +59,13 @@ def create_trajectory_list(patient, region, ref, threshold_low=0.01, threshold_h
     mutation_positions_mask = tools.mutation_positions_mask(patient, region, aft, threshold_low)
     # Mask to filter the aft in positions where there is no reference or seen to often gapped
     reference_mask = tools.reference_filter_mask(patient, region, aft, ref, gap_threshold)
-    mask = np.logical_and(mutation_positions_mask, reference_mask)
-    mask = np.tile(mask, (aft.shape[0], aft.shape[1], 1))
-    mut_frequencies = aft[mask]
+    mutation_mask = np.logical_and(mutation_positions_mask, reference_mask)
+    mutation_mask = np.tile(mutation_mask, (aft.shape[0], aft.shape[1], 1))
+    mut_frequencies = aft[mutation_mask]
     mut_frequencies = np.reshape(mut_frequencies, (aft.shape[0], -1))  # each column is a different mutation
 
     # Map the original position and nucleotide
-    i_idx, j_idx = np.meshgrid(range(aft.shape[1]), range(aft.shape[2]), indexing="ij")
-    coordinates = np.array([i_idx, j_idx])
-    coordinates = np.tile(coordinates, (aft.shape[0], 1, 1, 1))
-    coordinates = np.swapaxes(coordinates, 1, 3)
-    coordinates = np.swapaxes(coordinates, 1, 2)
-    coordinates = coordinates[mask]
-    coordinates = np.reshape(coordinates, (aft.shape[0], -1, 2))
-    # coordinates[t,ii,:] gives the [nucleotide, genome_position] of the mut_frequencies[t,ii] for any t
+    coordinates = _make_coordinates(aft.shape, mutation_mask)
 
     # Removing "mutation" at first time point because we don't know their history, ie rising or falling
     mask2 = np.where(mut_frequencies[0, :] > threshold_low)
@@ -105,22 +97,22 @@ def create_trajectory_list(patient, region, ref, threshold_low=0.01, threshold_h
 
     # Get boolean matrix to label trajectories as synonymous and/or reversion
     syn_mutations = patient.get_syn_mutations(region, mask_constrained=syn_constrained)
-    reversion_map = get_reversion_map(patient, region, aft, ref)
-    seq_fitness = get_fitness_cost(patient, region, aft)  # to the "any" subtype by default
+    reversion_map = tools.reversion_map(patient, region, aft, ref)
+    seq_fitness = tools.get_fitness_cost(patient, region, aft, subtype=ref_subtype)
 
     date = patient.dsi[0]
     time = patient.dsi - date
     # iterate though all columns (<=> mutations trajectories)
     for ii in range(mut_frequencies.shape[1]):
         # iterate for all trajectories inside this column
-        for jj, idx_start in enumerate(np.where(new_trajectory_filter[:, ii] == True)[0]):
+        for jj, idx_start in enumerate(np.where(new_trajectory_filter[:, ii])[0]):
 
-            if not True in (trajectory_stop_filter[idx_start:, ii] == True):  # still active
+            if True not in (trajectory_stop_filter[idx_start:, ii]):  # still active
                 idx_end = None
             else:
-                idx_end = np.where(trajectory_stop_filter[:, ii] == True)[0][jj]  # fixed or lost
+                idx_end = np.where(trajectory_stop_filter[:, ii])[0][jj]  # fixed or lost
 
-            if idx_end == None:
+            if idx_end is None:
                 freqs = np.ma.array(mut_frequencies[idx_start:, ii])
                 freqs.mask = mut_freq_mask[idx_start:, ii]
                 t = time[idx_start:]
@@ -134,19 +126,20 @@ def create_trajectory_list(patient, region, ref, threshold_low=0.01, threshold_h
                 t_prev_sample = time[idx_start - 1]
             t_prev_sample -= t[0]  # offset so that trajectory starts at t=0
 
-            if idx_end == None:
+            if idx_end is None:
                 fixation = "active"
-            elif filter_fixation[idx_end, ii] == True:
+            elif filter_fixation[idx_end, ii]:
                 fixation = "fixed"
             else:
                 fixation = "lost"
 
             position = coordinates[0, ii, 1]
             nucleotide = coordinates[0, ii, 0]
-            traj = Trajectory(np.ma.array(freqs), t - t[0], date + t[0], time[-1] - t[0], t_prev_sample, fixation, threshold_low,
-                              threshold_high, patient.name, region, position=position, nucleotide=nucleotide,
-                              synonymous=syn_mutations[nucleotide,
-                                                       position], reversion=reversion_map[nucleotide, position],
+            traj = Trajectory(np.ma.array(freqs), t - t[0], date + t[0], time[-1] - t[0], t_prev_sample,
+                              fixation, threshold_low, threshold_high, patient.name, region,
+                              position=position, nucleotide=nucleotide,
+                              synonymous=syn_mutations[nucleotide, position],
+                              reversion=reversion_map[nucleotide, position],
                               fitness_cost=seq_fitness[position])
             trajectories = trajectories + [traj]
 
@@ -169,32 +162,19 @@ def create_all_patient_trajectories(region, patient_names=[]):
     return trajectories
 
 
-def get_reversion_map(patient, region, aft, ref):
+def _make_coordinates(aft_shape, mutation_mask):
     """
-    Returns a 2D boolean matrix (nucleotide*patient_sequence_length) where True are the positions that
-    correspond to the reference nucleotide.
+    Returns the coordinates of the mutations. coordinates[t,ii,:] gives the [nucleotide, genome_position] of
+    the mutations selected by mutation_mask for any t.
     """
-    reversion_map = np.zeros((aft.shape[1], aft.shape[2]), dtype="bool")
-    map_to_ref = patient.map_to_external_reference(region)
-    ref_idx = ref.get_consensus_indices_in_patient_region(map_to_ref)
-
-    reversion_map[ref_idx, map_to_ref[:, 2]] = True
-    return reversion_map
-
-
-def get_fitness_cost(patient, region, aft, subtype="any"):
-    """
-    Returns a 1D vector (patient_sequence_length) with the fitness coefficient for each sites. Sites missing
-    from the consensus sequence or without fitness_cost associated are nans.
-    """
-    filename = filenames.get_fitness_filename(region, subtype)
-    data = pd.read_csv(filename, skiprows=[0], sep="\t")
-    fitness_consensus = data["median"]
-    map_to_ref = patient.map_to_external_reference(region)
-    fitness = np.empty(aft.shape[2])
-    fitness[:] = np.nan
-    fitness[map_to_ref[:, 2]] = fitness_consensus[map_to_ref[:, 0] - map_to_ref[0][0]]
-    return fitness
+    i_idx, j_idx = np.meshgrid(range(aft_shape[1]), range(aft_shape[2]), indexing="ij")
+    coordinates = np.array([i_idx, j_idx])
+    coordinates = np.tile(coordinates, (aft_shape[0], 1, 1, 1))
+    coordinates = np.swapaxes(coordinates, 1, 3)
+    coordinates = np.swapaxes(coordinates, 1, 2)
+    coordinates = coordinates[mutation_mask]
+    coordinates = np.reshape(coordinates, (aft_shape[0], -1, 2))
+    return coordinates
 
 
 def make_trajectory_dict(remove_one_point=False):
@@ -241,5 +221,7 @@ def load_trajectory_dict(path="trajectory_dict"):
 if __name__ == "__main__":
     region = "env"
     patient = Patient.load("p1")
-    ref = HIVreference(subtype="any")
-    trajectories = create_trajectory_list(patient, region, ref)
+    ref_subtype = "any"
+    ref = HIVreference(subtype=ref_subtype)
+    aft = patient.get_allele_frequency_trajectories(region)
+    trajectories = create_trajectory_list(patient, region, ref_subtype)
