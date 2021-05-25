@@ -184,7 +184,7 @@ def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[])
     return trajectories
 
 
-def make_trajectory_dict(remove_one_point=False):
+def make_trajectory_dict(ref_subtype="any"):
     """
     Returns a dictionary of the form trajectories[region][type]. Trajectories[region][type] is a list of all
     the trajectories in the given region and with the given type.
@@ -192,32 +192,39 @@ def make_trajectory_dict(remove_one_point=False):
     Possible types are ["syn", "non_syn", "rev", "non_rev"].
     """
 
+    assert ref_subtype in ["any", "subtypes"], "ref_subtype must be 'any' or 'subtypes'"
     regions = ["env", "pol", "gag", "all"]
     trajectories = {}
 
     for region in regions:
         # Create the dictionary with the different regions
+
+        print(f"Getting trajectories for region {region}.")
+
         if region != "all":
-            tmp_trajectories = create_all_patient_trajectories(region)
+            tmp_trajectories = create_all_patient_trajectories(region, ref_subtype=ref_subtype)
         else:
-            tmp_trajectories = create_all_patient_trajectories(
-                "env") + create_all_patient_trajectories("pol") + create_all_patient_trajectories("gag")
-        if remove_one_point:
-            tmp_trajectories = [traj for traj in tmp_trajectories if traj.t[-1] != 0]
+            tmp_trajectories = trajectories["env"]["all"] + \
+                trajectories["pol"]["all"] + trajectories["gag"]["all"]
+
         trajectories[region] = tmp_trajectories
 
         # Split into sub dictionnaries (rev, non_rev and all)
-        rev = [traj for traj in trajectories[region] if traj.reversion == True]
-        non_rev = [traj for traj in trajectories[region] if traj.reversion == False]
-        syn = [traj for traj in trajectories[region] if traj.synonymous == True]
-        non_syn = [traj for traj in trajectories[region] if traj.synonymous == False]
+        rev = [traj for traj in trajectories[region] if traj.reversion]
+        non_rev = [traj for traj in trajectories[region] if ~traj.reversion]
+        syn = [traj for traj in trajectories[region] if traj.synonymous]
+        non_syn = [traj for traj in trajectories[region] if ~traj.synonymous]
         trajectories[region] = {"rev": rev, "non_rev": non_rev,
                                 "syn": syn, "non_syn": non_syn, "all": trajectories[region]}
-
     return trajectories
 
 
-def load_trajectory_dict(path="trajectory_dict"):
+def save_trajectory_dict(trajectory_dict, filename):
+    with open(filename, "wb") as f:
+        pickle.dump(trajectory_dict, f)
+
+
+def load_trajectory_dict(path="data/trajectory_dict"):
     trajectories = {}
     with open(path, 'rb') as file:
         trajectories = pickle.load(file)
@@ -226,10 +233,11 @@ def load_trajectory_dict(path="trajectory_dict"):
 
 
 if __name__ == "__main__":
-    region = "env"
-    patient = Patient.load("p1")
-    ref_subtype = "any"
-    ref = HIVreference(subtype=ref_subtype)
-    aft = patient.get_allele_frequency_trajectories(region)
-    # trajectories = create_trajectory_list(patient, region, ref_subtype)
-    trajectories = create_all_patient_trajectories(region, ref_subtype="subtypes")
+    # region = "env"
+    # patient = Patient.load("p1")
+    # ref_subtype = "any"
+    # ref = HIVreference(subtype=ref_subtype)
+    # aft = patient.get_allele_frequency_trajectories(region)
+
+    trajectory_dict = make_trajectory_dict(ref_subtype="any")
+    # trajectory_dict = load_trajectory_dict()
