@@ -35,6 +35,21 @@ class Trajectory():
         return str(self.__dict__)
 
 
+def _make_coordinates(aft_shape, mutation_mask):
+    """
+    Returns the coordinates of the mutations. coordinates[t,ii,:] gives the [nucleotide, genome_position] of
+    the mutations selected by mutation_mask for any t.
+    """
+    i_idx, j_idx = np.meshgrid(range(aft_shape[1]), range(aft_shape[2]), indexing="ij")
+    coordinates = np.array([i_idx, j_idx])
+    coordinates = np.tile(coordinates, (aft_shape[0], 1, 1, 1))
+    coordinates = np.swapaxes(coordinates, 1, 3)
+    coordinates = np.swapaxes(coordinates, 1, 2)
+    coordinates = coordinates[mutation_mask]
+    coordinates = np.reshape(coordinates, (aft_shape[0], -1, 2))
+    return coordinates
+
+
 def create_trajectory_list(patient, region, ref_subtype, threshold_low=0.01, threshold_high=0.99,
                            syn_constrained=False, gap_threshold=0.1):
     """
@@ -148,33 +163,27 @@ def create_trajectory_list(patient, region, ref_subtype, threshold_low=0.01, thr
     return trajectories
 
 
-def create_all_patient_trajectories(region, patient_names=[]):
+def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[]):
+    assert ref_subtype in ["any", "subtypes"], "ref_subtype should be 'any' or 'subtypes'"
+
     if patient_names == []:
         patient_names = ["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]
+        if ref_subtype == "subtypes":
+            subtypes = ["AE", "B", "B", "B", "B", "B", "C", "B", "B", "B"]
 
     trajectories = []
-    ref = HIVreference(subtype="any")
-    for patient_name in patient_names:
+    for ii, patient_name in enumerate(patient_names):
         patient = Patient.load(patient_name)
+        subtype = ""
+        if ref_subtype == "any":
+            subtype = "any"
+        else:
+            subtype = subtypes[ii]
+        print(patient_name, subtype)
         aft = patient.get_allele_frequency_trajectories(region)
-        trajectories = trajectories + create_trajectory_list(patient, region, aft, ref)
+        trajectories = trajectories + create_trajectory_list(patient, region, subtype)
 
     return trajectories
-
-
-def _make_coordinates(aft_shape, mutation_mask):
-    """
-    Returns the coordinates of the mutations. coordinates[t,ii,:] gives the [nucleotide, genome_position] of
-    the mutations selected by mutation_mask for any t.
-    """
-    i_idx, j_idx = np.meshgrid(range(aft_shape[1]), range(aft_shape[2]), indexing="ij")
-    coordinates = np.array([i_idx, j_idx])
-    coordinates = np.tile(coordinates, (aft_shape[0], 1, 1, 1))
-    coordinates = np.swapaxes(coordinates, 1, 3)
-    coordinates = np.swapaxes(coordinates, 1, 2)
-    coordinates = coordinates[mutation_mask]
-    coordinates = np.reshape(coordinates, (aft_shape[0], -1, 2))
-    return coordinates
 
 
 def make_trajectory_dict(remove_one_point=False):
@@ -224,4 +233,5 @@ if __name__ == "__main__":
     ref_subtype = "any"
     ref = HIVreference(subtype=ref_subtype)
     aft = patient.get_allele_frequency_trajectories(region)
-    trajectories = create_trajectory_list(patient, region, ref_subtype)
+    # trajectories = create_trajectory_list(patient, region, ref_subtype)
+    trajectories = create_all_patient_trajectories(region, ref_subtype="subtypes")
