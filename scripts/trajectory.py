@@ -249,17 +249,7 @@ def make_intermediate_data():
             json.dump([traj.to_json() for traj in trajectories], f, indent=4, sort_keys=True)
 
 
-def save_trajectory_dict(trajectory_dict, filename):
-    with open(filename, "wb") as f:
-        pickle.dump(trajectory_dict, f)
 
-
-def load_trajectory_dict(path="data/trajectory_dict"):
-    trajectories = {}
-    with open(path, 'rb') as file:
-        trajectories = pickle.load(file)
-
-    return trajectories
 
 
 if __name__ == "__main__":
