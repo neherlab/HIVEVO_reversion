@@ -1,7 +1,8 @@
 import pickle
 import filenames
+import json
+import copy
 import numpy as np
-import pandas as pd
 
 import tools
 from hivevo.HIVreference import HIVreference
@@ -33,6 +34,20 @@ class Trajectory():
 
     def __repr__(self):
         return str(self.__dict__)
+
+    def to_json(self):
+        """
+        Transform the array to a dictonary that is compatible with json dump.
+        """
+        tmp = copy.deepcopy(self.__dict__)
+        tmp["frequencies_mask"] = tmp["frequencies"].mask.tolist()
+        tmp["frequencies"] = tmp["frequencies"].data.tolist()
+        tmp["t"] = tmp["t"].tolist()
+
+        for key in tmp.keys():  # To replace numpy types by python standard types
+            if isinstance(tmp[key], np.generic):
+                tmp[key] = tmp[key].item()
+        return tmp
 
 
 def _make_coordinates(aft_shape, mutation_mask):
@@ -198,7 +213,6 @@ def make_trajectory_dict(ref_subtype="any"):
 
     for region in regions:
         # Create the dictionary with the different regions
-
         print(f"Getting trajectories for region {region}.")
 
         if region != "all":
@@ -217,6 +231,22 @@ def make_trajectory_dict(ref_subtype="any"):
         trajectories[region] = {"rev": rev, "non_rev": non_rev,
                                 "syn": syn, "non_syn": non_syn, "all": trajectories[region]}
     return trajectories
+
+
+def make_intermediate_data():
+    """
+    Creates the intermediate data files.
+    """
+    traj_list_names = ["Trajectory_list_any", "Trajectory_list_subtype"]
+    ref_subtypes = ["any", "subtypes"]
+
+    for name, ref_subtype in zip(traj_list_names, ref_subtypes):
+        trajectories = create_all_patient_trajectories("env", ref_subtype) + \
+            create_all_patient_trajectories("pol", ref_subtype) + \
+            create_all_patient_trajectories("gag", ref_subtype)
+
+        with open("data/" + name, "w") as f:
+            json.dump([traj.to_json() for traj in trajectories], f, indent=4)
 
 
 def save_trajectory_dict(trajectory_dict, filename):
@@ -239,5 +269,10 @@ if __name__ == "__main__":
     # ref = HIVreference(subtype=ref_subtype)
     # aft = patient.get_allele_frequency_trajectories(region)
 
-    trajectory_dict = make_trajectory_dict(ref_subtype="any")
+    # trajectory_dict = make_trajectory_dict(ref_subtype="any")
     # trajectory_dict = load_trajectory_dict()
+
+    # trajectories = create_all_patient_trajectories("env")
+    # json_string = json.dump([traj.to_json() for traj in trajectories])
+
+    make_intermediate_data()
