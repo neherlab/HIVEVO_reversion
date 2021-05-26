@@ -246,7 +246,7 @@ def make_intermediate_data():
             create_all_patient_trajectories("gag", ref_subtype)
 
         with open("data/" + name, "w") as f:
-            json.dump([traj.to_json() for traj in trajectories], f, indent=4)
+            json.dump([traj.to_json() for traj in trajectories], f, indent=4, sort_keys=True)
 
 
 def save_trajectory_dict(trajectory_dict, filename):
