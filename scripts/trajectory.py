@@ -245,11 +245,31 @@ def make_intermediate_data():
             create_all_patient_trajectories("pol", ref_subtype) + \
             create_all_patient_trajectories("gag", ref_subtype)
 
-        with open("data/" + name, "w") as f:
+        with open("data/" + name + ".json", "w") as f:
             json.dump([traj.to_json() for traj in trajectories], f, indent=4, sort_keys=True)
 
 
+def instanciate_trajectory(traj_dict):
+    """
+    Instanciate Trajectory object from the dictionary style used for .json save.
+    """
+    kwargs = {}
+    for key in traj_dict.keys():
+        if key not in ["frequencies", "frequencies_mask"]:
+            kwargs[key] = traj_dict[key]
+    kwargs["frequencies"] = np.ma.array(traj_dict["frequencies"], mask=traj_dict["frequencies_mask"])
 
+    return Trajectory(**kwargs)
+
+
+def load_trajectory_list(filename):
+    """
+    Loads a trajectory list from the .json file.
+    """
+    with open(filename, "r") as f:
+        trajectories = json.load(f)
+
+    return [instanciate_trajectory(traj) for traj in trajectories]
 
 
 if __name__ == "__main__":
@@ -265,4 +285,5 @@ if __name__ == "__main__":
     # trajectories = create_all_patient_trajectories("env")
     # json_string = json.dump([traj.to_json() for traj in trajectories])
 
-    make_intermediate_data()
+    # make_intermediate_data()
+    trajectories = load_trajectory_list("data/Trajectory_list_any.json")
