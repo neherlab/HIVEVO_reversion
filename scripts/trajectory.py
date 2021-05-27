@@ -1,9 +1,8 @@
-import pickle
-import filenames
 import json
 import copy
 import numpy as np
 
+import filenames
 import tools
 from hivevo.HIVreference import HIVreference
 from hivevo.patients import Patient
@@ -199,44 +198,11 @@ def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[])
     return trajectories
 
 
-def make_trajectory_dict(ref_subtype="any"):
-    """
-    Returns a dictionary of the form trajectories[region][type]. Trajectories[region][type] is a list of all
-    the trajectories in the given region and with the given type.
-    Possible regions are ["env", "pol", "gag", "all"].
-    Possible types are ["syn", "non_syn", "rev", "non_rev"].
-    """
-
-    assert ref_subtype in ["any", "subtypes"], "ref_subtype must be 'any' or 'subtypes'"
-    regions = ["env", "pol", "gag", "all"]
-    trajectories = {}
-
-    for region in regions:
-        # Create the dictionary with the different regions
-        print(f"Getting trajectories for region {region}.")
-
-        if region != "all":
-            tmp_trajectories = create_all_patient_trajectories(region, ref_subtype=ref_subtype)
-        else:
-            tmp_trajectories = trajectories["env"]["all"] + \
-                trajectories["pol"]["all"] + trajectories["gag"]["all"]
-
-        trajectories[region] = tmp_trajectories
-
-        # Split into sub dictionnaries (rev, non_rev and all)
-        rev = [traj for traj in trajectories[region] if traj.reversion]
-        non_rev = [traj for traj in trajectories[region] if ~traj.reversion]
-        syn = [traj for traj in trajectories[region] if traj.synonymous]
-        non_syn = [traj for traj in trajectories[region] if ~traj.synonymous]
-        trajectories[region] = {"rev": rev, "non_rev": non_rev,
-                                "syn": syn, "non_syn": non_syn, "all": trajectories[region]}
-    return trajectories
-
-
 def make_intermediate_data():
     """
     Creates the intermediate data files.
     """
+    import bootstrap
     traj_list_names = ["Trajectory_list_any", "Trajectory_list_subtype"]
     ref_subtypes = ["any", "subtypes"]
 
@@ -246,7 +212,17 @@ def make_intermediate_data():
             create_all_patient_trajectories("gag", ref_subtype)
 
         with open("data/" + name + ".json", "w") as f:
-            json.dump([traj.to_json() for traj in trajectories], f, indent=4, sort_keys=True)
+            json.dump([traj.to_json() for traj in trajectories], f, indent=4)
+
+        bootstrap_dict, _ = bootstrap.make_bootstrap_mean_dict(trajectories, nb_bootstrap=100)
+        # json formating of numpy arrays
+        for key1 in bootstrap_dict.keys():
+            for key2 in bootstrap_dict[key1].keys():
+                bootstrap_dict[key1][key2]["mean"] = bootstrap_dict[key1][key2]["mean"].tolist()
+                bootstrap_dict[key1][key2]["std"] = bootstrap_dict[key1][key2]["std"].tolist()
+
+        with open("data/boostrap_mean_dict_" + ref_subtype + ".json", "w") as f:
+            json.dump(bootstrap_dict, f, indent=4)
 
 
 def instanciate_trajectory(traj_dict):
@@ -258,6 +234,7 @@ def instanciate_trajectory(traj_dict):
         if key not in ["frequencies", "frequencies_mask"]:
             kwargs[key] = traj_dict[key]
     kwargs["frequencies"] = np.ma.array(traj_dict["frequencies"], mask=traj_dict["frequencies_mask"])
+    kwargs["t"] = np.array(traj_dict["t"])
 
     return Trajectory(**kwargs)
 
@@ -270,6 +247,70 @@ def load_trajectory_list(filename):
         trajectories = json.load(f)
 
     return [instanciate_trajectory(traj) for traj in trajectories]
+
+
+def create_time_bins(bin_size=400):
+    """
+    Create time bins for the mean in time computation. It does homogeneous bins, except for the one at t=0 that
+    only takes point where t=0. Bin_size is in days.
+    """
+    time_bins = [-5, 5]
+    interval = [-600, 3000]
+    while time_bins[0] > interval[0]:
+        time_bins = [time_bins[0] - bin_size] + time_bins
+    while time_bins[-1] < interval[1]:
+        time_bins = time_bins + [time_bins[-1] + bin_size]
+
+    return np.array(time_bins)
+
+
+def get_mean_in_time(trajectories, bin_size=400, freq_range=[0.4, 0.6]):
+    """
+    Computes the mean frequency in time of a set of trajectories from the point they are seen in the
+    freq_range window.
+    Returns the middle of the time bins and the computed frequency mean.
+    """
+    trajectories = copy.deepcopy(trajectories)
+
+    # Create bins and select trajectories going through the freq_range
+    time_bins = create_time_bins(bin_size)
+    trajectories = [traj for traj in trajectories if np.sum(np.logical_and(
+        traj.frequencies >= freq_range[0], traj.frequencies < freq_range[1]), dtype=bool)]
+
+    # Offset trajectories to set t=0 at the point they are seen in the freq_range and adds all the
+    # frequencies / times
+    # to arrays for later computation of mean
+    t_traj = np.array([])
+    f_traj = np.array([])
+    for traj in trajectories:
+        idx = np.where(np.logical_and(traj.frequencies >=
+                                      freq_range[0], traj.frequencies < freq_range[1]))[0][0]
+        traj.t = traj.t - traj.t[idx]
+        t_traj = np.concatenate((t_traj, traj.t))
+        f_traj = np.concatenate((f_traj, traj.frequencies))
+
+    # Binning of all the data in the time bins
+    filtered_fixed = [traj for traj in trajectories if traj.fixation == "fixed"]
+    filtered_lost = [traj for traj in trajectories if traj.fixation == "lost"]
+    freqs, fixed, lost = [], [], []
+    for ii in range(len(time_bins) - 1):
+        freqs = freqs + [f_traj[np.logical_and(t_traj >= time_bins[ii], t_traj < time_bins[ii + 1])]]
+        fixed = fixed + [len([traj for traj in filtered_fixed if traj.t[-1] < time_bins[ii]])]
+        lost = lost + [len([traj for traj in filtered_lost if traj.t[-1] < time_bins[ii]])]
+
+    # Computation of the mean in each bin, active trajectories contribute their current frequency,
+    # fixed contribute 1 and lost contribute 0
+    mean = []
+    for ii in range(len(freqs)):
+        mean = mean + [np.sum(freqs[ii]) + fixed[ii]]
+        if len(freqs[ii]) + fixed[ii] + lost[ii] != 0:
+            mean[-1] /= (len(freqs[ii]) + fixed[ii] + lost[ii])
+        else:
+            mean[-1] = np.nan
+    nb_active = [len(freq) for freq in freqs]
+    nb_dead = [fixed[ii] + lost[ii] for ii in range(len(fixed))]
+
+    return 0.5 * (time_bins[1:] + time_bins[:-1]), mean, nb_active, nb_dead
 
 
 if __name__ == "__main__":
@@ -285,5 +326,4 @@ if __name__ == "__main__":
     # trajectories = create_all_patient_trajectories("env")
     # json_string = json.dump([traj.to_json() for traj in trajectories])
 
-    # make_intermediate_data()
-    trajectories = load_trajectory_list("data/Trajectory_list_any.json")
+    make_intermediate_data()
