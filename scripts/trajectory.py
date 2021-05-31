@@ -327,19 +327,32 @@ def load_mean_in_time_dict(filename):
     return mean_in_time
 
 
+def offset_trajectories(trajectories, freq_range):
+    """
+    Offset trajectories to set t=0 at the point they are seen in the freq_range.
+    """
+    trajectories = copy.deepcopy(trajectories)
+    # Selecting trajectories in frequency window
+    trajectories = [traj for traj in trajectories if np.sum(np.logical_and(
+        traj.frequencies >= freq_range[0], traj.frequencies < freq_range[1]), dtype=bool)]
+
+    for traj in trajectories:
+        idx = np.where(np.logical_and(traj.frequencies >=
+                                      freq_range[0], traj.frequencies < freq_range[1]))[0][0]
+        traj.t = traj.t - traj.t[idx]
+
+        # Adds a last point for better visual if we now fixation or loss
+        time = np.random.rand() * 400 + 100
+
+        if traj.fixation == "fixed":
+            traj.t = np.append(traj.t, [traj.t[-1] + time, 3000])
+            traj.frequencies = np.append(traj.frequencies, [1, 1])
+        elif traj.fixation == "lost":
+            traj.t = np.append(traj.t, [traj.t[-1] + time, 3000])
+            traj.frequencies = np.append(traj.frequencies, [0, 0])
+
+    return trajectories
+
+
 if __name__ == "__main__":
-    # region = "env"
-    # patient = Patient.load("p1")
-    # ref_subtype = "any"
-    # ref = HIVreference(subtype=ref_subtype)
-    # aft = patient.get_allele_frequency_trajectories(region)
-
-    # trajectory_dict = make_trajectory_dict(ref_subtype="any")
-    # trajectory_dict = load_trajectory_dict()
-
-    # trajectories = create_all_patient_trajectories("env")
-    # json_string = json.dump([traj.to_json() for traj in trajectories])
-
-    # make_intermediate_data()
-
-    mean_in_time = load_mean_in_time_dict("data/bootstrap_mean_dict_any.json")
+    make_intermediate_data()
