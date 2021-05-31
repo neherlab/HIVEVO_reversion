@@ -221,7 +221,7 @@ def make_intermediate_data():
                 bootstrap_dict[key1][key2]["mean"] = bootstrap_dict[key1][key2]["mean"].tolist()
                 bootstrap_dict[key1][key2]["std"] = bootstrap_dict[key1][key2]["std"].tolist()
 
-        with open("data/boostrap_mean_dict_" + ref_subtype + ".json", "w") as f:
+        with open("data/bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
             json.dump(bootstrap_dict, f, indent=4)
 
 
@@ -313,6 +313,20 @@ def get_mean_in_time(trajectories, bin_size=400, freq_range=[0.4, 0.6]):
     return 0.5 * (time_bins[1:] + time_bins[:-1]), mean, nb_active, nb_dead
 
 
+def load_mean_in_time_dict(filename):
+    """
+    Loads the mean_in_time dictionary and returns it.
+    """
+    with open(filename, "r") as f:
+        mean_in_time = json.load(f)
+
+    for key1 in mean_in_time.keys():
+        for key2 in mean_in_time[key1].keys():
+            mean_in_time[key1][key2]["mean"] = np.array(mean_in_time[key1][key2]["mean"])
+            mean_in_time[key1][key2]["std"] = np.array(mean_in_time[key1][key2]["std"])
+    return mean_in_time
+
+
 if __name__ == "__main__":
     # region = "env"
     # patient = Patient.load("p1")
@@ -326,4 +340,6 @@ if __name__ == "__main__":
     # trajectories = create_all_patient_trajectories("env")
     # json_string = json.dump([traj.to_json() for traj in trajectories])
 
-    make_intermediate_data()
+    # make_intermediate_data()
+
+    mean_in_time = load_mean_in_time_dict("data/bootstrap_mean_dict_any.json")
