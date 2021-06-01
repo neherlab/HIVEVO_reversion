@@ -203,7 +203,7 @@ def make_intermediate_data():
     Creates the intermediate data files.
     """
     import bootstrap
-    traj_list_names = ["Trajectory_list_any", "Trajectory_list_subtype"]
+    traj_list_names = ["Trajectory_list_any", "Trajectory_list_subtypes"]
     ref_subtypes = ["any", "subtypes"]
 
     for name, ref_subtype in zip(traj_list_names, ref_subtypes):
@@ -355,4 +355,9 @@ def offset_trajectories(trajectories, freq_range):
 
 
 if __name__ == "__main__":
-    make_intermediate_data()
+    # make_intermediate_data()
+
+    trajectories = create_all_patient_trajectories("env", "any")
+    print(len(trajectories))
+    trajectories = create_all_patient_trajectories("env", "subtypes")
+    print(len(trajectories))
