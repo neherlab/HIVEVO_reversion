@@ -4,8 +4,10 @@ import trajectory
 
 if __name__ == "__main__":
     # Parameters
-    trajectory_file = "data/Trajectory_list_any.json"
-    mean_in_time_file = "data/bootstrap_mean_dict_any.json"
+    trajectory_file = "data/Trajectory_list_subtypes.json"
+    mean_in_time_file = "data/bootstrap_mean_dict_subtypes.json"
+    # trajectory_file = "data/Trajectory_list_any.json"
+    # mean_in_time_file = "data/bootstrap_mean_dict_any.json"
     fontsize = 16
     fill_alpha = 0.15
     grid_alpha = 0.5
@@ -69,4 +71,5 @@ if __name__ == "__main__":
                   ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "reversion", "non-reversion"],
                   fontsize=fontsize, ncol=2, loc="lower right")
     plt.tight_layout()
+    plt.savefig("figures/mean_in_time_subtypes.png", format="png")
     plt.show()
