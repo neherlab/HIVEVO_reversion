@@ -211,7 +211,7 @@ def make_intermediate_data():
             create_all_patient_trajectories("pol", ref_subtype) + \
             create_all_patient_trajectories("gag", ref_subtype)
 
-        with open("data/" + name + ".json", "w") as f:
+        with open("data/WH/" + name + ".json", "w") as f:
             json.dump([traj.to_json() for traj in trajectories], f, indent=4)
 
         bootstrap_dict, _ = bootstrap.make_bootstrap_mean_dict(trajectories, nb_bootstrap=100)
@@ -221,7 +221,7 @@ def make_intermediate_data():
                 bootstrap_dict[key1][key2]["mean"] = bootstrap_dict[key1][key2]["mean"].tolist()
                 bootstrap_dict[key1][key2]["std"] = bootstrap_dict[key1][key2]["std"].tolist()
 
-        with open("data/bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
+        with open("data/WH/bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
             json.dump(bootstrap_dict, f, indent=4)
 
 
