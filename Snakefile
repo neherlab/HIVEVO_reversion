@@ -12,12 +12,12 @@ rule lanl_metadata:
         Creating metadata for the original LANL data.
         """
     input:
-        lanl_data = "data/raw/{region}.fasta"
+        lanl_data = "data/BH/raw/{region}.fasta"
     output:
-        lanl_metadata = "data/raw/{region}_metadata.tsv"
+        lanl_metadata = "data/BH/raw/{region}_metadata.tsv"
     shell:
         """
-        python scripts/metadata_from_names.py {input.lanl_data} {output.lanl_metadata}
+        python scripts/snakecommands.py metadata-from-names {input.lanl_data} {output.lanl_metadata}
         """
 
 
