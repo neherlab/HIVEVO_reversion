@@ -27,14 +27,16 @@ rule sub_sample:
         Subsampling the original lanl data homogeneously in time and creating subsample metadata.
         """
     input:
-        lanl_data = "data/raw/{region}.fasta",
-        lanl_metadata = "data/raw/{region}_metadata.tsv"
+        lanl_data = "data/BH/raw/{region}.fasta",
+        lanl_metadata = "data/BH/raw/{region}_metadata.tsv"
     output:
-        sequences = "data/raw/{region}_{nb_sequences}_subsampled.fasta",
-        metadata = "data/raw/{region}_{nb_sequences}_subsampled_metadata.tsv"
+        sequences = "data/BH/raw/{region}_{nb_sequences}_subsampled.fasta",
+        metadata = "data/BH/raw/{region}_{nb_sequences}_subsampled_metadata.tsv"
     shell:
         """
-        python scripts/subsample.py {input.lanl_data} {input.lanl_metadata} {wildcards.nb_sequences} {output.sequences} {output.metadata}
+        python scripts/snakecommands.py subsample {input.lanl_data} {input.lanl_metadata} \
+        {wildcards.nb_sequences} {output.sequences} {output.metadata} \
+        --remove_subtype_o
         """
 
 
@@ -46,10 +48,10 @@ rule align:
         """
     input:
         sequences = rules.sub_sample.output.sequences,
-        reference = "data/reference/HXB2_{region}.fasta"
+        reference = "data/BH/reference/HXB2_{region}.fasta"
     output:
-        alignment = "data/alignments/to_HXB2/{region}_{nb_sequences}.fasta"
-    threads: 4
+        alignment = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}.fasta"
+    threads: 8
     shell:
         """
         augur align \
@@ -63,15 +65,15 @@ rule align:
 rule consensus:
     message:
         """
-        Computes the consensus sequence of the alignment.
+        Computing the consensus sequence of the {wildcards.region}_{wildcards.nb_sequences} alignment.
         """
     input:
         alignment = rules.align.output.alignment
     output:
-        consensus_sequence = "data/alignments/to_HXB2/{region}_{nb_sequences}_consensus.fasta"
+        consensus_sequence = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_consensus.fasta"
     shell:
         """
-        python scripts/consensus_sequences.py {input.alignment} {output.consensus_sequence}
+        python scripts/snakecommands.py consensus {input.alignment} {output.consensus_sequence}
         """
 
 
@@ -96,7 +98,7 @@ rule tree:
         alignment = rules.align.output.alignment
     output:
         tree = "intermediate_files/tree_{region}_{nb_sequences}.nwk"
-    threads: 4
+    threads: 8
     shell:
         """
         augur tree \
