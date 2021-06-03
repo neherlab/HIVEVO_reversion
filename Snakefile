@@ -185,7 +185,7 @@ rule gtr:
         gtr_json = "data/BH/gtr/{region}_{nb_sequences}.json"
     shell:
         """
-        python scripts/snakecommands.py gtr {input.align} {input.tree} {output.gtr_json}
+        python scripts/snakecommands.py gtr {input.tree} {input.align} {output.gtr_json}
         """
 
 rule subalign_gtr:
@@ -197,7 +197,7 @@ rule subalign_gtr:
         gtr_json = "gtr/{region}_{nb_sequences}_{position}.json"
     shell:
         """
-        python scripts/infer_gtr.py {input.align} {input.tree} {output.gtr_json}
+        python scripts/infer_gtr.py {input.tree} {input.align} {output.gtr_json}
         """
 
 rule mutation_rates:
