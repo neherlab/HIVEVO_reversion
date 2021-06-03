@@ -83,12 +83,12 @@ rule split_positions:
     input:
         alignment = rules.align.output.alignment
     output:
-        alignment_first = "data/alignments/to_HXB2/{region}_{nb_sequences}_1st.fasta",
-        alignment_second = "data/alignments/to_HXB2/{region}_{nb_sequences}_2nd.fasta",
-        alignment_third = "data/alignments/to_HXB2/{region}_{nb_sequences}_3rd.fasta"
+        alignment_first = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_1st.fasta",
+        alignment_second = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_2nd.fasta",
+        alignment_third = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_3rd.fasta"
     shell:
         """
-        python scripts/split_positions.py {input.alignment}
+        python scripts/snakecommands.py split-positions {input.alignment}
         """
 
 rule tree:
@@ -231,8 +231,8 @@ rule clean:
     message: "Removing generated files."
     shell:
         """
-        rm data/raw/*subsampled* -f
-        rm data/alignments/to_HXB2/* -f
+        rm data/BH/raw/*subsampled* -f
+        rm data/BH/alignments/to_HXB2/* -f
         rm intermediate_files/* -f
         rm visualisation/* -f
         rm gtr/* -f

@@ -7,6 +7,8 @@ import numpy as np
 from Bio import SeqIO, AlignIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
+from Bio.Alphabet import SingleLetterAlphabet
+from Bio.Align import MultipleSeqAlignment
 
 
 @click.group()
@@ -124,6 +126,9 @@ def subsample(sequences, metadata, number, output_sequences, output_metadata, re
 @click.argument("alignment", type=click.Path(exists=True))
 @click.argument("output", type=click.Path(exists=False))
 def consensus(alignment, output):
+    """
+    Computes the OUTPUT consensus sequences from the ALIGNMENT.
+    """
     alignment_file = alignment
     alignment = AlignIO.read(alignment, "fasta")
     alignment_array = np.array(alignment)
@@ -142,6 +147,30 @@ def consensus(alignment, output):
 
     with open(output, "w") as handle:
         SeqIO.write([consensus_sequence], handle, "fasta")
+
+
+@cli.command()
+@click.argument("alignment", type=click.Path(exists=True))
+def split_positions(alignment):
+    """
+    Subsamples the given ALIGNMENT into 1st 2nd and 3rd positions
+    """
+    alignment_file = alignment
+    alignment = AlignIO.read(alignment, "fasta")
+    alignment_array = np.array(alignment)
+
+    basename = alignment_file.replace(".fasta", "")
+
+    for position, name in zip([0, 1, 2], ["1st", "2nd", "3rd"]):
+        sub_alignment = alignment_array[:, position::3]
+        seq_list = []
+        for ii in range(alignment_array.shape[0]):
+            seq = "".join(sub_alignment[ii, :])
+            seq_list += [SeqRecord(Seq(seq, SingleLetterAlphabet()), id=alignment[ii].id,
+                                   name=alignment[ii].name, description="")]
+
+        sub_alignment = MultipleSeqAlignment(seq_list)
+        AlignIO.write([sub_alignment], basename + "_" + name + ".fasta", "fasta")
 
 
 if __name__ == '__main__':
