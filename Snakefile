@@ -97,7 +97,7 @@ rule tree:
     input:
         alignment = rules.align.output.alignment
     output:
-        tree = "intermediate_files/tree_{region}_{nb_sequences}.nwk"
+        tree = "data/BH/intermediate_files/tree_{region}_{nb_sequences}.nwk"
     threads: 8
     shell:
         """
@@ -117,8 +117,8 @@ rule refine:
         alignment = rules.align.output.alignment,
         metadata = rules.sub_sample.output.metadata
     output:
-        tree = "intermediate_files/timetree_{region}_{nb_sequences}.nwk",
-        node_data = "intermediate_files/branch_lengths_{region}_{nb_sequences}.json"
+        tree = "data/BH/intermediate_files/timetree_{region}_{nb_sequences}.nwk",
+        node_data = "data/BH/intermediate_files/branch_lengths_{region}_{nb_sequences}.json"
     params:
         coalescent = "opt",
         date_inference = "marginal",
@@ -144,7 +144,7 @@ rule ancestral:
         tree = rules.refine.output.tree,
         alignment = rules.align.output.alignment
     output:
-        node_data = "intermediate_files/{region}_{nb_sequences}_nt_muts.json"
+        node_data = "data/BH/intermediate_files/{region}_{nb_sequences}_nt_muts.json"
     params:
         inference = "joint"
     shell:
@@ -180,12 +180,12 @@ rule gtr:
     message: "Inferring GTR model for alignment {wildcards.region} using TreeTime."
     input:
         tree = rules.refine.output.tree,
-        align = "data/alignments/to_HXB2/{region}_{nb_sequences}.fasta"
+        align = rules.align.output.alignment
     output:
-        gtr_json = "gtr/{region}_{nb_sequences}.json"
+        gtr_json = "data/BH/gtr/{region}_{nb_sequences}.json"
     shell:
         """
-        python scripts/infer_gtr.py {input.align} {input.tree} {output.gtr_json}
+        python scripts/snakecommands.py gtr {input.align} {input.tree} {output.gtr_json}
         """
 
 rule subalign_gtr:

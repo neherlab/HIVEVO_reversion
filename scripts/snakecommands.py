@@ -2,6 +2,7 @@
 Scripts used for the snakefile commands
 """
 import click
+import json
 import pandas as pd
 import numpy as np
 from Bio import SeqIO, AlignIO
@@ -9,6 +10,7 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import SingleLetterAlphabet
 from Bio.Align import MultipleSeqAlignment
+from treetime import TreeAnc
 
 
 @click.group()
@@ -171,6 +173,34 @@ def split_positions(alignment):
 
         sub_alignment = MultipleSeqAlignment(seq_list)
         AlignIO.write([sub_alignment], basename + "_" + name + ".fasta", "fasta")
+
+
+@cli.command()
+@click.argument("tree", type=click.Path(exists=True))
+@click.argument("alignment", type=click.Path(exists=True))
+@click.argument("output", type=click.Path(exists=False))
+def gtr(tree, alignment, output):
+    """
+    Infers a the OUTPUT GTR model from the TREE and ALIGNMENT.
+    """
+    alignment_file = alignment
+    alignment = AlignIO.read(alignment, "fasta")
+    tt = TreeAnc(tree=tree, aln=alignment_file)
+    gtr = tt.infer_gtr(marginal=True, normalized_rate=False)
+    output_JSON(gtr, output)
+
+
+def output_JSON(gtr_model, output_file):
+    gtr = gtr_model.__dict__
+    save_dict = {}
+    for key in ["_mu", "_Pi", "_W"]:
+        if isinstance(gtr[key], np.ndarray):
+            save_dict[key.replace("_", "")] = gtr[key].tolist()
+        else:
+            save_dict[key.replace("_", "")] = gtr[key]
+
+    with open(output_file, 'w') as output:
+        json.dump(save_dict, output)
 
 
 if __name__ == '__main__':
