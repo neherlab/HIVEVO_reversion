@@ -1,3 +1,4 @@
 figures/
 data/
 scripts/__pycache__
+.snakemake
