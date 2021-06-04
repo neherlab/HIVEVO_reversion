@@ -59,25 +59,33 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
     for year in years:
         average_distance += [np.mean(distance[dates == year])]
         std_distance += [np.std(distance[dates == year])]
-        
+
     average_distance_in_time = np.array(average_distance)
     std_distance_in_time = np.array(std_distance)
 
     return years, average_distance_in_time, std_distance_in_time
 
 
-if __name__ == '__main__':
+def plot_mean_distance_in_time(consensus=True):
+    """
+    Plots the figure for the mean  hamiltonian distance in time.
+    Consensus = True to compare to the consensus sequence from the alignment. Set to False to compare to root
+    of the tree instead.
+    """
     alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta"
-    consensus_file = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta"
-    # consensus_file = "intermediate_files/pol_1000_nt_muts.json"
+    if consensus:
+        reference_file = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta"
+    else:
+        reference_file = "data/BH/intermediate_files/pol_1000_nt_muts.json"
 
     plt.figure()
     subtypes = ["B", "C"]
     colors = ["C0", "C1"]
+    fontsize = 16
     c = 0
     for subtype in subtypes:
-        consensus_sequence = get_reference_sequence(consensus_file)
-        years, dist, std = get_mean_distance_in_time(alignment_file, consensus_sequence, subtype)
+        reference_sequence = get_reference_sequence(reference_file)
+        years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
         fit = np.polyfit(years[std != 0], dist[std != 0], deg=1, w=(1 / std[std != 0]))
         plt.errorbar(years, dist, yerr=std, fmt=".", label=subtype, color=colors[c])
         plt.plot(years, np.polyval(fit, years), "--",
@@ -85,7 +93,16 @@ if __name__ == '__main__':
         c += 1
 
     plt.grid()
-    plt.xlabel("Time [years]")
-    plt.ylabel("Average fraction difference")
-    plt.legend()
+    plt.xlabel("Time [years]", fontsize=fontsize)
+    plt.ylabel("Average fraction difference", fontsize=fontsize)
+    plt.legend(fontsize=fontsize)
+    if consensus:
+        plt.title("Distance to consensus", fontsize=fontsize)
+    else:
+        plt.title("Distance to root", fontsize=fontsize)
+
+
+if __name__ == '__main__':
+    plot_mean_distance_in_time(True)
+    plot_mean_distance_in_time(False)
     plt.show()
