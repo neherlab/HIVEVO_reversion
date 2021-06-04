@@ -205,14 +205,14 @@ rule mutation_rates:
     input:
         refine_file = rules.refine.output.node_data,
         gtr_all = rules.gtr.output.gtr_json,
-        gtr_first = "gtr/{region}_{nb_sequences}_1st.json",
-        gtr_second = "gtr/{region}_{nb_sequences}_2nd.json",
-        gtr_third = "gtr/{region}_{nb_sequences}_3rd.json"
+        gtr_first = "data/BH/gtr/{region}_{nb_sequences}_1st.json",
+        gtr_second = "data/BH/gtr/{region}_{nb_sequences}_2nd.json",
+        gtr_third = "data/BH/gtr/{region}_{nb_sequences}_3rd.json"
     output:
-        mutation_rates = "mutation_rates/{region}_{nb_sequences}.json"
+        mutation_rates = "data/BH/mutation_rates/{region}_{nb_sequences}.json"
     shell:
         """
-        python scripts/extract_mut_rate.py {input.refine_file} {input.gtr_all} {input.gtr_first} \
+        python scripts/snakecommands.py mutation-rate {input.refine_file} {input.gtr_all} {input.gtr_first} \
             {input.gtr_second} {input.gtr_third} {output.mutation_rates}
         """
 

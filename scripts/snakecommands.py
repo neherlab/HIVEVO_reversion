@@ -190,6 +190,44 @@ def gtr(tree, alignment, output):
     output_JSON(gtr, output)
 
 
+@cli.command()
+@click.argument("refine", type=click.Path(exists=True))
+@click.argument("gtr", type=click.Path(exists=True))
+@click.argument("gtr1", type=click.Path(exists=True))
+@click.argument("gtr2", type=click.Path(exists=True))
+@click.argument("gtr3", type=click.Path(exists=True))
+@click.argument("output", type=click.Path(exists=False))
+def mutation_rate(refine, gtr, gtr1, gtr2, gtr3, output):
+    """
+    Returns the OUTPUT mutation rate (per site per year) from the TreeTime REFINE file and the GTR files.
+    """
+    rate_dict = {}
+    rate_dict["all"] = get_mutation_rate(gtr, refine)
+    rate_dict["first"] = get_mutation_rate(gtr1, refine)
+    rate_dict["second"] = get_mutation_rate(gtr2, refine)
+    rate_dict["third"] = get_mutation_rate(gtr3, refine)
+
+    with open(output, "w") as output:
+        json.dump(rate_dict, output)
+
+    return mutation_rate
+
+
+def get_mutation_rate(gtr_file, refine_file):
+    """
+    Returns the mutation rate in mutation per site per year from the GTR model and its corresponding
+    tree file from augur refine output.
+    """
+    with open(gtr_file, "r") as file:
+        gtr = json.load(file)
+    with open(refine_file, "r") as file:
+        refine = json.load(file)
+
+    mutation_rate = gtr["mu"] * refine["clock"]["rate"]
+
+    return mutation_rate
+
+
 def output_JSON(gtr_model, output_file):
     gtr = gtr_model.__dict__
     save_dict = {}
