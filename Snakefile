@@ -1,5 +1,6 @@
 rule all:
     input:
+        consensus = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta",
         auspice_json = "visualisation/pol_1000.json",
         rates = "data/BH/mutation_rates/pol_1000.json",
         tree = "data/BH/intermediate_files/timetree_pol_1000.nwk",
