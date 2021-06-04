@@ -1,9 +1,9 @@
 rule all:
     input:
         auspice_json = "visualisation/pol_1000.json",
-        rates0 = "mutation_rates/pol_1000.json",
-        tree = "intermediate_files/timetree_pol_1000.nwk",
-        branch = "branch_lengths/pol_1000.json"
+        rates = "data/BH/mutation_rates/pol_1000.json",
+        tree = "data/BH/intermediate_files/timetree_pol_1000.nwk",
+        branch = "data/BH/branch_lengths/pol_1000.json"
 
 
 rule lanl_metadata:
