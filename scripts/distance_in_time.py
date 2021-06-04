@@ -22,6 +22,50 @@ def get_reference_sequence(filename):
     return reference_sequence
 
 
+def get_gap_mask(alignment_array, threshold=0.1):
+    """
+    Return a vector were true are the sites seen with less than threshold fraction of N.
+    """
+    gaps = alignment_array == "N"
+    gap_proportion = np.sum(gaps, axis=0, dtype=int) / gaps.shape[0]
+    return gap_proportion < threshold
+
+
+def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
+    """
+    Returns the time, average distance and standard deviation of the average distance to the reference
+    sequence.
+    """
+    # Data loading
+    alignment = AlignIO.read(alignment_file, "fasta")
+    alignment_array = np.array(alignment)
+    names = [seq.id for seq in alignment]
+    dates = np.array([int(name.split(".")[2]) for name in names])
+    subtypes = np.array([name.split(".")[0] for name in names])
+
+    # Selecting subtype
+    alignment_array = alignment_array[subtypes == subtype]
+    dates = dates[subtypes == subtype]
+
+    # Distance to consensus sequence
+    gap_mask = get_gap_mask(alignment_array)
+    distance_matrix = (alignment_array != reference_sequence)[:, gap_mask]
+    distance = np.sum(distance_matrix, axis=1, dtype=int) / distance_matrix.shape[-1]
+
+    # Distance average per year
+    average_distance = []
+    std_distance = []
+    years = np.unique(dates)
+    for year in years:
+        average_distance += [np.mean(distance[dates == year])]
+        std_distance += [np.std(distance[dates == year])]
+        
+    average_distance_in_time = np.array(average_distance)
+    std_distance_in_time = np.array(std_distance)
+
+    return years, average_distance_in_time, std_distance_in_time
+
+
 if __name__ == '__main__':
     alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta"
     consensus_file = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta"
@@ -32,7 +76,7 @@ if __name__ == '__main__':
     colors = ["C0", "C1"]
     c = 0
     for subtype in subtypes:
-        consensus_sequence = get_consensus_sequence(consensus_file)
+        consensus_sequence = get_reference_sequence(consensus_file)
         years, dist, std = get_mean_distance_in_time(alignment_file, consensus_sequence, subtype)
         fit = np.polyfit(years[std != 0], dist[std != 0], deg=1, w=(1 / std[std != 0]))
         plt.errorbar(years, dist, yerr=std, fmt=".", label=subtype, color=colors[c])
