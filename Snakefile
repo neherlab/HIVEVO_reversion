@@ -221,10 +221,10 @@ rule mean_branch_length:
     input:
         refine_file = rules.refine.output.node_data,
     output:
-        mean_branch_length = "branch_lengths/{region}_{nb_sequences}.json"
+        mean_branch_length = "data/BH/branch_lengths/{region}_{nb_sequences}.json"
     shell:
         """
-        python scripts/extract_mean_branch_length.py {input.refine_file} {output.mean_branch_length}
+        python scripts/snakecommands.py mean-branch-length {input.refine_file} {output.mean_branch_length}
         """
 
 rule clean:

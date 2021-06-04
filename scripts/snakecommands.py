@@ -213,6 +213,28 @@ def mutation_rate(refine, gtr, gtr1, gtr2, gtr3, output):
     return mutation_rate
 
 
+@cli.command()
+@click.argument("refine", type=click.Path(exists=True))
+@click.argument("output", type=click.Path(exists=False))
+def mean_branch_length(refine, output):
+    """
+    Computes the OUTPUT mean branch length for the given REFINE file.
+    """
+    with open(refine, "r") as file:
+        refine = json.load(file)
+
+    total_length = 0
+    for key in refine["nodes"].keys():
+        total_length += refine["nodes"][key]["branch_length"]
+    mean_length = total_length / len(refine["nodes"])
+    mean_length = mean_length / refine["clock"]["rate"]
+
+    mean_length = {"mean_branch_length": mean_length}
+
+    with open(output, "w") as o:
+        json.dump(mean_length, o)
+
+
 def get_mutation_rate(gtr_file, refine_file):
     """
     Returns the mutation rate in mutation per site per year from the GTR model and its corresponding
