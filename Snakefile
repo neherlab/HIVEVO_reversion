@@ -192,12 +192,12 @@ rule subalign_gtr:
     message: "Inferring gtr model for subalignment {wildcards.region}_{wildcards.position} using TreeTime."
     input:
         tree = rules.refine.output.tree,
-        align = "data/alignments/to_HXB2/{region}_{nb_sequences}_{position}.fasta"
+        align = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_{position}.fasta"
     output:
-        gtr_json = "gtr/{region}_{nb_sequences}_{position}.json"
+        gtr_json = "data/BH/gtr/{region}_{nb_sequences}_{position}.json"
     shell:
         """
-        python scripts/infer_gtr.py {input.tree} {input.align} {output.gtr_json}
+        python scripts/snakecommands.py gtr {input.tree} {input.align} {output.gtr_json}
         """
 
 rule mutation_rates:
@@ -233,9 +233,9 @@ rule clean:
         """
         rm data/BH/raw/*subsampled* -f
         rm data/BH/alignments/to_HXB2/* -f
-        rm intermediate_files/* -f
+        rm data/BH/intermediate_files/* -f
         rm visualisation/* -f
-        rm gtr/* -f
-        rm mutation_rates/* -f
-        rm branch_lengths/* -f
+        rm data/BH/gtr/* -f
+        rm data/BH/mutation_rates/* -f
+        rm data/BH/branch_lengths/* -f
         """
