@@ -98,8 +98,10 @@ def plot_mean_distance_in_time(consensus=True):
     plt.legend(fontsize=fontsize)
     if consensus:
         plt.title("Distance to consensus", fontsize=fontsize)
+        plt.savefig("figures/Distance_to_consensus.png", format="png")
     else:
         plt.title("Distance to root", fontsize=fontsize)
+        plt.savefig("figures/Distance_to_root.png", format="png")
 
 
 if __name__ == '__main__':
