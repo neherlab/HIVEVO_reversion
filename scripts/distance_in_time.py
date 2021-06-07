@@ -66,6 +66,35 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
     return years, average_distance_in_time, std_distance_in_time
 
 
+def get_root_to_tip_distance(tree_file, clock_file):
+    """
+    Computes the mean root to tipe distance for each year.
+    Returns a list of mean root_to_tip distance and a list of corresponding years.
+    """
+    tree = Phylo.read(tree_file, "newick")
+    with open(clock_file, "r") as file:
+        clock = json.load(file)
+        clock = clock["clock"]["rate"]
+
+    # Loading the tips of the tree
+    tips = tree.get_terminals()
+
+    # Getting the years of the tips
+    dates = []
+    for tip in tips:
+        date = tip.name.split(".")[2]
+        dates += [int(date)]
+    dates = np.unique(dates)
+
+    mean_lengths = []
+    for date in dates:
+        tmp = [tip for tip in tips if int(tip.name.split(".")[2]) == date]
+        lengths = [tree.distance(tip) for tip in tmp]
+        mean_lengths += [np.mean(lengths) / clock]
+
+    return dates, mean_lengths
+
+
 def plot_mean_distance_in_time(consensus=True):
     """
     Plots the figure for the mean  hamiltonian distance in time.
@@ -108,6 +137,10 @@ def plot_root_to_tip():
     """
     Plots the figure for the root to tip distance in time.
     """
+    tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk"
+    clock_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json"
+
+    dates, lengths = get_root_to_tip_distance(tree_file, clock_file)
 
 
 
@@ -116,16 +149,4 @@ if __name__ == '__main__':
     # plot_mean_distance_in_time(False)
     # plt.show()
 
-    tree = Phylo.read("data/BH/intermediate_files/timetree_pol_1000.nwk", "newick")
-    clock_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json"
-    with open(clock_file, "r") as file:
-        clock = json.load(file)
-        clock = clock["clock"]["rate"]
-
-    tips = tree.get_terminals()
-    lengths = []
-    for tip in tips:
-        lengths += [tree.distance(tip)/clock]
-
-    mean = np.mean(lengths)
-    print(mean)
+    dates, mean_lengths = get_root_to_tip_distance(tree_file, clock_file)
