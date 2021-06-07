@@ -139,14 +139,22 @@ def plot_root_to_tip():
     """
     tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk"
     clock_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json"
+    fontsize = 16
 
     dates, lengths = get_root_to_tip_distance(tree_file, clock_file)
 
+    plt.figure()
+    plt.plot(dates, lengths, '.', label="Data")
+    fit = np.polyfit(dates, lengths, deg=1)
+    plt.plot(dates, np.polyval(fit, dates), "--", label=f"{round(fit[0],5)}x + {round(fit[1],5)}")
+    plt.xlabel("Time [years]", fontsize=fontsize)
+    plt.ylabel("Mean root-tip length [years]", fontsize=fontsize)
+    plt.legend(fontsize=fontsize)
+    plt.grid()
 
 
 if __name__ == '__main__':
     # plot_mean_distance_in_time(True)
     # plot_mean_distance_in_time(False)
-    # plt.show()
-
-    dates, mean_lengths = get_root_to_tip_distance(tree_file, clock_file)
+    plot_root_to_tip()
+    plt.show()
