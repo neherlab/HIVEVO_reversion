@@ -1,7 +1,7 @@
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-from Bio import AlignIO
+from Bio import AlignIO, Phylo
 
 
 def get_reference_sequence(filename):
@@ -104,7 +104,28 @@ def plot_mean_distance_in_time(consensus=True):
         plt.savefig("figures/Distance_to_root.png", format="png")
 
 
+def plot_root_to_tip():
+    """
+    Plots the figure for the root to tip distance in time.
+    """
+
+
+
 if __name__ == '__main__':
-    plot_mean_distance_in_time(True)
-    plot_mean_distance_in_time(False)
-    plt.show()
+    # plot_mean_distance_in_time(True)
+    # plot_mean_distance_in_time(False)
+    # plt.show()
+
+    tree = Phylo.read("data/BH/intermediate_files/timetree_pol_1000.nwk", "newick")
+    clock_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json"
+    with open(clock_file, "r") as file:
+        clock = json.load(file)
+        clock = clock["clock"]["rate"]
+
+    tips = tree.get_terminals()
+    lengths = []
+    for tip in tips:
+        lengths += [tree.distance(tip)/clock]
+
+    mean = np.mean(lengths)
+    print(mean)
