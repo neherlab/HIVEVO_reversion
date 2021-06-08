@@ -99,17 +99,25 @@ def get_root_to_tip_distance(tree_file, branch_length_file):
     return dates, mean_lengths
 
 
-def plot_mean_distance_in_time(consensus=True, savefig=False):
+def plot_mean_distance_in_time(consensus="global", savefig=False):
     """
     Plots the figure for the mean  hamiltonian distance in time.
     Consensus = True to compare to the consensus sequence from the alignment. Set to False to compare to root
     of the tree instead.
     """
+
+    assert consensus in ["global", "root",
+                         "subtypes"], "Reference sequence can only be global root or subtypes"
+
     alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta"
-    if consensus:
+    if consensus == "global":
         reference_file = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta"
-    else:
+    elif consensus == "root":
         reference_file = "data/BH/intermediate_files/pol_1000_nt_muts.json"
+    elif consensus == "subtypes":
+        reference_file = {}
+        reference_file["B"] = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
+        reference_file["C"] = "data/BH/alignments/to_HXB2/pol_1000_C_consensus.fasta"
 
     plt.figure()
     subtypes = ["B", "C"]
@@ -117,7 +125,11 @@ def plot_mean_distance_in_time(consensus=True, savefig=False):
     fontsize = 16
     c = 0
     for subtype in subtypes:
-        reference_sequence = get_reference_sequence(reference_file)
+        if consensus != "subtypes":
+            reference_sequence = get_reference_sequence(reference_file)
+        else:
+            reference_sequence = get_reference_sequence(reference_file[subtype])
+
         years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
         fit = np.polyfit(years[std != 0], dist[std != 0], deg=1, w=(1 / std[std != 0]))
         plt.errorbar(years, dist, yerr=std, fmt=".", label=subtype, color=colors[c])
@@ -129,14 +141,18 @@ def plot_mean_distance_in_time(consensus=True, savefig=False):
     plt.xlabel("Time [years]", fontsize=fontsize)
     plt.ylabel("Average fraction difference", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
-    if consensus:
-        plt.title("Distance to consensus", fontsize=fontsize)
+    if consensus == "global":
+        plt.title("Distance to global consensus", fontsize=fontsize)
         if savefig:
             plt.savefig("figures/Distance_to_consensus.png", format="png")
-    else:
+    elif consensus == "root":
         plt.title("Distance to root", fontsize=fontsize)
         if savefig:
             plt.savefig("figures/Distance_to_root.png", format="png")
+    elif consensus == "subtypes":
+        plt.title("Distance to subtype consensus", fontsize=fontsize)
+        if savefig:
+            plt.savefig("figures/Distance_to_subtype_consensus.png", format="png")
 
 
 def plot_root_to_tip(savefig):
@@ -163,8 +179,9 @@ def plot_root_to_tip(savefig):
 
 
 if __name__ == '__main__':
-    savefig = False
-    # plot_mean_distance_in_time(True, savefig)
-    # plot_mean_distance_in_time(False, savefig)
+    savefig = True
+    plot_mean_distance_in_time("global", savefig)
+    plot_mean_distance_in_time("root", savefig)
+    plot_mean_distance_in_time("subtypes", savefig)
     # plot_root_to_tip(savefig)
     plt.show()
