@@ -235,6 +235,23 @@ def mean_branch_length(refine, output):
         json.dump(mean_length, o)
 
 
+@cli.command()
+@click.argument("alignment", type=click.Path(exists=True))
+def split_subtypes(alignment):
+    """
+    Split the original ALIGNMENT into subtype B and C and saves the 2 sub alignments for these subtypes.
+    """
+    alignment_file = alignment
+    alignment = AlignIO.read(alignment, "fasta")
+
+    basename = alignment_file.replace(".fasta", "")
+
+    for subtype in ["B", "C"]:
+        seq_list = [seq for seq in alignment if seq.id[0] == subtype]
+        sub_alignment = MultipleSeqAlignment(seq_list)
+        AlignIO.write([sub_alignment], basename + "_" + subtype + ".fasta", "fasta")
+
+
 def get_mutation_rate(gtr_file, refine_file):
     """
     Returns the mutation rate in mutation per site per year from the GTR model and its corresponding
