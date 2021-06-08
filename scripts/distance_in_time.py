@@ -66,15 +66,23 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
     return years, average_distance_in_time, std_distance_in_time
 
 
-def get_root_to_tip_distance(tree_file):
+def get_root_to_tip_distance(tree_file, branch_length_file):
     """
     Computes the mean root to tipe distance for each year.
     Returns a list of mean root_to_tip distance and a list of corresponding years.
     """
 
-    # Loading the tips of the tree
+    # Loading the tree and branch_length file
     tree = Phylo.read(tree_file, "newick")
     tips = tree.get_terminals()
+
+    with open(branch_length_file) as f:
+        file = json.load(f)
+        nodes = file["nodes"]
+
+    # Replacing the branch length by the mutation_length entry of the branch_length_file
+    for tip in tips:
+        tip.branch_length = nodes[tip.name]["mutation_length"]
 
     # Getting the years of the tips
     dates = []
@@ -133,10 +141,11 @@ def plot_root_to_tip():
     """
     Plots the figure for the root to tip distance in time.
     """
-    tree_file = "data/BH/intermediate_files/tree_pol_1000.nwk"
+    tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk"
+    branch_length_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json"
     fontsize = 16
 
-    dates, lengths = get_root_to_tip_distance(tree_file)
+    dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
 
     plt.figure()
     plt.plot(dates, lengths, '.', label="Data")
