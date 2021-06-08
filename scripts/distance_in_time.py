@@ -143,9 +143,10 @@ def plot_root_to_tip():
     fit = np.polyfit(dates, lengths, deg=1)
     plt.plot(dates, np.polyval(fit, dates), "--", label=f"{round(fit[0],5)}x + {round(fit[1],5)}")
     plt.xlabel("Time [years]", fontsize=fontsize)
-    plt.ylabel("Mean root-tip length [years]", fontsize=fontsize)
+    plt.ylabel("Mean root-tip length", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
     plt.grid()
+    plt.title("Root to tip distance", fontsize=fontsize)
     plt.savefig("figures/Distance_to_root.png", format="png")
 
 
