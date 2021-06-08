@@ -99,7 +99,7 @@ def get_root_to_tip_distance(tree_file, branch_length_file):
     return dates, mean_lengths
 
 
-def plot_mean_distance_in_time(consensus=True):
+def plot_mean_distance_in_time(consensus=True, savefig=False):
     """
     Plots the figure for the mean  hamiltonian distance in time.
     Consensus = True to compare to the consensus sequence from the alignment. Set to False to compare to root
@@ -131,13 +131,15 @@ def plot_mean_distance_in_time(consensus=True):
     plt.legend(fontsize=fontsize)
     if consensus:
         plt.title("Distance to consensus", fontsize=fontsize)
-        plt.savefig("figures/Distance_to_consensus.png", format="png")
+        if savefig:
+            plt.savefig("figures/Distance_to_consensus.png", format="png")
     else:
         plt.title("Distance to root", fontsize=fontsize)
-        plt.savefig("figures/Distance_to_root.png", format="png")
+        if savefig:
+            plt.savefig("figures/Distance_to_root.png", format="png")
 
 
-def plot_root_to_tip():
+def plot_root_to_tip(savefig):
     """
     Plots the figure for the root to tip distance in time.
     """
@@ -156,11 +158,13 @@ def plot_root_to_tip():
     plt.legend(fontsize=fontsize)
     plt.grid()
     plt.title("Root to tip distance", fontsize=fontsize)
-    plt.savefig("figures/Distance_to_root.png", format="png")
+    if savefig:
+        plt.savefig("figures/Distance_to_root.png", format="png")
 
 
 if __name__ == '__main__':
-    # plot_mean_distance_in_time(True)
-    # plot_mean_distance_in_time(False)
-    plot_root_to_tip()
+    savefig = False
+    # plot_mean_distance_in_time(True, savefig)
+    # plot_mean_distance_in_time(False, savefig)
+    # plot_root_to_tip(savefig)
     plt.show()
