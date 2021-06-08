@@ -4,7 +4,8 @@ rule all:
         auspice_json = "visualisation/pol_1000.json",
         rates = "data/BH/mutation_rates/pol_1000.json",
         tree = "data/BH/intermediate_files/timetree_pol_1000.nwk",
-        branch = "data/BH/branch_lengths/pol_1000.json"
+        branch = "data/BH/branch_lengths/pol_1000.json",
+        subtype = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
 
 
 rule lanl_metadata:
@@ -77,6 +78,20 @@ rule consensus:
         python scripts/snakecommands.py consensus {input.alignment} {output.consensus_sequence}
         """
 
+rule split_subtypes:
+    message:
+        """
+        Splitting {input.alignment} into subtype B and C.
+        """
+    input:
+        alignment = rules.align.output.alignment
+    output:
+        alignment_B = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_B.fasta",
+        alignment_C = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_C.fasta"
+    shell:
+        """
+        python scripts/snakecommands.py split-subtypes {input.alignment}
+        """
 
 rule split_positions:
     message:
@@ -90,6 +105,23 @@ rule split_positions:
     shell:
         """
         python scripts/snakecommands.py split-positions {input.alignment}
+        """
+
+rule subtype_consensus:
+    message:
+        """
+        Computing the consensus sequence of {input.alignment_B} and {input.alignment_C}.
+        """
+    input:
+        alignment_B = rules.split_subtypes.output.alignment_B,
+        alignment_C = rules.split_subtypes.output.alignment_C
+    output:
+        consensus_B = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_B_consensus.fasta",
+        consensus_C = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_C_consensus.fasta"
+    shell:
+        """
+        python scripts/snakecommands.py consensus {input.alignment_B} {output.consensus_B}
+        python scripts/snakecommands.py consensus {input.alignment_C} {output.consensus_C}
         """
 
 rule tree:
