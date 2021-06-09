@@ -2,7 +2,7 @@ import json
 import copy
 import numpy as np
 
-import filenames
+import filenames # Link to the hivevo folder
 import tools
 from hivevo.HIVreference import HIVreference
 from hivevo.patients import Patient
