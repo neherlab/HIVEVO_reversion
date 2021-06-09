@@ -35,8 +35,11 @@ class Trajectory():
         return str(self.__dict__)
 
     def to_json(self):
-        """
-        Transform the array to a dictonary that is compatible with json dump.
+        """Transform the array to a dictonary that is compatible with json dump.
+
+        Returns:
+            dict: Dictionary format of the class, json compatible.
+
         """
         tmp = copy.deepcopy(self.__dict__)
         tmp["frequencies_mask"] = tmp["frequencies"].mask.tolist()
@@ -50,9 +53,16 @@ class Trajectory():
 
 
 def _make_coordinates(aft_shape, mutation_mask):
-    """
-    Returns the coordinates of the mutations. coordinates[t,ii,:] gives the [nucleotide, genome_position] of
-    the mutations selected by mutation_mask for any t.
+    """Returns the coordinates of the mutations.
+
+    Args:
+        aft_shape (tuple): Shape of the allele frequency trajectory.
+        mutation_mask (np.array): Mutation mask from the create_trajectory_list function.
+
+    Returns:
+        np.array: coordinates[t,ii,:] gives the [nucleotide, genome_position] of the mutations selected by
+        mutation_mask for any t.
+
     """
     i_idx, j_idx = np.meshgrid(range(aft_shape[1]), range(aft_shape[2]), indexing="ij")
     coordinates = np.array([i_idx, j_idx])
@@ -66,15 +76,29 @@ def _make_coordinates(aft_shape, mutation_mask):
 
 def create_trajectory_list(patient, region, ref_subtype, threshold_low=0.01, threshold_high=0.99,
                            syn_constrained=False, gap_threshold=0.1):
-    """
-    Creates a list of trajectories from a patient allele frequency trajectory (aft).
+    """Creates a list of trajectories from a patient allele frequency trajectory (aft).
     Select the maximal amount of trajectories:
         - trajectories are extinct before the first time point
         - trajectories are either active, extinct or fixed after the last time point, which is specified
         - a trajectory can be as small as 1 point (extinct->active->fixed, or extinct->active->exctinct)
         - several trajectories can come from a single aft (for ex. extinct->active->extinct->active->fixed)
-        - masked datapoints (low depth / coverage) are included only if in the middle of a trajectory (ie. [0.2, --, 0.6] is kept, but [--, 0.2, 0] gives [0.2] and [0.5, --, 1] gives [0.5])
+        - masked datapoints (low depth / coverage) are included only if in the middle of a trajectory (ie.
+          [0.2, --, 0.6] is kept, but [--, 0.2, 0] gives [0.2] and [0.5, --, 1] gives [0.5])
+
+    Args:
+        patient (Patient): The patient to analyse.
+        region (string): Region to analyse ['env', 'pol', 'gag'].
+        ref_subtype (string): Subtype of the reference loaded from hivevo package.
+        threshold_low (float): Minimum frequency to consider a mutation.
+        threshold_high (float): Frequency for fixation.
+        syn_constrained (bool): Parameter for patient.get_syn_mutations() from hivevo package.
+        gap_threshold (float): Threshold for frequency of gaps at a genome position, discarded if above.
+
+    Returns:
+        list(Trajectories): List of all the trajectories from the patient for the given region.
+
     """
+
     trajectories = []
     aft = patient.get_allele_frequency_trajectories(region)
     ref = HIVreference(subtype=ref_subtype)
