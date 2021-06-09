@@ -202,6 +202,18 @@ def create_trajectory_list(patient, region, ref_subtype, threshold_low=0.01, thr
 
 
 def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[]):
+    """Create a list of all the trajectories from the given patients.
+
+    Args:
+        region (str): Region to analyse ['env', 'pol', 'gag'].
+        ref_subtype (str): Which consensus to use, either 'any' (global consensus) or 'subtypes' consensus.
+        patient_names (list(str)): Names of the patients, all except p7 and p10 by default.
+
+    Returns:
+        list(Trajectory): List of all patient trajectories for the specified region.
+
+    """
+
     assert ref_subtype in ["any", "subtypes"], "ref_subtype should be 'any' or 'subtypes'"
 
     if patient_names == []:
@@ -224,7 +236,7 @@ def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[])
 
 def make_intermediate_data():
     """
-    Creates the intermediate data files.
+    Creates all the intermediate data files for the Within Host analysis.
     """
     import bootstrap
     traj_list_names = ["Trajectory_list_any", "Trajectory_list_subtypes"]
@@ -250,8 +262,14 @@ def make_intermediate_data():
 
 
 def instanciate_trajectory(traj_dict):
-    """
-    Instanciate Trajectory object from the dictionary style used for .json save.
+    """Instanciate a Trajectory object from a disctionary .json save.
+
+    Args:
+        traj_dict (dict): Dictionary format of a Trajectory object.
+
+    Returns:
+        Trajectory: Trajectory object from the dictionary save.
+
     """
     kwargs = {}
     for key in traj_dict.keys():
@@ -264,8 +282,14 @@ def instanciate_trajectory(traj_dict):
 
 
 def load_trajectory_list(filename):
-    """
-    Loads a trajectory list from the .json file.
+    """Loads a trajectory list from the .json file.
+
+    Args:
+        filename (str): Path to the save file in json format.
+
+    Returns:
+        list(Trajectory): List of trajectories from the savefile.
+
     """
     with open(filename, "r") as f:
         trajectories = json.load(f)
@@ -274,9 +298,15 @@ def load_trajectory_list(filename):
 
 
 def create_time_bins(bin_size=400):
-    """
-    Create time bins for the mean in time computation. It does homogeneous bins, except for the one at t=0 that
-    only takes point where t=0. Bin_size is in days.
+    """Create time bins for the mean in time computation.
+    It does homogeneous bins, except for the one at t=0 that only takes point where t=0. Bin_size is in days.
+
+    Args:
+        bin_size (int): size of the bins to create.
+
+    Returns:
+        np.array: Edge on the bins.
+
     """
     time_bins = [-5, 5]
     interval = [-600, 3000]
@@ -289,10 +319,20 @@ def create_time_bins(bin_size=400):
 
 
 def get_mean_in_time(trajectories, bin_size=400, freq_range=[0.4, 0.6]):
-    """
-    Computes the mean frequency in time of a set of trajectories from the point they are seen in the
+    """Computes the mean frequency in time of a set of trajectories from the point they are seen in the
     freq_range window.
-    Returns the middle of the time bins and the computed frequency mean.
+
+    Args:
+        trajectories (list(Trajectory)): List of the trajectories.
+        bin_size (int): Size of the bins.
+        freq_range (list(float)): List of 2 items for the frequency window to use.
+
+    Returns:
+        time (np.array): middle of the bins.
+        mean (np.array): mean frequency at these times.
+        nb_active (np.array): number of trajectory still alive at this time point.
+        nb_dead (np.array): number of trajectory fixed or lost at this time point.
+
     """
     trajectories = copy.deepcopy(trajectories)
 
@@ -338,8 +378,14 @@ def get_mean_in_time(trajectories, bin_size=400, freq_range=[0.4, 0.6]):
 
 
 def load_mean_in_time_dict(filename):
-    """
-    Loads the mean_in_time dictionary and returns it.
+    """Loads the mean_in_time dictionary and returns it.
+
+    Args:
+        filename (str): Path to the savefile.
+
+    Returns:
+        mean_in_time (dict): Dictionary containing the means in time for hte different categories.
+
     """
     with open(filename, "r") as f:
         mean_in_time = json.load(f)
@@ -352,8 +398,15 @@ def load_mean_in_time_dict(filename):
 
 
 def offset_trajectories(trajectories, freq_range):
-    """
-    Offset trajectories to set t=0 at the point they are seen in the freq_range.
+    """Offset trajectories to set t=0 at the point they are seen in the freq_range.
+
+    Args:
+        trajectories (list(Trajectory)): List of trajectories to offset.
+        freq_range (list(float)): 2 item list for the frequency window to use.
+
+    Returns:
+        list(Trajectory): List of trajectories that have been offset.
+
     """
     trajectories = copy.deepcopy(trajectories)
     # Selecting trajectories in frequency window
@@ -381,6 +434,7 @@ def offset_trajectories(trajectories, freq_range):
 if __name__ == "__main__":
     # make_intermediate_data()
 
+    # Not equal because reference (and hence reference mask) is not the same
     trajectories = create_all_patient_trajectories("env", "any")
     print(len(trajectories))
     trajectories = create_all_patient_trajectories("env", "subtypes")
