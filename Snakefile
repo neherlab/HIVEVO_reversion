@@ -126,7 +126,7 @@ rule subtype_consensus:
 
 rule tree:
     message:
-        "Building tree using augur"
+        "Building tree using augur and IQtree GTR-F-R10 model"
     input:
         alignment = rules.align.output.alignment
     output:
@@ -135,6 +135,8 @@ rule tree:
     shell:
         """
         augur tree \
+            --method iqtree \
+            --tree-builder-args="-czb -m GTR+F+R10" \
             --alignment {input.alignment} \
             --output {output.tree} \
             --nthreads {threads}
