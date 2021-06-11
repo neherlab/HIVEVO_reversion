@@ -170,7 +170,8 @@ rule refine:
             --coalescent {params.coalescent} \
             --date-confidence \
             --date-inference {params.date_inference} \
-            --clock-filter-iqd {params.clock_filter_iqd}
+            --clock-filter-iqd {params.clock_filter_iqd} \
+            --branch-length-inference input
         """
 
 rule ancestral:
