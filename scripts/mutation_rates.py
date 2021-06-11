@@ -47,19 +47,22 @@ def plot_mutation_rates():
     Plot for the mutation rates.
     """
     rates = compute_mutation_rates()
-    labels = ["Hamming root", "Hamming subtype", "RTT"]
+    labels = ["Hamming root", "Hamming subtype", "RTT", "WH"]
 
     fontsize = 16
+    markersize = 16
 
     plt.figure()
     for ii, key in enumerate(["root", "subtypes"]):
-        plt.plot(ii, rates[key]["B"]*1e4, '.', color="C0", markersize=16)
-        plt.plot(ii, rates[key]["C"]*1e4, '.', color="C1", markersize=16)
-    plt.plot(2, rates["rtt"]*1e4, '.', markersize=16)
-    plt.xticks(range(3), labels, fontsize=fontsize)
+        plt.plot(ii, rates[key]["B"]*1e4, '.', color="C0", markersize=markersize)
+        plt.plot(ii, rates[key]["C"]*1e4, '.', color="C1", markersize=markersize)
+    plt.plot(2, rates["rtt"]*1e4, '.', markersize=markersize)
+    plt.plot(3, 19, '.', color="C0", markersize=markersize)
+    plt.xticks(range(4), labels, fontsize=fontsize, rotation=8)
     plt.ylabel("Mutation rates (per year) * e-4", fontsize=fontsize)
     plt.legend(["B", "C"], fontsize=fontsize)
     plt.grid()
+    plt.savefig("figures/mutation_rates.png", format="png")
     plt.show()
 
 
