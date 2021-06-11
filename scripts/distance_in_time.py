@@ -1,4 +1,5 @@
 import json
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from Bio import AlignIO, Phylo
@@ -9,6 +10,8 @@ def get_reference_sequence(filename):
     Loads the reference sequence from the given file and returns it. Can either be the consensus sequence
     (from fasta file), or the root sequence (from the nt_muts.json file from TreeTime).
     """
+    assert os.path.exists(filename), f"{filename} doesn't exist."
+
     # Root sequence from tree file
     if ".json" in filename:
         with open(filename) as f:
@@ -36,6 +39,9 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
     Returns the time, average distance and standard deviation of the average distance to the reference
     sequence.
     """
+    # Checks
+    assert os.path.exists(alignment_file), f"{alignment_file} doesn't exist."
+
     # Data loading
     alignment = AlignIO.read(alignment_file, "fasta")
     alignment_array = np.array(alignment)
@@ -71,6 +77,9 @@ def get_root_to_tip_distance(tree_file, branch_length_file):
     Computes the mean root to tipe distance for each year.
     Returns a list of mean root_to_tip distance and a list of corresponding years.
     """
+    # Checks
+    assert os.path.exists(tree_file), f"{tree_file} doesn't exist."
+    assert os.path.exists(branch_length_file), f"{branch_length_file} doesn't exist."
 
     # Loading the tree and branch_length file
     tree = Phylo.read(tree_file, "newick")
