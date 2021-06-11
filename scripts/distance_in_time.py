@@ -107,7 +107,7 @@ def plot_mean_distance_in_time(consensus="global", savefig=False):
     """
 
     assert consensus in ["global", "root",
-                         "subtypes"], "Reference sequence can only be global root or subtypes"
+                         "subtypes"], "Reference sequence can only be 'global' 'root' or 'subtypes'"
 
     alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta"
     if consensus == "global":
@@ -131,7 +131,8 @@ def plot_mean_distance_in_time(consensus="global", savefig=False):
             reference_sequence = get_reference_sequence(reference_file[subtype])
 
         years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
-        fit = np.polyfit(years[std != 0], dist[std != 0], deg=1, w=(1 / std[std != 0]))
+        fit = np.polyfit(years, dist, deg=1)
+        # fit = np.polyfit(years[std != 0], dist[std != 0], deg=1, w=(1 / std[std != 0]))
         plt.errorbar(years, dist, yerr=std, fmt=".", label=subtype, color=colors[c])
         plt.plot(years, np.polyval(fit, years), "--",
                  color=colors[c], label=f"{round(fit[0],5)}x + {round(fit[1],5)}")
@@ -179,9 +180,9 @@ def plot_root_to_tip(savefig):
 
 
 if __name__ == '__main__':
-    savefig = True
+    savefig = False
     plot_mean_distance_in_time("global", savefig)
     plot_mean_distance_in_time("root", savefig)
     plot_mean_distance_in_time("subtypes", savefig)
-    # plot_root_to_tip(savefig)
+    plot_root_to_tip(savefig)
     plt.show()
