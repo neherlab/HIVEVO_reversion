@@ -1,6 +1,8 @@
 wildcard_constraints:
     region = "(env|pol|gag)",
-    nb_sequences = "(1000|500|250|125)"
+    nb_sequences = "(1000|500|250|125)",
+    subtype = "(B|C)",
+    position = "(1st|2nd|3rd)"
 
 
 rule all:
@@ -135,19 +137,17 @@ rule split_positions:
 rule subtype_consensus:
     message:
         """
-        Computing the consensus sequence of {input.alignment_B} and {input.alignment_C}.
+        Computing the consensus sequence of {input.alignment}.
         """
     input:
-        alignment_B = rules.split_subtypes.output.alignment_B,
-        alignment_C = rules.split_subtypes.output.alignment_C
+        alignment = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_{subtype}.fasta"
     output:
-        consensus_B = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_B_consensus.fasta",
-        consensus_C = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_C_consensus.fasta"
+        consensus = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_{subtype}_consensus.fasta",
     shell:
         """
-        python scripts/snakecommands.py consensus {input.alignment_B} {output.consensus_B}
-        python scripts/snakecommands.py consensus {input.alignment_C} {output.consensus_C}
+        python scripts/snakecommands.py consensus {input.alignment} {output.consensus}
         """
+
 
 rule tree:
     message:

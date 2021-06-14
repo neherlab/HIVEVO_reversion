@@ -22,6 +22,8 @@ def compute_mutation_rates():
     branch_length_file_2 = "data/BH/intermediate_files/branch_lengths_pol_500.json"
     tree_file_3 = "data/BH/intermediate_files/timetree_pol_250.nwk"
     branch_length_file_3 = "data/BH/intermediate_files/branch_lengths_pol_250.json"
+    tree_file_4 = "data/BH/intermediate_files/timetree_pol_125.nwk"
+    branch_length_file_4 = "data/BH/intermediate_files/branch_lengths_pol_125.json"
 
     # Rates from hamming distance
     rates = {"root": {}, "subtypes": {}}
@@ -42,13 +44,16 @@ def compute_mutation_rates():
     dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
     dates, lengths2 = get_root_to_tip_distance(tree_file_2, branch_length_file_2)
     dates, lengths3 = get_root_to_tip_distance(tree_file_3, branch_length_file_3)
+    dates, lengths4 = get_root_to_tip_distance(tree_file_4, branch_length_file_4)
     fit = np.polyfit(dates, lengths, deg=1)
     fit2 = np.polyfit(dates, lengths2, deg=1)
     fit3 = np.polyfit(dates, lengths3, deg=1)
+    fit4 = np.polyfit(dates, lengths4, deg=1)
     rates["rtt"] = {}
     rates["rtt"]["1000"] = fit[0]
     rates["rtt"]["500"] = fit2[0]
     rates["rtt"]["250"] = fit3[0]
+    rates["rtt"]["125"] = fit4[0]
 
     return rates
 
@@ -62,17 +67,23 @@ def plot_mutation_rates():
 
     fontsize = 16
     markersize = 16
+    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
 
     plt.figure()
     for ii, key in enumerate(["root", "subtypes"]):
-        plt.plot(ii, rates[key]["B"]*1e4, '.', color="C0", markersize=markersize)
-        plt.plot(ii, rates[key]["C"]*1e4, '.', color="C1", markersize=markersize)
-    for key in rates["rtt"].keys():
-        plt.plot(2, rates["rtt"][key]*1e4, '.', markersize=markersize)
+        if ii:
+            plt.plot(ii, rates[key]["B"]*1e4, '.', color="C0", markersize=markersize, label="B")
+            plt.plot(ii, rates[key]["C"]*1e4, '.', color="C1", markersize=markersize, label="C")
+        else:
+            plt.plot(ii, rates[key]["B"]*1e4, '.', color="C0", markersize=markersize)
+            plt.plot(ii, rates[key]["C"]*1e4, '.', color="C1", markersize=markersize)
+
+    for ii, key in enumerate(rates["rtt"].keys()):
+        plt.plot(2, rates["rtt"][key]*1e4, '.', color=colors[ii+2], markersize=markersize, label=key)
     plt.plot(3, 19, '.', color="C0", markersize=markersize)
     plt.xticks(range(4), labels, fontsize=fontsize, rotation=8)
     plt.ylabel("Mutation rates (per year) * e-4", fontsize=fontsize)
-    plt.legend(["B", "C"], fontsize=fontsize)
+    plt.legend(fontsize=fontsize)
     plt.grid()
     plt.savefig("figures/mutation_rates.png", format="png")
     plt.show()
