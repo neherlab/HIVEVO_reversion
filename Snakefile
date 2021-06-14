@@ -8,6 +8,24 @@ rule all:
         subtype = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
 
 
+rule mut_rate_figure:
+    message:
+        """
+        Creating the files for the mutation rate figure.
+        """
+    input:
+        reference_file_B = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta",
+        reference_file_C = "data/BH/alignments/to_HXB2/pol_1000_C_consensus.fasta",
+        alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta",
+        tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk",
+        reference_file_root = "data/BH/intermediate_files/pol_1000_nt_muts.json",
+        branch_length_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json",
+        reference_root_2 = "data/BH/intermediate_files/pol_500_nt_muts.json",
+        branch_length_file_2 = "data/BH/intermediate_files/branch_lengths_pol_500.json",
+        reference_root_3 = "data/BH/intermediate_files/pol_250_nt_muts.json",
+        branch_length_file_3 = "data/BH/intermediate_files/branch_lengths_pol_250.json"
+
+
 rule lanl_metadata:
     message:
         """
