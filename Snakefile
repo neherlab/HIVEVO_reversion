@@ -1,3 +1,8 @@
+wildcard_constraints:
+    region = ["pol", "env", "gag"],
+    nb_sequences = [1000, 500, 250, 125]
+
+
 rule all:
     input:
         consensus = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta",
@@ -8,7 +13,7 @@ rule all:
         subtype = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
 
 
-rule mut_rate_figure:
+rule figure_mut_rate:
     message:
         """
         Creating the files for the mutation rate figure.
@@ -23,7 +28,9 @@ rule mut_rate_figure:
         reference_root_2 = "data/BH/intermediate_files/pol_500_nt_muts.json",
         branch_length_file_2 = "data/BH/intermediate_files/branch_lengths_pol_500.json",
         reference_root_3 = "data/BH/intermediate_files/pol_250_nt_muts.json",
-        branch_length_file_3 = "data/BH/intermediate_files/branch_lengths_pol_250.json"
+        branch_length_file_3 = "data/BH/intermediate_files/branch_lengths_pol_250.json",
+        reference_root_4 = "data/BH/intermediate_files/pol_125_nt_muts.json",
+        branch_length_file_4 = "data/BH/intermediate_files/branch_lengths_pol_125.json"
 
 
 rule lanl_metadata:
@@ -71,7 +78,7 @@ rule align:
         reference = "data/BH/reference/HXB2_{region}.fasta"
     output:
         alignment = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}.fasta"
-    threads: 8
+    threads: 4
     shell:
         """
         augur align \
@@ -149,7 +156,7 @@ rule tree:
         alignment = rules.align.output.alignment
     output:
         tree = "data/BH/intermediate_files/tree_{region}_{nb_sequences}.nwk"
-    threads: 8
+    threads: 4
     shell:
         """
         augur tree \
