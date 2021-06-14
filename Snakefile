@@ -1,6 +1,6 @@
 wildcard_constraints:
-    region = ["pol", "env", "gag"],
-    nb_sequences = [1000, 500, 250, 125]
+    region = "(env|pol|gag)",
+    nb_sequences = "(1000|500|250|125)"
 
 
 rule all:
