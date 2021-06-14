@@ -18,6 +18,10 @@ def compute_mutation_rates():
     alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta"
     tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk"
     branch_length_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json"
+    tree_file_2 = "data/BH/intermediate_files/timetree_pol_500.nwk"
+    branch_length_file_2 = "data/BH/intermediate_files/branch_lengths_pol_500.json"
+    tree_file_3 = "data/BH/intermediate_files/timetree_pol_250.nwk"
+    branch_length_file_3 = "data/BH/intermediate_files/branch_lengths_pol_250.json"
 
     # Rates from hamming distance
     rates = {"root": {}, "subtypes": {}}
@@ -36,8 +40,15 @@ def compute_mutation_rates():
 
     # Rates from root to tip distance
     dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
+    dates, lengths2 = get_root_to_tip_distance(tree_file_2, branch_length_file_2)
+    dates, lengths3 = get_root_to_tip_distance(tree_file_3, branch_length_file_3)
     fit = np.polyfit(dates, lengths, deg=1)
-    rates["rtt"] = fit[0]
+    fit2 = np.polyfit(dates, lengths2, deg=1)
+    fit3 = np.polyfit(dates, lengths3, deg=1)
+    rates["rtt"] = {}
+    rates["rtt"]["1000"] = fit[0]
+    rates["rtt"]["500"] = fit2[0]
+    rates["rtt"]["250"] = fit3[0]
 
     return rates
 
@@ -56,7 +67,8 @@ def plot_mutation_rates():
     for ii, key in enumerate(["root", "subtypes"]):
         plt.plot(ii, rates[key]["B"]*1e4, '.', color="C0", markersize=markersize)
         plt.plot(ii, rates[key]["C"]*1e4, '.', color="C1", markersize=markersize)
-    plt.plot(2, rates["rtt"]*1e4, '.', markersize=markersize)
+    for key in rates["rtt"].keys():
+        plt.plot(2, rates["rtt"][key]*1e4, '.', markersize=markersize)
     plt.plot(3, 19, '.', color="C0", markersize=markersize)
     plt.xticks(range(4), labels, fontsize=fontsize, rotation=8)
     plt.ylabel("Mutation rates (per year) * e-4", fontsize=fontsize)
