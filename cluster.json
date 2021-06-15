@@ -1,38 +1,26 @@
 {
   "__default__": {
-    "time": "05:59:00",
-    "qos": "6hours",
+    "time": "00:28:00",
+    "qos": "30mins",
     "n": 1,
     "mem": "16G"
   },
-  "ancestral": {
-    "mem": "32G"
-  },
-  "refine": {
-    "time": "05:59:00",
+  "align": {
+    "time": "05:58:00",
     "qos": "6hours",
-    "n": 1,
-    "mem": "32G"
+    "n": 4,
+    "mem": "16G"
   },
   "tree": {
-    "n": 8,
+    "time": "05:58:00",
     "qos": "6hours",
-    "time": "05:59:00"
+    "n": 4,
+    "mem": "16G"
   },
-  "align": {
-    "n": 8,
-    "mem": "16G",
+  "refine": {
+    "time": "05:58:00",
     "qos": "6hours",
-    "time": "05:59:00"
+    "n": 4,
+    "mem": "16G"
   },
-  "prealign": {
-    "n": 8,
-    "mem": "16G",
-    "qos": "6hours",
-    "time": "05:59:00"
-  },
-  "filter":{
-    "qos": "6hours",
-    "time": "05:59:00"
-  }
 }
