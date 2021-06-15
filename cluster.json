@@ -1,19 +1,7 @@
 {
   "__default__": {
     "time": "00:28:00",
-    "qos": "30mins",
-    "n": 1,
-    "mem": "16G"
-  },
-  "lanl_metadata": {
-    "time": "00:28:00",
-    "qos": "30mins",
-    "n": 1,
-    "mem": "16G"
-  },
-  "sub_sample": {
-    "time": "00:28:00",
-    "qos": "30mins",
+    "qos": "30min",
     "n": 1,
     "mem": "16G"
   },
