@@ -5,7 +5,7 @@ from Bio import AlignIO, Phylo
 from distance_in_time import get_reference_sequence, get_mean_distance_in_time, get_root_to_tip_distance
 
 
-def compute_mutation_rates():
+def compute_mutation_rates(nb_sequences = [1000, 500, 250, 125, 60, 30]):
     """
     Returns the mutation rates from the distance to root, distance to subtype consensus and root to tip
     distance.
@@ -16,14 +16,11 @@ def compute_mutation_rates():
     reference_file["B"] = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
     reference_file["C"] = "data/BH/alignments/to_HXB2/pol_1000_C_consensus.fasta"
     alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta"
-    tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk"
-    branch_length_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json"
-    tree_file_2 = "data/BH/intermediate_files/timetree_pol_500.nwk"
-    branch_length_file_2 = "data/BH/intermediate_files/branch_lengths_pol_500.json"
-    tree_file_3 = "data/BH/intermediate_files/timetree_pol_250.nwk"
-    branch_length_file_3 = "data/BH/intermediate_files/branch_lengths_pol_250.json"
-    tree_file_4 = "data/BH/intermediate_files/timetree_pol_125.nwk"
-    branch_length_file_4 = "data/BH/intermediate_files/branch_lengths_pol_125.json"
+    tree_file = {}
+    branch_length_file = {}
+    for nb in nb_sequences:
+        tree_file[str(nb)] = "data/BH/intermediate_files/timetree_pol_" + str(nb) + ".nwk"
+        branch_length_file[str(nb)] = "data/BH/intermediate_files/branch_lengths_pol_" + str(nb) + ".json"
 
     # Rates from hamming distance
     rates = {"root": {}, "subtypes": {}}
@@ -41,19 +38,14 @@ def compute_mutation_rates():
         rates["subtypes"][subtype] = fit[0]
 
     # Rates from root to tip distance
-    dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
-    dates, lengths2 = get_root_to_tip_distance(tree_file_2, branch_length_file_2)
-    dates, lengths3 = get_root_to_tip_distance(tree_file_3, branch_length_file_3)
-    dates, lengths4 = get_root_to_tip_distance(tree_file_4, branch_length_file_4)
-    fit = np.polyfit(dates, lengths, deg=1)
-    fit2 = np.polyfit(dates, lengths2, deg=1)
-    fit3 = np.polyfit(dates, lengths3, deg=1)
-    fit4 = np.polyfit(dates, lengths4, deg=1)
+    dates = {}
+    lengths = {}
     rates["rtt"] = {}
-    rates["rtt"]["1000"] = fit[0]
-    rates["rtt"]["500"] = fit2[0]
-    rates["rtt"]["250"] = fit3[0]
-    rates["rtt"]["125"] = fit4[0]
+
+    for key in tree_file.keys():
+        dates[key], lengths[key] = get_root_to_tip_distance(tree_file[key], branch_length_file[key])
+        fit = np.polyfit(dates[key], lengths[key], deg=1)
+        rates["rtt"][key] = fit[0]
 
     return rates
 
@@ -67,7 +59,7 @@ def plot_mutation_rates():
 
     fontsize = 16
     markersize = 16
-    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
+    colors = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7"]
 
     plt.figure()
     for ii, key in enumerate(["root", "subtypes"]):
@@ -85,6 +77,7 @@ def plot_mutation_rates():
     plt.ylabel("Mutation rates (per year) * e-4", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
     plt.grid()
+    plt.ylim([0, 20])
     plt.savefig("figures/mutation_rates.png", format="png")
     plt.show()
 
