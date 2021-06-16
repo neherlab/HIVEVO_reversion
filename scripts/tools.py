@@ -158,7 +158,7 @@ def get_fragment_depth(patient, fragment):
 
 
 def reversion_map(patient, region, aft, ref):
-    """Returns a 2D boolean matrix where True are the positions correspond to the reference nucleotide.
+    """Returns a 2D boolean matrix where True are the positions that correspond to the reference nucleotide.
 
     Args:
         patient (Patient): The patient to analyse.
@@ -207,10 +207,37 @@ def get_fitness_cost(patient, region, aft, subtype="any"):
         return fitness
 
 
+def reference_mask(patient, region, aft, ref):
+    """
+    Returns a 1D vector of size aft.shape[-1] where True are the position that correspond to the reference
+    sequence. Position that are not mapped to reference or seen too often gapped are always False.
+    """
+    ref_filter = reference_filter_mask(patient, region, aft, ref)
+    consensus_mask = reversion_map(patient, region, aft, ref)
+    initial_idx = patient.get_initial_indices(region)
+    # gives reversion mask at initial majority nucleotide
+    consensus_mask = consensus_mask[initial_idx, np.arange(aft.shape[-1])]
+
+    return np.logical_and(ref_filter, consensus_mask)
+
+
+def non_reference_mask(patient, region, aft, ref):
+    """
+    Returns a 1D vector of size aft.shape[-1] where True are the position that do not correspond to the
+    reference sequences. Position that are not mapped to reference or seen too often gapped are always False.
+    """
+    ref_filter = reference_filter_mask(patient, region, aft, ref)
+    consensus_mask = reversion_map(patient, region, aft, ref)
+    initial_idx = patient.get_initial_indices(region)
+    # gives reversion mask at initial majority nucleotide
+    consensus_mask = consensus_mask[initial_idx, np.arange(aft.shape[-1])]
+
+    return np.logical_and(ref_filter, ~consensus_mask)
+
+
 if __name__ == "__main__":
     region = "env"
     patient = Patient.load("p1")
     ref = HIVreference(subtype="any")
     aft = patient.get_allele_frequency_trajectories(region)
-    aft_initial = mutation_positions_mask(patient, region, aft)
-    depth = depth_mask(patient, region)
+    mask = reference_mask(patient, region, aft, ref)
