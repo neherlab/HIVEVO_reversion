@@ -3,3 +3,4 @@ data/
 scripts/__pycache__
 .snakemake
 visualisation/
+log/
