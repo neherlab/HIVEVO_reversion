@@ -2,7 +2,7 @@ NB_SEQUENCES = [1000, 500, 250, 125, 60, 30]
 
 wildcard_constraints:
     region = "(env|pol|gag)",
-    nb_sequences = "(1000|500|250|125|60|30)",
+    nb_sequences = "(2000|1000|500|250|125|60|30)",
     subtype = "(B|C)",
     position = "(1st|2nd|3rd)"
 

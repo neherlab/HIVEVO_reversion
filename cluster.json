@@ -3,24 +3,24 @@
     "time": "00:28:00",
     "qos": "30min",
     "n": 1,
-    "mem": "2G"
+    "mem": "1G"
   },
   "align": {
     "time": "05:58:00",
     "qos": "6hours",
     "n": 4,
-    "mem": "16G"
+    "mem": "8G"
   },
   "tree": {
     "time": "05:58:00",
     "qos": "6hours",
     "n": 4,
-    "mem": "16G"
+    "mem": "8G"
   },
   "refine": {
     "time": "05:58:00",
     "qos": "6hours",
-    "n": 4,
-    "mem": "16G"
+    "n": 1,
+    "mem": "1G"
   },
 }
