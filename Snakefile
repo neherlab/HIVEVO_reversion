@@ -295,4 +295,5 @@ rule clean:
         rm data/BH/gtr/* -f
         rm data/BH/mutation_rates/* -f
         rm data/BH/branch_lengths/* -f
+        rm log/* -f
         """
