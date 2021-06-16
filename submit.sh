@@ -1,7 +1,7 @@
 #!/bin/sh
 
-#SBATCH --output=log/%x.out                 # where to store the output ( %j is the jobname )
-#SBATCH --error=log/%x.err                  # where to store error messages
+#SBATCH --output=log/%x.%j.out                 # where to store the output ( %j is the jobname )
+#SBATCH --error=log/%x.%j.err                  # where to store error messages
 
 #Run .bashrc to initialize conda
 source $HOME/.bashrc
