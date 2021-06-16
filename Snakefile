@@ -9,12 +9,12 @@ wildcard_constraints:
 
 rule all:
     input:
-        consensus = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta",
-        auspice_json = "visualisation/pol_1000.json",
-        rates = "data/BH/mutation_rates/pol_1000.json",
-        tree = "data/BH/intermediate_files/timetree_pol_1000.nwk",
-        branch = "data/BH/branch_lengths/pol_1000.json",
-        subtype = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
+        consensus = "data/BH/alignments/to_HXB2/pol_2000_consensus.fasta",
+        auspice_json = "visualisation/pol_2000.json",
+        rates = "data/BH/mutation_rates/pol_2000.json",
+        tree = "data/BH/intermediate_files/timetree_pol_2000.nwk",
+        branch = "data/BH/branch_lengths/pol_2000.json",
+        subtype = "data/BH/alignments/to_HXB2/pol_2000_B_consensus.fasta"
 
 
 rule figure_mut_rate:
