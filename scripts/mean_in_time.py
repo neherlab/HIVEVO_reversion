@@ -4,8 +4,8 @@ import trajectory
 
 if __name__ == "__main__":
     # Parameters
-    trajectory_file = "data/Trajectory_list_subtypes.json"
-    mean_in_time_file = "data/bootstrap_mean_dict_subtypes.json"
+    trajectory_file = "data/WH/Trajectory_list_subtypes.json"
+    mean_in_time_file = "data/WH/bootstrap_mean_dict_subtypes.json"
     # trajectory_file = "data/Trajectory_list_any.json"
     # mean_in_time_file = "data/bootstrap_mean_dict_any.json"
     fontsize = 16

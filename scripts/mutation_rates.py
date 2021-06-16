@@ -72,7 +72,7 @@ def plot_mutation_rates():
 
     for ii, key in enumerate(rates["rtt"].keys()):
         plt.plot(2, rates["rtt"][key]*1e4, '.', color=colors[ii+2], markersize=markersize, label=key)
-    plt.plot(3, 19, '.', color="C0", markersize=markersize)
+    plt.plot(3, 19, '.', color="C0", markersize=markersize) # WH rate
     plt.xticks(range(4), labels, fontsize=fontsize, rotation=8)
     plt.ylabel("Mutation rates (per year) * e-4", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
@@ -84,4 +84,3 @@ def plot_mutation_rates():
 
 if __name__ == '__main__':
     plot_mutation_rates()
-    # gitkrakentest
