@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 
 import trajectory
@@ -67,20 +68,33 @@ def bootstrap_divergence_in_time(region, reference, nb_bootstrap=10, time=np.ara
     that. Returns the times, average and std.
     """
     # founder is founder sequence, any is global consensus
-    assert reference in ["founder", "any", "B", "C"], "Reference must be 'founder' 'any' 'B' or 'C'"
+    assert reference in ["founder", "any", "subtypes"], "Reference must be 'founder' 'any' 'subtypes'"
+    patient_names = copy.copy(patient_names)
+
+    if reference == "subtypes":
+        patient_names.remove("p1")  # p1 is subtype AE
+        if patient_names == ["p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]:
+            subtypes = ["B", "B", "B", "B", "C", "B", "B", "B"]
+        else:
+            raise ValueError("Must be the regular patients to compute divergence to subtype")
 
     # Computes divergence for each patient
-    patient_div_dict = {}
-    for patient_name in patient_names:
+
+    patient_div_dict = {k: [] for k in patient_names}
+    for ii, patient_name in enumerate(patient_names):
         patient = Patient.load(patient_name)
         aft = patient.get_allele_frequency_trajectories(region)
-        tmp_div = divergence.mean_divergence_in_time(patient, region, aft, reference)
+        if reference == "subtypes":
+            tmp_div = divergence.mean_divergence_in_time(patient, region, aft, subtypes[ii])
+        else:
+            tmp_div = divergence.mean_divergence_in_time(patient, region, aft, reference)
         # Interpolation of divergence value as samples are not homogeneous in time. Fine because monotonic
         patient_div_dict[patient_name] = np.interp(time, patient.dsi, tmp_div)
 
     means = []
     for ii in range(nb_bootstrap):
         bootstrap_names = bootstrap_patient_names(patient_names)
+
         divergences = np.array([patient_div_dict[name] for name in bootstrap_names])
         means += [np.mean(divergences, axis=0)]
 
@@ -90,8 +104,27 @@ def bootstrap_divergence_in_time(region, reference, nb_bootstrap=10, time=np.ara
     return time, bootstrapped_mean, bootstrapped_std
 
 
+def make_bootstrap_div_dict(nb_bootstrap=100):
+    """
+    Computes the average divergence in time over patients.
+    Returns a dictionary of the format divergence[env/pol/gag][founder/any/subtypes][mean/std]
+    """
+    div_dict = {}
+
+    for region in ["env", "pol", "gag"]:
+        div_dict[region] = {}
+        for reference in ["founder", "any", "subtypes"]:
+            time, mean, std = bootstrap_divergence_in_time(region, reference, nb_bootstrap)
+            div_dict[region][reference] = {}
+            div_dict[region][reference]["mean"] = mean
+            div_dict[region][reference]["std"] = std
+            div_dict[region][reference]["time"] = time
+
+    return div_dict
+
+
 if __name__ == '__main__':
     # trajectories = trajectory.load_trajectory_list("data/Trajectory_list_any.json")
     # bootstrap_dict, times = make_bootstrap_mean_dict(trajectories)
 
-    bootstrap_divergence_in_time("pol", "any")
+    make_bootstrap_div_dict(5)
