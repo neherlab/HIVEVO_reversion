@@ -219,7 +219,7 @@ def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[])
     if patient_names == []:
         patient_names = ["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]
         if ref_subtype == "subtypes":
-            subtypes = ["AE", "B", "B", "B", "B", "B", "C", "B", "B", "B"]
+            subtypes = ["AE", "B", "B", "B", "B", "C", "B", "B", "B"]
 
     trajectories = []
     for ii, patient_name in enumerate(patient_names):
