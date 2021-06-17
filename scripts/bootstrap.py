@@ -1,6 +1,9 @@
 import numpy as np
 
 import trajectory
+import divergence
+from hivevo.HIVreference import HIVreference
+from hivevo.patients import Patient
 
 
 def bootstrap_patient_names(patient_names=["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]):
@@ -57,6 +60,38 @@ def make_bootstrap_mean_dict(trajectory_list, nb_bootstrap=10):
     return bootstrap_dict, times
 
 
+def bootstrap_divergence_in_time(region, reference, nb_bootstrap=10, time=np.arange(0, 3100, 100),
+                                 patient_names=["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]):
+    """
+    Computes the mean divergence in time for all patient, and then computes a bootstrapped value and std from
+    that. Returns the times, average and std.
+    """
+    # founder is founder sequence, any is global consensus
+    assert reference in ["founder", "any", "B", "C"], "Reference must be 'founder' 'any' 'B' or 'C'"
+
+    # Computes divergence for each patient
+    patient_div_dict = {}
+    for patient_name in patient_names:
+        patient = Patient.load(patient_name)
+        aft = patient.get_allele_frequency_trajectories(region)
+        tmp_div = divergence.mean_divergence_in_time(patient, region, aft, reference)
+        # Interpolation of divergence value as samples are not homogeneous in time. Fine because monotonic
+        patient_div_dict[patient_name] = np.interp(time, patient.dsi, tmp_div)
+
+    means = []
+    for ii in range(nb_bootstrap):
+        bootstrap_names = bootstrap_patient_names(patient_names)
+        divergences = np.array([patient_div_dict[name] for name in bootstrap_names])
+        means += [np.mean(divergences, axis=0)]
+
+    bootstrapped_mean = np.mean(means, axis=0)
+    bootstrapped_std = np.std(means, axis=0)
+
+    return time, bootstrapped_mean, bootstrapped_std
+
+
 if __name__ == '__main__':
-    trajectories = trajectory.load_trajectory_list("data/Trajectory_list_any.json")
-    bootstrap_dict, times = make_bootstrap_mean_dict(trajectories)
+    # trajectories = trajectory.load_trajectory_list("data/Trajectory_list_any.json")
+    # bootstrap_dict, times = make_bootstrap_mean_dict(trajectories)
+
+    bootstrap_divergence_in_time("pol", "any")

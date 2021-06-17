@@ -23,7 +23,8 @@ def divergence_in_time(patient, region, aft, div_ref):
     Returns the divergence in time matrix (2D) for each genome position at each time point.
     div_ref specifies the reference to which the divergence needs to be computed.
     """
-    assert div_ref in ["founder", "any", "B", "C"]  # founder is founder sequence, any is global consensus
+    # founder is founder sequence, any is global consensus
+    assert div_ref in ["founder", "any", "B", "C"], "Reference must be 'founder' 'any' 'B' or 'C'"
 
     initial_idx = patient.get_initial_indices(region)
     if div_ref == "founder":
