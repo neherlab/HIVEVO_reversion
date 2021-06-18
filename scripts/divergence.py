@@ -54,6 +54,7 @@ def mean_divergence_in_time(patient, region, aft, div_ref, consensus):
     non_consensus_mask = tools.non_reference_mask(patient, region, aft, consensus)
     divergence = divergence_in_time(patient, region, aft, div_ref)
     div_dict = {}
+    div_dict["all"] = np.mean(divergence, axis=1)
     div_dict["consensus"] = np.mean(divergence[:, consensus_mask], axis=1)
     div_dict["non_consensus"] = np.mean(divergence[:, non_consensus_mask], axis=1)
     return div_dict
