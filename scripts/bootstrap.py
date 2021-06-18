@@ -79,7 +79,6 @@ def bootstrap_divergence_in_time(region, reference, nb_bootstrap=10, time=np.ara
             raise ValueError("Must be the regular patients to compute divergence to subtype")
 
     # Computes divergence for each patient
-
     patient_div_dict = {k: [] for k in patient_names}
     for ii, patient_name in enumerate(patient_names):
         patient = Patient.load(patient_name)
@@ -114,6 +113,7 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
     for region in ["env", "pol", "gag"]:
         div_dict[region] = {}
         for reference in ["founder", "any", "subtypes"]:
+            print(f"Computing bootstrapped divergence for {region} {reference}")
             time, mean, std = bootstrap_divergence_in_time(region, reference, nb_bootstrap)
             div_dict[region][reference] = {}
             div_dict[region][reference]["mean"] = mean

@@ -1,5 +1,6 @@
 import filenames
 import tools
+import json
 import numpy as np
 
 from hivevo.HIVreference import HIVreference
@@ -52,10 +53,52 @@ def mean_divergence_in_time(patient, region, aft, div_ref):
     return np.mean(divergence_in_time(patient, region, aft, div_ref), axis=1)
 
 
+def make_intermediate_data(folder_path):
+    """
+    Creates the bootstrapped divergence in time dictionaries and saves them in the defined folder.
+    """
+    import bootstrap
+
+    div_dict = bootstrap.make_bootstrap_div_dict(nb_bootstrap=5)
+    for key in div_dict.keys():
+        for key2 in div_dict[key].keys():
+            # Converting numpy to list for .json compatibility
+            div_dict[key][key2]["mean"] = div_dict[key][key2]["mean"].tolist()
+            div_dict[key][key2]["std"] = div_dict[key][key2]["std"].tolist()
+            div_dict[key][key2]["time"] = div_dict[key][key2]["time"].tolist()
+
+    with open(folder_path + "bootstrap_div_dict" + ".json", "w") as f:
+        json.dump(div_dict, f, indent=4)
+
+
+def load_div_dict(filename):
+    """Loads the divergence dictionary and returns it.
+
+    Args:
+        filename (str): Path to the savefile.
+
+    Returns:
+        div_dict(dict): Dictionary containing the divergence in time for the different categories.
+
+    """
+    with open(filename, "r") as f:
+        div_dict = json.load(f)
+
+    for key1 in div_dict.keys():
+        for key2 in div_dict[key1].keys():
+            div_dict[key1][key2]["mean"] = np.array(div_dict[key1][key2]["mean"])
+            div_dict[key1][key2]["std"] = np.array(div_dict[key1][key2]["std"])
+            div_dict[key1][key2]["time"] = np.array(div_dict[key1][key2]["time"])
+    return div_dict
+
+
 if __name__ == '__main__':
-    region = "env"
-    patient = Patient.load("p2")
-    aft = patient.get_allele_frequency_trajectories(region)
-    div = mean_divergence_in_time(patient, region, aft, "founder")
-    div = mean_divergence_in_time(patient, region, aft, "any")
-    div = mean_divergence_in_time(patient, region, aft, "B")
+    # region = "env"
+    # patient = Patient.load("p2")
+    # aft = patient.get_allele_frequency_trajectories(region)
+    # div = mean_divergence_in_time(patient, region, aft, "founder")
+    # div = mean_divergence_in_time(patient, region, aft, "any")
+    # div = mean_divergence_in_time(patient, region, aft, "B")
+
+    # div_dict = make_intermediate_data("data/WH/")
+    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")

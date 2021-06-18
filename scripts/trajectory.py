@@ -2,7 +2,7 @@ import json
 import copy
 import numpy as np
 
-import filenames # Link to the hivevo folder
+import filenames  # Link to the hivevo folder
 import tools
 from hivevo.HIVreference import HIVreference
 from hivevo.patients import Patient
@@ -234,7 +234,7 @@ def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[])
     return trajectories
 
 
-def make_intermediate_data():
+def make_intermediate_data(folder_path):
     """
     Creates all the intermediate data files for the Within Host analysis.
     """
@@ -243,13 +243,16 @@ def make_intermediate_data():
     ref_subtypes = ["any", "subtypes"]
 
     for name, ref_subtype in zip(traj_list_names, ref_subtypes):
+        print(f"Creating trajectories for {ref_subtype}")
         trajectories = create_all_patient_trajectories("env", ref_subtype) + \
             create_all_patient_trajectories("pol", ref_subtype) + \
             create_all_patient_trajectories("gag", ref_subtype)
 
-        with open("data/WH/" + name + ".json", "w") as f:
+        print(f"Saving trajectories for {ref_subtype}")
+        with open(folder_path + name + ".json", "w") as f:
             json.dump([traj.to_json() for traj in trajectories], f, indent=4)
 
+        print(f"Computing bootstrapped mean in time for {ref_subtype}")
         bootstrap_dict, _ = bootstrap.make_bootstrap_mean_dict(trajectories, nb_bootstrap=100)
         # json formating of numpy arrays
         for key1 in bootstrap_dict.keys():
@@ -257,7 +260,8 @@ def make_intermediate_data():
                 bootstrap_dict[key1][key2]["mean"] = bootstrap_dict[key1][key2]["mean"].tolist()
                 bootstrap_dict[key1][key2]["std"] = bootstrap_dict[key1][key2]["std"].tolist()
 
-        with open("data/WH/bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
+        print(f"Saving mean in time for {ref_subtype}")
+        with open(folder_path + "bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
             json.dump(bootstrap_dict, f, indent=4)
 
 
@@ -432,10 +436,10 @@ def offset_trajectories(trajectories, freq_range):
 
 
 if __name__ == "__main__":
-    # make_intermediate_data()
+    make_intermediate_data()
 
     # Not equal because reference (and hence reference mask) is not the same
-    trajectories = create_all_patient_trajectories("env", "any")
-    print(len(trajectories))
-    trajectories = create_all_patient_trajectories("env", "subtypes")
-    print(len(trajectories))
+    # trajectories = create_all_patient_trajectories("env", "any")
+    # print(len(trajectories))
+    # trajectories = create_all_patient_trajectories("env", "subtypes")
+    # print(len(trajectories))
