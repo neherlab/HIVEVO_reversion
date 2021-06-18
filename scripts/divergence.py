@@ -46,14 +46,17 @@ def divergence_in_time(patient, region, aft, div_ref):
     return np.squeeze(div)
 
 
-def mean_divergence_in_time(patient, region, aft, div_ref):
+def mean_divergence_in_time(patient, region, aft, div_ref, consensus):
     """
     Returns the average over all positions of divergence_in_time(patient, region, aft, div_ref)
     """
-    # TODO
-    reference_mask = tools.reference_mask(patient, region, aft, ref)
-    non_reference_mask = tools.non_reference_mask(patient, region, aft, ref)
-    return np.mean(divergence_in_time(patient, region, aft, div_ref), axis=1)
+    consensus_mask = tools.reference_mask(patient, region, aft, consensus)
+    non_consensus_mask = tools.non_reference_mask(patient, region, aft, consensus)
+    divergence = divergence_in_time(patient, region, aft, div_ref)
+    div_dict = {}
+    div_dict["consensus"] = np.mean(divergence[:, consensus_mask], axis=1)
+    div_dict["non_consensus"] = np.mean(divergence[:, non_consensus_mask], axis=1)
+    return div_dict
 
 
 def make_intermediate_data(folder_path):
