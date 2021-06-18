@@ -28,7 +28,8 @@ rule figure_mut_rate:
         alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta",
         tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk",
         reference_files_root = expand("data/BH/intermediate_files/pol_{nb}_nt_muts.json", nb=NB_SEQUENCES),
-        branch_length_file = expand("data/BH/intermediate_files/branch_lengths_pol_{nb}.json", nb=NB_SEQUENCES)
+        branch_length_file = expand(
+            "data/BH/intermediate_files/branch_lengths_pol_{nb}.json", nb=NB_SEQUENCES)
 
 
 rule lanl_metadata:
