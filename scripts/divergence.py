@@ -50,6 +50,9 @@ def mean_divergence_in_time(patient, region, aft, div_ref):
     """
     Returns the average over all positions of divergence_in_time(patient, region, aft, div_ref)
     """
+    # TODO
+    reference_mask = tools.reference_mask(patient, region, aft, ref)
+    non_reference_mask = tools.non_reference_mask(patient, region, aft, ref)
     return np.mean(divergence_in_time(patient, region, aft, div_ref), axis=1)
 
 
