@@ -48,7 +48,9 @@ def divergence_in_time(patient, region, aft, div_ref):
 
 def mean_divergence_in_time(patient, region, aft, div_ref, consensus):
     """
-    Returns the average over all positions of divergence_in_time(patient, region, aft, div_ref)
+    Returns the average over subset of position of divergence_in_time(patient, region, aft, div_ref).
+    Does it for all the sites, for consensus sites and for non_consensus sites. These are defined by the
+    consensus used.
     """
     consensus_mask = tools.reference_mask(patient, region, aft, consensus)
     non_consensus_mask = tools.non_reference_mask(patient, region, aft, consensus)
@@ -66,13 +68,14 @@ def make_intermediate_data(folder_path):
     """
     import bootstrap
 
-    div_dict = bootstrap.make_bootstrap_div_dict(nb_bootstrap=5)
-    for key in div_dict.keys():
+    div_dict = bootstrap.make_bootstrap_div_dict(nb_bootstrap=100)
+    div_dict["time"] = div_dict["time"].tolist()
+    for key in ["env", "pol", "gag"]:
         for key2 in div_dict[key].keys():
-            # Converting numpy to list for .json compatibility
-            div_dict[key][key2]["mean"] = div_dict[key][key2]["mean"].tolist()
-            div_dict[key][key2]["std"] = div_dict[key][key2]["std"].tolist()
-            div_dict[key][key2]["time"] = div_dict[key][key2]["time"].tolist()
+            for key3 in div_dict[key][key2].keys():
+                # Converting numpy to list for .json compatibility
+                div_dict[key][key2]["mean"] = div_dict[key][key2]["mean"].tolist()
+                div_dict[key][key2]["std"] = div_dict[key][key2]["std"].tolist()
 
     with open(folder_path + "bootstrap_div_dict" + ".json", "w") as f:
         json.dump(div_dict, f, indent=4)
