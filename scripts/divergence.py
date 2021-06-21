@@ -95,11 +95,15 @@ def load_div_dict(filename):
     with open(filename, "r") as f:
         div_dict = json.load(f)
 
-    for key1 in div_dict.keys():
-        for key2 in div_dict[key1].keys():
-            div_dict[key1][key2]["mean"] = np.array(div_dict[key1][key2]["mean"])
-            div_dict[key1][key2]["std"] = np.array(div_dict[key1][key2]["std"])
-            div_dict[key1][key2]["time"] = np.array(div_dict[key1][key2]["time"])
+    div_dict["time"] = np.array(div_dict["time"])
+
+    for key in ["env", "pol", "gag"]:  # Region
+        for key2 in div_dict[key].keys():  # Reference to which compute the divergence
+            for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+                for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+                    div_dict[key][key2][key3][key4]["mean"] = np.array(
+                        div_dict[key][key2][key3][key4]["mean"])
+                    div_dict[key][key2][key3][key4]["std"] = np.array(div_dict[key][key2][key3][key4]["std"])
     return div_dict
 
 
@@ -111,5 +115,5 @@ if __name__ == '__main__':
     # div = mean_divergence_in_time(patient, region, aft, "any")
     # div = mean_divergence_in_time(patient, region, aft, "B")
 
-    make_intermediate_data("data/WH/")
-    # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    # make_intermediate_data("data/WH/")
+    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
