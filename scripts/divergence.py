@@ -69,7 +69,7 @@ def make_intermediate_data(folder_path):
     import bootstrap
 
     div_dict = bootstrap.make_bootstrap_div_dict(nb_bootstrap=100)
-    div_dict["time"] = div_dict["time"].tolist()
+    div_dict["time"] = (div_dict["time"] / 365).tolist()
     for key in ["env", "pol", "gag"]:  # Region
         for key2 in div_dict[key].keys():  # Reference to which compute the divergence
             for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
