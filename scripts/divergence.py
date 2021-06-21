@@ -69,13 +69,15 @@ def make_intermediate_data(folder_path):
     import bootstrap
 
     div_dict = bootstrap.make_bootstrap_div_dict(nb_bootstrap=100)
+    breakpoint()
     div_dict["time"] = div_dict["time"].tolist()
-    for key in ["env", "pol", "gag"]:
-        for key2 in div_dict[key].keys():
-            for key3 in div_dict[key][key2].keys():
-                # Converting numpy to list for .json compatibility
-                div_dict[key][key2]["mean"] = div_dict[key][key2]["mean"].tolist()
-                div_dict[key][key2]["std"] = div_dict[key][key2]["std"].tolist()
+    for key in ["env", "pol", "gag"]:  # Region
+        for key2 in div_dict[key].keys():  # Reference to which compute the divergence
+            for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+                for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+                    # Converting numpy to list for .json compatibility
+                    div_dict[key][key2][key3][key4]["mean"] = div_dict[key][key2][key3][key4]["mean"].tolist()
+                    div_dict[key][key2][key3][key4]["std"] = div_dict[key][key2][key3][key4]["std"].tolist()
 
     with open(folder_path + "bootstrap_div_dict" + ".json", "w") as f:
         json.dump(div_dict, f, indent=4)
@@ -110,5 +112,5 @@ if __name__ == '__main__':
     # div = mean_divergence_in_time(patient, region, aft, "any")
     # div = mean_divergence_in_time(patient, region, aft, "B")
 
-    # div_dict = make_intermediate_data("data/WH/")
-    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    make_intermediate_data("data/WH/")
+    # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
