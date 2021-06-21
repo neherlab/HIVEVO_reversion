@@ -69,7 +69,6 @@ def make_intermediate_data(folder_path):
     import bootstrap
 
     div_dict = bootstrap.make_bootstrap_div_dict(nb_bootstrap=100)
-    breakpoint()
     div_dict["time"] = div_dict["time"].tolist()
     for key in ["env", "pol", "gag"]:  # Region
         for key2 in div_dict[key].keys():  # Reference to which compute the divergence
