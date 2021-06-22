@@ -5,7 +5,7 @@ import divergence
 if __name__ == '__main__':
     div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
     lines = ["-", "--", ":"]
-    colors = ["C0", "C1", "C2", "C3", "C4"]
+    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
     fontsize = 16
 
     regions = ["env", "pol", "gag"]
@@ -48,5 +48,20 @@ if __name__ == '__main__':
     plt.ylabel("Divergence", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
     plt.xlim([0, 6])
+
+    # # Check
+    # plt.figure(figsize=(14, 10))
+    # for ii, region in enumerate(regions):
+    #     for jj, key2 in enumerate(div_dict[region].keys()):
+    #         plt.plot(time, div_dict[region][key2]["global"]["all"]["mean"], lines[jj],
+    #                  label=f"{region} {key2}", color=colors[ii])
+    #         plt.plot(time, div_dict[region][key2]["subtype"]["all"]["mean"], lines[jj],
+    #                  label=f"{region} {key2}", color=colors[ii+3])
+    # plt.grid()
+    # plt.xlabel("Time [years]", fontsize=fontsize)
+    # plt.ylabel("Divergence", fontsize=fontsize)
+    # plt.legend(fontsize=fontsize)
+    # plt.xlim([0, 6])
+
 
     plt.show()
