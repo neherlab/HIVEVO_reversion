@@ -235,6 +235,17 @@ def non_reference_mask(patient, region, aft, ref):
     return np.logical_and(ref_filter, ~consensus_mask)
 
 
+def get_site_mask(aft, position):
+    """
+    Returns a 1D boolean vector of size aft.shape[-1] where True are the positions corresponding to 1st 2nd or
+    3rd.
+    """
+    assert position in [1, 2, 3], "Position must be 1 2 or 3."
+    position_mask = np.zeros(aft.shape[-1], dtype=bool)
+    position_mask[position - 1::3] = True
+    return position_mask
+
+
 if __name__ == "__main__":
     region = "env"
     patient = Patient.load("p1")
