@@ -58,7 +58,7 @@ def mean_divergence_in_time(patient, region, aft, div_ref, consensus):
     first_mask = tools.site_mask(aft, 1)
     second_mask = tools.site_mask(aft, 2)
     third_mask = tools.site_mask(aft, 3)
-    
+
     div_dict = {}
     div_dict["all"] = {
         "all": np.mean(divergence, axis=1),
@@ -130,10 +130,8 @@ def load_div_dict(filename):
 if __name__ == '__main__':
     region = "env"
     patient = Patient.load("p2")
-    # aft = patient.get_allele_frequency_trajectories(region)
-    div = mean_divergence_in_time(patient, region, aft, "founder")
-    # div = mean_divergence_in_time(patient, region, aft, "any")
-    # div = mean_divergence_in_time(patient, region, aft, "B")
+    aft = patient.get_allele_frequency_trajectories(region)
+    div = mean_divergence_in_time(patient, region, aft, "founder", HIVreference(subtype="any"))
 
     # make_intermediate_data("data/WH/")
     # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")

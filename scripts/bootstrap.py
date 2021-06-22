@@ -103,20 +103,27 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
 
         # Interpolation of divergence value as samples are not homogeneous in time. Fine because monotonic
         for key in ["all", "consensus", "non_consensus"]:
-            patient_div_dict[patient_name][key] = np.interp(time, patient.dsi, tmp_div_dict[key])
+            patient_div_dict[patient_name][key] = {}
+            for key2 in ["all", "first", "second", "third"]:
+                patient_div_dict[patient_name][key][key2] = np.interp(
+                    time, patient.dsi, tmp_div_dict[key][key2])
 
-    means = {"all": [], "consensus": [], "non_consensus": []}
+    means = {"all": {}, "consensus": {}, "non_consensus": {}}
     for ii in range(nb_bootstrap):
         bootstrap_names = bootstrap_patient_names(patient_names)
 
         for key in ["all", "consensus", "non_consensus"]:
-            divergences = np.array([patient_div_dict[name][key] for name in bootstrap_names])
-            means[key] += [np.mean(divergences, axis=0)]
+            for key2 in ["all", "first", "second", "third"]:
+                means[key][key2] = []
+                divergences = np.array([patient_div_dict[name][key][key2] for name in bootstrap_names])
+                means[key][key2] += [np.mean(divergences, axis=0)]
 
     bootstrapped_dict = {"all": {}, "consensus": {}, "non_consensus": {}}
     for key in ["all", "consensus", "non_consensus"]:
-        bootstrapped_dict[key]["mean"] = np.mean(means[key], axis=0)
-        bootstrapped_dict[key]["std"] = np.std(means[key], axis=0)
+        for key2 in ["all", "first", "second", "third"]:
+            bootstrapped_dict[key][key2] = {}
+            bootstrapped_dict[key][key2]["mean"] = np.mean(means[key][key2], axis=0)
+            bootstrapped_dict[key][key2]["std"] = np.std(means[key][key2], axis=0)
 
     return time, bootstrapped_dict
 
