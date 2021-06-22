@@ -55,10 +55,30 @@ def mean_divergence_in_time(patient, region, aft, div_ref, consensus):
     consensus_mask = tools.reference_mask(patient, region, aft, consensus)
     non_consensus_mask = tools.non_reference_mask(patient, region, aft, consensus)
     divergence = divergence_in_time(patient, region, aft, div_ref)
+    first_mask = tools.site_mask(aft, 1)
+    second_mask = tools.site_mask(aft, 2)
+    third_mask = tools.site_mask(aft, 3)
+    
     div_dict = {}
-    div_dict["all"] = np.mean(divergence, axis=1)
-    div_dict["consensus"] = np.mean(divergence[:, consensus_mask], axis=1)
-    div_dict["non_consensus"] = np.mean(divergence[:, non_consensus_mask], axis=1)
+    div_dict["all"] = {
+        "all": np.mean(divergence, axis=1),
+        "first": np.mean(divergence[:, first_mask], axis=1),
+        "second": np.mean(divergence[:, second_mask], axis=1),
+        "third": np.mean(divergence[:, third_mask], axis=1)
+    }
+    div_dict["consensus"] = {
+        "all": np.mean(divergence[:, consensus_mask], axis=1),
+        "first": np.mean(divergence[:, np.logical_and(consensus_mask, first_mask)], axis=1),
+        "second": np.mean(divergence[:, np.logical_and(consensus_mask, second_mask)], axis=1),
+        "third": np.mean(divergence[:, np.logical_and(consensus_mask, third_mask)], axis=1)
+    }
+    div_dict["non_consensus"] = {
+        "all": np.mean(divergence[:, non_consensus_mask], axis=1),
+        "first": np.mean(divergence[:, np.logical_and(non_consensus_mask, first_mask)], axis=1),
+        "second": np.mean(divergence[:, np.logical_and(non_consensus_mask, second_mask)], axis=1),
+        "third": np.mean(divergence[:, np.logical_and(non_consensus_mask, third_mask)], axis=1)
+    }
+
     return div_dict
 
 
@@ -108,12 +128,12 @@ def load_div_dict(filename):
 
 
 if __name__ == '__main__':
-    # region = "env"
-    # patient = Patient.load("p2")
+    region = "env"
+    patient = Patient.load("p2")
     # aft = patient.get_allele_frequency_trajectories(region)
-    # div = mean_divergence_in_time(patient, region, aft, "founder")
+    div = mean_divergence_in_time(patient, region, aft, "founder")
     # div = mean_divergence_in_time(patient, region, aft, "any")
     # div = mean_divergence_in_time(patient, region, aft, "B")
 
     # make_intermediate_data("data/WH/")
-    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")

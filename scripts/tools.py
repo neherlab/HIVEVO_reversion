@@ -235,7 +235,7 @@ def non_reference_mask(patient, region, aft, ref):
     return np.logical_and(ref_filter, ~consensus_mask)
 
 
-def get_site_mask(aft, position):
+def site_mask(aft, position):
     """
     Returns a 1D boolean vector of size aft.shape[-1] where True are the positions corresponding to 1st 2nd or
     3rd.
