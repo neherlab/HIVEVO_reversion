@@ -15,7 +15,7 @@ if __name__ == '__main__':
     plt.figure(figsize=(14, 10))
     for ii, region in enumerate(regions):
         for jj, key2 in enumerate(div_dict[region].keys()):
-            plt.plot(time, div_dict[region][key2]["global"]["all"]["mean"], lines[jj],
+            plt.plot(time, div_dict[region][key2]["global"]["all"]["all"]["mean"], lines[jj],
                      label=f"{region} {key2}", color=colors[ii])
     plt.grid()
     plt.xlabel("Time [years]", fontsize=fontsize)
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     plt.title("Pol global consensus")
     for ii, key in enumerate(["all", "consensus", "non_consensus"]):
         for jj, key2 in enumerate(div_dict["pol"].keys()):
-            plt.plot(time, div_dict["pol"][key2]["global"][key]["mean"], lines[jj],
+            plt.plot(time, div_dict["pol"][key2]["global"][key]["all"]["mean"], lines[jj],
                      label=f"pol {key2} {key}", color=colors[ii])
     plt.grid()
     plt.xlabel("Time [years]", fontsize=fontsize)
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     plt.title("Pol subtype consensus")
     for ii, key in enumerate(["all", "consensus", "non_consensus"]):
         for jj, key2 in enumerate(div_dict["pol"].keys()):
-            plt.plot(time, div_dict["pol"][key2]["subtype"][key]["mean"], lines[jj],
+            plt.plot(time, div_dict["pol"][key2]["subtype"][key]["all"]["mean"], lines[jj],
                      label=f"pol {key2} {key}", color=colors[ii])
     plt.grid()
     plt.xlabel("Time [years]", fontsize=fontsize)
@@ -49,19 +49,17 @@ if __name__ == '__main__':
     plt.legend(fontsize=fontsize)
     plt.xlim([0, 6])
 
-    # # Check
-    # plt.figure(figsize=(14, 10))
-    # for ii, region in enumerate(regions):
-    #     for jj, key2 in enumerate(div_dict[region].keys()):
-    #         plt.plot(time, div_dict[region][key2]["global"]["all"]["mean"], lines[jj],
-    #                  label=f"{region} {key2}", color=colors[ii])
-    #         plt.plot(time, div_dict[region][key2]["subtype"]["all"]["mean"], lines[jj],
-    #                  label=f"{region} {key2}", color=colors[ii+3])
-    # plt.grid()
-    # plt.xlabel("Time [years]", fontsize=fontsize)
-    # plt.ylabel("Divergence", fontsize=fontsize)
-    # plt.legend(fontsize=fontsize)
-    # plt.xlim([0, 6])
-
+    # By Positions
+    plt.figure(figsize=(14, 10))
+    plt.title("Pol positions")
+    for ii, key in enumerate(["all", "consensus", "non_consensus"]):
+        for jj, key2 in enumerate(["all", "first", "second", "third"]):
+            plt.plot(time, div_dict["pol"]["founder"]["subtype"][key][key2]["mean"], lines[jj],
+                     label=f"pol {key2} {key}", color=colors[ii])
+    plt.grid()
+    plt.xlabel("Time [years]", fontsize=fontsize)
+    plt.ylabel("Divergence", fontsize=fontsize)
+    plt.legend(fontsize=fontsize)
+    plt.xlim([0, 6])
 
     plt.show()
