@@ -132,7 +132,7 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
     """
     Computes the average divergence in time over patients.
     Returns a dictionary of the format:
-        divergence[env/pol/gag][founder/any/subtypes][global/subtype][all/consensus/non_consensus][mean/std]
+        divergence[env/pol/gag][founder/any/subtypes][global/subtype][all/consensus/non_consensus][all/first/second/third][mean/std]
     There is also the entry for the time vector : divergence[time]
     """
     div_dict = {}

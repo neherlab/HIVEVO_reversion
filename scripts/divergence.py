@@ -124,9 +124,11 @@ def load_div_dict(filename):
         for key2 in div_dict[key].keys():  # Reference to which compute the divergence
             for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
                 for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
-                    div_dict[key][key2][key3][key4]["mean"] = np.array(
-                        div_dict[key][key2][key3][key4]["mean"])
-                    div_dict[key][key2][key3][key4]["std"] = np.array(div_dict[key][key2][key3][key4]["std"])
+                    for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
+                        div_dict[key][key2][key3][key4][key5]["mean"] = np.array(
+                            div_dict[key][key2][key3][key4][key5]["mean"])
+                        div_dict[key][key2][key3][key4][key5]["std"] = np.array(
+                            div_dict[key][key2][key3][key4][key5]["std"])
     return div_dict
 
 
