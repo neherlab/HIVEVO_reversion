@@ -132,11 +132,30 @@ def load_div_dict(filename):
     return div_dict
 
 
+def make_rate_dict(div_dict):
+    """
+    Creates a dictionary with the rates computed from the derivative of the divergence dictionary.
+    """
+    import copy
+
+    rate_dict = copy.deepcopy(div_dict)
+    for key in ["env", "pol", "gag"]:  # Region
+        for key2 in div_dict[key].keys():  # Reference to which compute the divergence
+            for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+                for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+                    for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
+                        rate_dict[key][key2][key3][key4][key5] = np.gradient(
+                            rate_dict[key][key2][key3][key4][key5]["mean"],
+                            rate_dict["time"][1] - rate_dict["time"][0])
+    return rate_dict
+
+
 if __name__ == '__main__':
     # region = "env"
     # patient = Patient.load("p2")
     # aft = patient.get_allele_frequency_trajectories(region)
     # div = mean_divergence_in_time(patient, region, aft, "founder", HIVreference(subtype="any"))
 
-    make_intermediate_data("data/WH/")
-    # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    # make_intermediate_data("data/WH/")
+    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    # rate_dict = make_rate_dict(div_dict)

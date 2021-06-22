@@ -108,13 +108,16 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
                 patient_div_dict[patient_name][key][key2] = np.interp(
                     time, patient.dsi, tmp_div_dict[key][key2])
 
+    # Initializing dictionary to store the different bootstrap values
     means = {"all": {}, "consensus": {}, "non_consensus": {}}
+    for key in means.keys():
+        for key2 in ["all", "first", "second", "third"]:
+            means[key][key2] = []
+
     for ii in range(nb_bootstrap):
         bootstrap_names = bootstrap_patient_names(patient_names)
-
         for key in ["all", "consensus", "non_consensus"]:
             for key2 in ["all", "first", "second", "third"]:
-                means[key][key2] = []
                 divergences = np.array([patient_div_dict[name][key][key2] for name in bootstrap_names])
                 means[key][key2] += [np.mean(divergences, axis=0)]
 
