@@ -144,12 +144,25 @@ def make_rate_dict(div_dict):
             for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
                 for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
                     for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        tmp = np.gradient(rate_dict[key][key2][key3][key4][key5]
-                                          ["mean"], rate_dict["time"][1] - rate_dict["time"][0])
-                        tmp = np.mean(tmp[2:20])  # Mean between 200 and 2000 days
-                        rate_dict[key][key2][key3][key4][key5] = tmp
+                        rate_dict[key][key2][key3][key4][key5] = np.gradient(
+                            rate_dict[key][key2][key3][key4][key5]["mean"],
+                            rate_dict["time"][1] - rate_dict["time"][0])
     return rate_dict
 
+
+def average_rate_dict(rate_dict):
+    import copy
+
+    avg_dict = copy.deepcopy(rate_dict)
+    for key in ["env", "pol", "gag"]:  # Region
+        for key2 in avg_dict[key].keys():  # Reference to which compute the divergence
+            for key3 in avg_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+                for key4 in avg_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+                    for key5 in avg_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
+                        tmp = avg_dict[key][key2][key3][key4][key5]
+                        rate = np.mean(tmp[2:20])  # between 200 and 2000 days
+                        avg_dict[key][key2][key3][key4][key5] = rate
+    return avg_dict
 
 if __name__ == '__main__':
     # region = "env"
@@ -177,5 +190,5 @@ if __name__ == '__main__':
                      color=colors[jj], label=f"{key} {key2} {estimate}")
     plt.legend()
     plt.grid()
-    plt.savefig("figures/mutation_rate.png", format="png")
+    plt.savefig("figures/mutation_rate_divergence.png", format="png")
     plt.show()
