@@ -144,9 +144,10 @@ def make_rate_dict(div_dict):
             for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
                 for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
                     for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        rate_dict[key][key2][key3][key4][key5] = np.gradient(
-                            rate_dict[key][key2][key3][key4][key5]["mean"],
-                            rate_dict["time"][1] - rate_dict["time"][0])
+                        tmp = np.gradient(rate_dict[key][key2][key3][key4][key5]
+                                          ["mean"], rate_dict["time"][1] - rate_dict["time"][0])
+                        tmp = np.mean(tmp[2:20])  # Mean between 200 and 2000 days
+                        rate_dict[key][key2][key3][key4][key5] = tmp
     return rate_dict
 
 
@@ -169,8 +170,12 @@ if __name__ == '__main__':
     plt.figure()
     for ii, key in enumerate(["all", "consensus", "non_consensus"]):
         for jj, key2 in enumerate(["all", "first", "second", "third"]):
-            plt.plot(rate_dict[region][reference]["global"][key][key2], lines[ii], color=colors[jj],
-                     label=f"{key} {key2}")
+            tmp = div_dict[region][reference]["global"][key][key2]["mean"]
+            estimate = (tmp[20] - tmp[0]) / (2000 / 365)
+            estimate = round(estimate, 4)
+            plt.plot(rate_dict["time"], rate_dict[region][reference]["global"][key][key2], lines[ii],
+                     color=colors[jj], label=f"{key} {key2} {estimate}")
     plt.legend()
-    plt.grid() 
+    plt.grid()
+    plt.savefig("figures/mutation_rate.png", format="png")
     plt.show()
