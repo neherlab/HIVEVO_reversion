@@ -150,7 +150,7 @@ def make_rate_dict(div_dict):
     return rate_dict
 
 
-def average_rate_dict(rate_dict):
+def average_rate_dict(rate_dict, first_idx=2, last_idx=20):
     import copy
 
     avg_dict = copy.deepcopy(rate_dict)
@@ -160,7 +160,7 @@ def average_rate_dict(rate_dict):
                 for key4 in avg_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
                     for key5 in avg_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
                         tmp = avg_dict[key][key2][key3][key4][key5]
-                        rate = np.mean(tmp[2:20])  # between 200 and 2000 days
+                        rate = np.mean(tmp[first_idx:last_idx])  # between 200 and 2000 days by default
                         avg_dict[key][key2][key3][key4][key5] = rate
     return avg_dict
 
