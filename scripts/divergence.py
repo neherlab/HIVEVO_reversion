@@ -158,4 +158,19 @@ if __name__ == '__main__':
 
     # make_intermediate_data("data/WH/")
     div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
-    # rate_dict = make_rate_dict(div_dict)
+    rate_dict = make_rate_dict(div_dict)
+
+    lines = ["-", "--", ":"]
+    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
+    region = "pol"
+    reference = "founder"
+
+    import matplotlib.pyplot as plt
+    plt.figure()
+    for ii, key in enumerate(["all", "consensus", "non_consensus"]):
+        for jj, key2 in enumerate(["all", "first", "second", "third"]):
+            plt.plot(rate_dict[region][reference]["global"][key][key2], lines[ii], color=colors[jj],
+                     label=f"{key} {key2}")
+    plt.legend()
+    plt.grid() 
+    plt.show()
