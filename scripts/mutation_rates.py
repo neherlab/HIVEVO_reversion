@@ -70,9 +70,9 @@ def plot_mutation_rates():
     markersize = 16
     colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
     cmap = matplotlib.cm.get_cmap('viridis')
-    cmap_colors = [cmap(x) for x in np.linspace(0,1, len(rates["rtt"].keys()))]
+    cmap_colors = [cmap(x) for x in np.linspace(0, 1, len(rates["rtt"].keys()))]
 
-    plt.figure(figsize=(10,7))
+    plt.figure(figsize=(10, 7))
     for ii, key in enumerate(["root", "subtypes"]):
         if ii:
             plt.plot(ii, rates[key]["B"] * 1e4, '.', color="C0", markersize=markersize, label="B")
