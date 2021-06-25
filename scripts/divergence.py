@@ -104,6 +104,24 @@ def make_intermediate_data(folder_path):
     with open(folder_path + "bootstrap_div_dict" + ".json", "w") as f:
         json.dump(div_dict, f, indent=4)
 
+    rate_dict = make_rate_dict(div_dict)
+    avg_rate_dict = average_rate_dict(rate_dict)
+    rate_dict["time"] = rate_dict["time"].tolist()
+    for key in ["env", "pol", "gag"]:  # Region
+        for key2 in rate_dict[key].keys():  # Reference to which compute the divergence
+            for key3 in rate_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+                for key4 in rate_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+                    for key5 in rate_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
+                        # Converting numpy to list for .json compatibility
+                        rate_dict[key][key2][key3][key4][key5] = \
+                            rate_dict[key][key2][key3][key4][key5].tolist()
+
+    with open(folder_path + "rate_dict" + ".json", "w") as f:
+        json.dump(rate_dict, f, indent=4)
+
+    with open(folder_path + "avg_rate_dict" + ".json", "w") as f:
+        json.dump(avg_rate_dict, f, indent=4)
+
 
 def load_div_dict(filename):
     """Loads the divergence dictionary and returns it.
@@ -151,9 +169,14 @@ def make_rate_dict(div_dict):
 
 
 def average_rate_dict(rate_dict, first_idx=2, last_idx=20):
+    """
+    Average the rates for the rate dictionary between 200 and 2000 days (by default). Returns a dictionary
+    with the same structure but with scalars instead of vectors at the leafs.
+    """
     import copy
 
     avg_dict = copy.deepcopy(rate_dict)
+    del avg_dict["time"]
     for key in ["env", "pol", "gag"]:  # Region
         for key2 in avg_dict[key].keys():  # Reference to which compute the divergence
             for key3 in avg_dict[key][key2].keys():  # Reference to define consensus and non-consensus
@@ -164,6 +187,35 @@ def average_rate_dict(rate_dict, first_idx=2, last_idx=20):
                         avg_dict[key][key2][key3][key4][key5] = rate
     return avg_dict
 
+
+def load_rate_dict(filename):
+    """
+    Loads the dictionary containing the rates over time (as vectors). Same format as divergence dictionary.
+    """
+    with open(filename, "r") as f:
+        rate_dict = json.load(f)
+
+    rate_dict["time"] = np.array(rate_dict["time"])
+
+    for key in ["env", "pol", "gag"]:  # Region
+        for key2 in rate_dict[key].keys():  # Reference to which compute the divergence
+            for key3 in rate_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+                for key4 in rate_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+                    for key5 in rate_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
+                        rate_dict[key][key2][key3][key4][key5] = np.array(
+                            rate_dict[key][key2][key3][key4][key5])
+    return rate_dict
+
+
+def load_avg_rate_dict(filename):
+    """
+    Loads the dictionary containing the averaged mutation rates between 200 and 2000 days.
+    """
+    with open(filename, "r") as f:
+        avg_rate_dict = json.load(f)
+    return avg_rate_dict
+
+
 if __name__ == '__main__':
     # region = "env"
     # patient = Patient.load("p2")
@@ -171,8 +223,11 @@ if __name__ == '__main__':
     # div = mean_divergence_in_time(patient, region, aft, "founder", HIVreference(subtype="any"))
 
     # make_intermediate_data("data/WH/")
+
+    # Mutation rate plot
     div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
-    rate_dict = make_rate_dict(div_dict)
+    rate_dict = load_rate_dict("data/WH/rate_dict.json")
+    avg_rate_dict = load_avg_rate_dict("data/WH/avg_rate_dict.json")
 
     lines = ["-", "--", ":"]
     colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
@@ -186,8 +241,9 @@ if __name__ == '__main__':
             tmp = div_dict[region][reference]["global"][key][key2]["mean"]
             estimate = (tmp[20] - tmp[0]) / (2000 / 365)
             estimate = round(estimate, 4)
+            estimate2 = round(avg_rate_dict[region][reference]["global"][key][key2], 4)
             plt.plot(rate_dict["time"], rate_dict[region][reference]["global"][key][key2], lines[ii],
-                     color=colors[jj], label=f"{key} {key2} {estimate}")
+                     color=colors[jj], label=f"{key} {key2} {estimate} {estimate2}")
     plt.legend()
     plt.grid()
     plt.savefig("figures/mutation_rate_divergence.png", format="png")

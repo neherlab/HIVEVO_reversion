@@ -148,8 +148,8 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
                 print(f"Computing bootstrapped divergence for {region} {reference} {consensus}")
                 time, bootstrap_dict = bootstrap_divergence_in_time(
                     region, reference, consensus, nb_bootstrap)
-                div_dict[region][reference][consensus] = bootstrap_dict
                 div_dict["time"] = time
+                div_dict[region][reference][consensus] = bootstrap_dict
 
     return div_dict
 
