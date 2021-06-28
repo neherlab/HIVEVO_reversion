@@ -92,7 +92,7 @@ rule align:
 rule consensus:
     message:
         """
-        Computing the consensus sequence of {intput.alignment}.
+        Computing the consensus sequence of {input.alignment}.
         """
     input:
         alignment = rules.align.output.alignment
