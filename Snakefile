@@ -1,20 +1,20 @@
-NB_SEQUENCES = [1000, 500, 250, 125, 60, 30]
+NB_SEQUENCES = [1000, 500, 250, 125]
 
 wildcard_constraints:
     region = "(env|pol|gag)",
-    nb_sequences = "(4000|2000|1000|500|250|125|60|30)",
+    nb_sequences = "(4000|2000|1000|500|250|125)",
     subtype = "(B|C)",
     position = "(1st|2nd|3rd)"
 
 
 rule all:
     input:
-        consensus = "data/BH/alignments/to_HXB2/pol_2000_consensus.fasta",
-        auspice_json = "visualisation/pol_2000.json",
-        rates = "data/BH/mutation_rates/pol_2000.json",
-        tree = "data/BH/intermediate_files/timetree_pol_2000.nwk",
-        branch = "data/BH/branch_lengths/pol_2000.json",
-        subtype = "data/BH/alignments/to_HXB2/pol_2000_B_consensus.fasta"
+        consensus = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta",
+        auspice_json = "visualisation/pol_1000.json",
+        rates = "data/BH/mutation_rates/pol_1000.json",
+        tree = "data/BH/intermediate_files/timetree_pol_1000.nwk",
+        branch = "data/BH/branch_lengths/pol_1000.json",
+        subtype = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
 
 
 rule figure_mut_rate:
@@ -28,14 +28,14 @@ rule figure_mut_rate:
         alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta",
         tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk",
         reference_files_root = expand("data/BH/intermediate_files/pol_{nb}_nt_muts.json", nb=NB_SEQUENCES),
-        branch_length_file = expand(
-            "data/BH/intermediate_files/branch_lengths_pol_{nb}.json", nb=NB_SEQUENCES)
+        branch_length_file = expand("data/BH/intermediate_files/branch_lengths_pol_{nb}.json", nb=NB_SEQUENCES),
+        mutation_rates_file = expand("data/BH/mutation_rates/pol_{nb}.json", nb=NB_SEQUENCES)
 
 
 rule lanl_metadata:
     message:
         """
-        Creating metadata for the original LANL data.
+        Creating metadata for the original LANL data of region {wildcards.region}.
         """
     input:
         lanl_data = "data/BH/raw/{region}.fasta"
@@ -50,7 +50,8 @@ rule lanl_metadata:
 rule sub_sample:
     message:
         """
-        Subsampling the original lanl data homogeneously in time and creating subsample metadata.
+        Subsampling the original lanl data for region {wildcards.region} homogeneously in time and creating
+        subsampled {wildcards.nb_sequences} sequences + their metadata.
         """
     input:
         lanl_data = "data/BH/raw/{region}.fasta",
@@ -69,8 +70,8 @@ rule sub_sample:
 rule align:
     message:
         """
-        Aligning sequences to {input.reference} using Augur. Add reference to alignment and strips gaps
-        relative to reference.
+        Aligning sequences {intput.sequences} to {input.reference} using Augur. Add HXB2 reference to
+        alignment and strips gaps relative to reference.
         """
     input:
         sequences = rules.sub_sample.output.sequences,
@@ -91,7 +92,7 @@ rule align:
 rule consensus:
     message:
         """
-        Computing the consensus sequence of the {wildcards.region}_{wildcards.nb_sequences} alignment.
+        Computing the consensus sequence of {intput.alignment}.
         """
     input:
         alignment = rules.align.output.alignment
@@ -148,7 +149,7 @@ rule subtype_consensus:
 
 rule tree:
     message:
-        "Building tree using augur and IQtree GTR-F-R10 model"
+        "Building tree for {input.alignment} using augur and IQtree GTR-F-R10 model."
     input:
         alignment = rules.align.output.alignment
     output:
@@ -167,7 +168,7 @@ rule tree:
 rule refine:
     message:
         """
-        Refining tree using augur refine.
+        Computing  TimeTree from {input.tree} using augur refine.
         """
     input:
         tree = rules.tree.output.tree,
@@ -197,7 +198,7 @@ rule refine:
         """
 
 rule ancestral:
-    message: "Reconstructing ancestral sequences and mutations"
+    message: "Reconstructing ancestral sequences and mutations from {input.tree}"
     input:
         tree = rules.refine.output.tree,
         alignment = rules.align.output.alignment
@@ -215,7 +216,11 @@ rule ancestral:
         """
 
 rule export:
-    message: "Exporting data files for visualisation in auspice"
+    message:
+        """
+        Exporting data for {wildcards.region}_{wildcards.nb_sequences} files for visualisation in
+        auspice.
+        """
     input:
         tree = rules.refine.output.tree,
         metadata = rules.sub_sample.output.metadata,
@@ -235,7 +240,7 @@ rule export:
 
 
 rule gtr:
-    message: "Inferring GTR model for alignment {wildcards.region} using TreeTime."
+    message: "Inferring GTR model from {input.tree} using TreeTime."
     input:
         tree = rules.refine.output.tree,
         align = rules.align.output.alignment
@@ -247,7 +252,11 @@ rule gtr:
         """
 
 rule subalign_gtr:
-    message: "Inferring gtr model for subalignment {wildcards.region}_{wildcards.position} using TreeTime."
+    message:
+        """
+        Inferring gtr model for subalignment {wildcards.region}_{wildcards.nb_sequences}_{wildcards.position}
+        using TreeTime.
+        """
     input:
         tree = rules.refine.output.tree,
         align = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_{position}.fasta"
@@ -259,7 +268,7 @@ rule subalign_gtr:
         """
 
 rule mutation_rates:
-    message: "Computing the mutation_rates for region {wildcards.region}."
+    message: "Computing the mutation_rates for {wildcards.region}_{wildcards.nb_sequences}."
     input:
         refine_file = rules.refine.output.node_data,
         gtr_all = rules.gtr.output.gtr_json,
@@ -275,7 +284,7 @@ rule mutation_rates:
         """
 
 rule mean_branch_length:
-    message: "Computing mean branch length for {wildcards.region}."
+    message: "Computing mean branch length for {wildcards.region}_{wildcards.nb_sequences}."
     input:
         refine_file = rules.refine.output.node_data,
     output:
