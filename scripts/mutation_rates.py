@@ -7,7 +7,7 @@ from distance_in_time import get_reference_sequence, get_mean_distance_in_time, 
 import divergence
 
 
-def compute_mutation_rates(nb_sequences=[1000, 500, 250, 125, 60, 30]):
+def compute_mutation_rates(nb_sequences=[1000, 500, 250, 125]):
     """
     Returns the mutation rates from the distance to root, distance to subtype consensus and root to tip
     distance.
@@ -21,8 +21,11 @@ def compute_mutation_rates(nb_sequences=[1000, 500, 250, 125, 60, 30]):
     tree_file = {}
     branch_length_file = {}
     for nb in nb_sequences:
-        tree_file[str(nb)] = "data/BH/intermediate_files/timetree_pol_" + str(nb) + ".nwk"
-        branch_length_file[str(nb)] = "data/BH/intermediate_files/branch_lengths_pol_" + str(nb) + ".json"
+        tree_file[str(nb)] = f"data/BH/intermediate_files/timetree_pol_{nb}.nwk"
+        branch_length_file[str(nb)] = f"data/BH/intermediate_files/branch_lengths_pol_{nb}.json"
+
+    # BH GTR files
+    gtr_file = "data/BH/mutation_rates/pol_1000.json"
 
     # WH rates
     WH_file = "data/WH/avg_rate_dict.json"
@@ -53,6 +56,10 @@ def compute_mutation_rates(nb_sequences=[1000, 500, 250, 125, 60, 30]):
         fit = np.polyfit(dates[key], lengths[key], deg=1)
         rates["rtt"][key] = fit[0]
 
+    # BH rates from GTR estimates
+    with open(gtr_file) as f:
+        rates["GTR"] = json.load(f)
+
     # WH rates from divergence
     rates["WH"] = WH_rate_dict["pol"]
 
@@ -64,15 +71,16 @@ def plot_mutation_rates():
     Plot for the mutation rates.
     """
     rates = compute_mutation_rates()
-    labels = ["Hamming root", "Hamming subtype", "RTT", "WH_global", "WH_subtypes", "WH_founder"]
+    labels = ["Hamming root", "Hamming subtype", "RTT", "GTR", "WH_global", "WH_subtypes", "WH_founder"]
 
     fontsize = 16
     markersize = 16
-    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
+    colors = ["C0", "C1", "C2", "C3", "C4", "C5", "C6"]
     cmap = matplotlib.cm.get_cmap('viridis')
     cmap_colors = [cmap(x) for x in np.linspace(0, 1, len(rates["rtt"].keys()))]
 
     plt.figure(figsize=(10, 7))
+    # BH stuff
     for ii, key in enumerate(["root", "subtypes"]):
         if ii:
             plt.plot(ii, rates[key]["B"] * 1e4, '.', color="C0", markersize=markersize, label="B")
@@ -84,15 +92,19 @@ def plot_mutation_rates():
     for ii, key in enumerate(rates["rtt"].keys()):
         plt.plot(2, rates["rtt"][key] * 1e4, '.', color=cmap_colors[ii], markersize=markersize, label=key)
 
-    for ii, key in enumerate(["first", "second", "third"]):
-        plt.plot(3, rates["WH"]["any"]["global"]["all"][key] * 1e4, ".",
-                 color=colors[ii + 2], markersize=markersize)
-        plt.plot(4, rates["WH"]["subtypes"]["global"]["all"][key] * 1e4, ".",
-                 color=colors[ii + 2], markersize=markersize)
-        plt.plot(5, rates["WH"]["founder"]["global"]["all"][key] * 1e4, ".",
-                 color=colors[ii + 2], markersize=markersize, label=key)
+    for ii, key in enumerate(rates["GTR"].keys()):
+        plt.plot(3, rates["GTR"][key] * 1e4, ".", color=colors[ii + 2], markersize=markersize, label=key)
 
-    plt.xticks(range(6), labels, fontsize=fontsize, rotation=8)
+    # WH stuff
+    for ii, key in enumerate(["first", "second", "third"]):
+        plt.plot(4, rates["WH"]["any"]["global"]["all"][key] * 1e4, ".",
+                 color=colors[ii + 3], markersize=markersize)
+        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key] * 1e4, ".",
+                 color=colors[ii + 3], markersize=markersize)
+        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key] * 1e4, ".",
+                 color=colors[ii + 3], markersize=markersize)
+
+    plt.xticks(range(len(labels)), labels, fontsize=fontsize, rotation=14)
     plt.ylabel("Mutation rates (per year) * e-4", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
     plt.grid()
