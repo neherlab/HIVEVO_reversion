@@ -24,6 +24,7 @@ if __name__ == '__main__':
     plt.ylabel("Divergence", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
     plt.xlim([0, 6])
+    plt.savefig("figures/Divergence_region.png", format="png")
 
     # pol relative to global consensus
     plt.figure(figsize=(14, 10))
@@ -39,6 +40,7 @@ if __name__ == '__main__':
     plt.ylabel("Divergence", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
     plt.xlim([0, 6])
+    plt.savefig("figures/Divergence_pol_global.png", format="png")
 
     # pol relative to subtype consensus
     plt.figure(figsize=(14, 10))
@@ -54,6 +56,7 @@ if __name__ == '__main__':
     plt.ylabel("Divergence", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
     plt.xlim([0, 6])
+    plt.savefig("figures/Divergence_pol_subtype.png", format="png")
 
     # By Positions
     plt.figure(figsize=(14, 10))
@@ -69,5 +72,6 @@ if __name__ == '__main__':
     plt.ylabel("Divergence", fontsize=fontsize)
     plt.legend(fontsize=fontsize)
     plt.xlim([0, 6])
+    plt.savefig("figures/Divergence_pol_positions.png", format="png")
 
     plt.show()
