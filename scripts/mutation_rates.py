@@ -71,7 +71,7 @@ def plot_mutation_rates():
     Plot for the mutation rates.
     """
     rates = compute_mutation_rates()
-    labels = ["Hamming root", "Hamming subtype", "RTT", "GTR", "WH_global", "WH_subtypes", "WH_founder"]
+    labels = ["H-root", "H-subtype", "RTT", "GTR", "WH_global", "WH_subtypes", "WH_founder"]
 
     fontsize = 16
     markersize = 16
@@ -96,13 +96,13 @@ def plot_mutation_rates():
         plt.plot(3, rates["GTR"][key] * 1e4, ".", color=colors[ii + 2], markersize=markersize, label=key)
 
     # WH stuff
-    for ii, key in enumerate(["first", "second", "third"]):
+    for ii, key in enumerate(["all", "first", "second", "third"]):
         plt.plot(4, rates["WH"]["any"]["global"]["all"][key] * 1e4, ".",
-                 color=colors[ii + 3], markersize=markersize)
+                 color=colors[ii + 2], markersize=markersize)
         plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key] * 1e4, ".",
-                 color=colors[ii + 3], markersize=markersize)
+                 color=colors[ii + 2], markersize=markersize)
         plt.plot(6, rates["WH"]["founder"]["global"]["all"][key] * 1e4, ".",
-                 color=colors[ii + 3], markersize=markersize)
+                 color=colors[ii + 2], markersize=markersize)
 
     plt.xticks(range(len(labels)), labels, fontsize=fontsize, rotation=14)
     plt.ylabel("Mutation rates (per year) * e-4", fontsize=fontsize)
