@@ -64,7 +64,8 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
     average_distance_in_time = {}
     std_distance_in_time = {}
     for ii, position in enumerate(["first", "second", "third"]):
-        distance[position] = np.sum(distance_matrix[:, ii::3], axis=1, dtype=int) / distance_matrix.shape[-1]
+        distance[position] = np.sum(distance_matrix[:, ii::3], axis=1,
+                                    dtype=int) / (distance_matrix.shape[-1] / 3)
 
         # Distance average per year
         average_distance[position] = []
