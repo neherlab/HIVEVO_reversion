@@ -36,15 +36,20 @@ def compute_mutation_rates(nb_sequences=[1000, 500, 250, 125]):
 
     reference_sequence = get_reference_sequence(reference_file["root"])
     for subtype in ["B", "C"]:
+        rates["root"][subtype] = {}
         years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
-        fit = np.polyfit(years, dist, deg=1)
-        rates["root"][subtype] = fit[0]
+        for key in ["first", "second", "third", "all"]:
+            fit = np.polyfit(years, dist[key], deg=1)
+            rates["root"][subtype][key] = fit[0]
 
     for subtype in ["B", "C"]:
         reference_sequence = get_reference_sequence(reference_file[subtype])
+        rates["subtypes"][subtype] = {}
         years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
-        fit = np.polyfit(years, dist, deg=1)
-        rates["subtypes"][subtype] = fit[0]
+        for key in ["first", "second", "third", "all"]:
+            years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
+            fit = np.polyfit(years, dist, deg=1)
+            rates["subtypes"][subtype][key] = fit[0]
 
     # Rates from root to tip distance
     dates = {}
@@ -113,4 +118,11 @@ def plot_mutation_rates():
 
 
 if __name__ == '__main__':
-    plot_mutation_rates()
+    # plot_mutation_rates()
+    reference_sequence = get_reference_sequence("data/BH/intermediate_files/pol_1000_nt_muts.json")
+    years, distance, std = get_mean_distance_in_time("data/BH/alignments/to_HXB2/pol_1000.fasta",
+                                                     reference_sequence)
+    plt.figure()
+    for position in ["first", "second", "third", "all"]:
+        plt.plot(years, distance[position])
+    plt.show()
