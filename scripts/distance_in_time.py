@@ -36,8 +36,8 @@ def get_gap_mask(alignment_array, threshold=0.1):
 
 def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
     """
-    Returns the time, average distance and standard deviation of the average distance to the reference
-    sequence.
+    Computes the hamming distance to the reference_sequence. Does this for all sites, for first second and
+    third positions. Returns dictionaries average_distance_in_time[all/first/second/third]
     """
     # Checks
     assert os.path.exists(alignment_file), f"{alignment_file} doesn't exist."
@@ -56,18 +56,33 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
     # Distance to consensus sequence
     gap_mask = get_gap_mask(alignment_array)
     distance_matrix = (alignment_array != reference_sequence)[:, gap_mask]
-    distance = np.sum(distance_matrix, axis=1, dtype=int) / distance_matrix.shape[-1]
 
-    # Distance average per year
-    average_distance = []
-    std_distance = []
+    distance = {}
+    average_distance = {}
+    std_distance = {}
     years = np.unique(dates)
-    for year in years:
-        average_distance += [np.mean(distance[dates == year])]
-        std_distance += [np.std(distance[dates == year])]
+    average_distance_in_time = {}
+    std_distance_in_time = {}
+    for ii, position in enumerate(["first", "second", "third"]):
+        distance[position] = np.sum(distance_matrix[:, ii::3], axis=1, dtype=int) / distance_matrix.shape[-1]
 
-    average_distance_in_time = np.array(average_distance)
-    std_distance_in_time = np.array(std_distance)
+        # Distance average per year
+        average_distance[position] = []
+        std_distance[position] = []
+        for year in years:
+            average_distance[position] += [np.mean(distance[position][dates == year])]
+            std_distance[position] += [np.std(distance[position][dates == year])]
+
+        average_distance_in_time[position] = np.array(average_distance[position])
+        std_distance_in_time[position] = np.array(std_distance[position])
+
+    # Average over all sites
+    average_distance_in_time["all"] = (average_distance_in_time["first"] +
+                                       average_distance_in_time["second"] +
+                                       average_distance_in_time["third"]) / 3
+    std_distance_in_time["all"] = (std_distance_in_time["first"] +
+                                   std_distance_in_time["second"] +
+                                   std_distance_in_time["third"]) / 3
 
     return years, average_distance_in_time, std_distance_in_time
 
