@@ -47,8 +47,7 @@ def compute_mutation_rates(nb_sequences=[1000, 500, 250, 125]):
         rates["subtypes"][subtype] = {}
         years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
         for key in ["first", "second", "third", "all"]:
-            years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
-            fit = np.polyfit(years, dist, deg=1)
+            fit = np.polyfit(years, dist[key], deg=1)
             rates["subtypes"][subtype][key] = fit[0]
 
     # Rates from root to tip distance
@@ -79,35 +78,38 @@ def plot_mutation_rates():
     labels = ["H-root", "H-subtype", "RTT", "GTR", "WH_global", "WH_subtypes", "WH_founder"]
 
     fontsize = 16
-    markersize = 16
-    colors = ["C0", "C1", "C2", "C3", "C4", "C5", "C6"]
-    cmap = matplotlib.cm.get_cmap('viridis')
-    cmap_colors = [cmap(x) for x in np.linspace(0, 1, len(rates["rtt"].keys()))]
+    markersize = 8
+    colors = ["k", "C0", "C1", "C2", "C3", "C4", "C5", "C6"]
+    cmap = matplotlib.cm.get_cmap('Purples')
+    cmap_colors = [cmap(x) for x in np.linspace(1, 0.3, len(rates["rtt"].keys()))]
 
     plt.figure(figsize=(10, 7))
     # BH stuff
     for ii, key in enumerate(["root", "subtypes"]):
-        if ii:
-            plt.plot(ii, rates[key]["B"] * 1e4, '.', color="C0", markersize=markersize, label="B")
-            plt.plot(ii, rates[key]["C"] * 1e4, '.', color="C1", markersize=markersize, label="C")
-        else:
-            plt.plot(ii, rates[key]["B"] * 1e4, '.', color="C0", markersize=markersize)
-            plt.plot(ii, rates[key]["C"] * 1e4, '.', color="C1", markersize=markersize)
+        for jj, key2 in enumerate(["all", "first", "second", "third"]):
+            if ii == 0 and jj == 0:  # For labelling
+                plt.plot(ii, rates[key]["B"][key2] * 1e4, 'o',
+                         color=colors[jj], markersize=markersize, label="B")
+                plt.plot(ii, rates[key]["C"][key2] * 1e4, 'X',
+                         color=colors[jj], markersize=markersize, label="C")
+            else:
+                plt.plot(ii, rates[key]["B"][key2] * 1e4, 'o', color=colors[jj], markersize=markersize)
+                plt.plot(ii, rates[key]["C"][key2] * 1e4, 'X', color=colors[jj], markersize=markersize)
 
     for ii, key in enumerate(rates["rtt"].keys()):
-        plt.plot(2, rates["rtt"][key] * 1e4, '.', color=cmap_colors[ii], markersize=markersize, label=key)
+        plt.plot(2, rates["rtt"][key] * 1e4, 'o', color=cmap_colors[ii], markersize=markersize, label=key)
 
     for ii, key in enumerate(rates["GTR"].keys()):
-        plt.plot(3, rates["GTR"][key] * 1e4, ".", color=colors[ii + 2], markersize=markersize, label=key)
+        plt.plot(3, rates["GTR"][key] * 1e4, "o", color=colors[ii], markersize=markersize, label=key)
 
     # WH stuff
     for ii, key in enumerate(["all", "first", "second", "third"]):
-        plt.plot(4, rates["WH"]["any"]["global"]["all"][key] * 1e4, ".",
-                 color=colors[ii + 2], markersize=markersize)
-        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key] * 1e4, ".",
-                 color=colors[ii + 2], markersize=markersize)
-        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key] * 1e4, ".",
-                 color=colors[ii + 2], markersize=markersize)
+        plt.plot(4, rates["WH"]["any"]["global"]["all"][key] * 1e4, 'o',
+                 color=colors[ii], markersize=markersize)
+        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key] * 1e4, 'o',
+                 color=colors[ii], markersize=markersize)
+        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key] * 1e4, 'o',
+                 color=colors[ii], markersize=markersize)
 
     plt.xticks(range(len(labels)), labels, fontsize=fontsize, rotation=14)
     plt.ylabel("Mutation rates (per year) * e-4", fontsize=fontsize)
@@ -118,11 +120,4 @@ def plot_mutation_rates():
 
 
 if __name__ == '__main__':
-    # plot_mutation_rates()
-    reference_sequence = get_reference_sequence("data/BH/intermediate_files/pol_1000_nt_muts.json")
-    years, distance, std = get_mean_distance_in_time("data/BH/alignments/to_HXB2/pol_1000.fasta",
-                                                     reference_sequence)
-    plt.figure()
-    for position in ["first", "second", "third", "all"]:
-        plt.plot(years, distance[position])
-    plt.show()
+    plot_mutation_rates()
