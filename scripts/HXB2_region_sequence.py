@@ -1,8 +1,7 @@
 # Script to create the HXB2 sequences for each region (env pol and gag) from the HIVevo references
-import filenames
+import filenames  # link to the hivevo_access folder
 from hivevo.patients import Patient
 from Bio import SeqIO
-import numpy as np
 
 if __name__ == '__main__':
     ref_sequence = SeqIO.read("data/BH/reference/HXB2.fasta", format="fasta")

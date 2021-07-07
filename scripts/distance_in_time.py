@@ -50,8 +50,9 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
     subtypes = np.array([name.split(".")[0] for name in names])
 
     # Selecting subtype
-    alignment_array = alignment_array[subtypes == subtype]
-    dates = dates[subtypes == subtype]
+    if subtype != "":
+        alignment_array = alignment_array[subtypes == subtype]
+        dates = dates[subtypes == subtype]
 
     # Distance to consensus sequence
     gap_mask = get_gap_mask(alignment_array)
@@ -156,9 +157,9 @@ def plot_mean_distance_in_time(consensus="global", savefig=False):
             reference_sequence = get_reference_sequence(reference_file[subtype])
 
         years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
-        fit = np.polyfit(years, dist, deg=1)
+        fit = np.polyfit(years, dist["all"], deg=1)
         # fit = np.polyfit(years[std != 0], dist[std != 0], deg=1, w=(1 / std[std != 0]))
-        plt.errorbar(years, dist, yerr=std, fmt=".", label=subtype, color=colors[c])
+        plt.errorbar(years, dist["all"], yerr=std["all"], fmt=".", label=subtype, color=colors[c])
         plt.plot(years, np.polyval(fit, years), "--",
                  color=colors[c], label=f"{round(fit[0],5)}x + {round(fit[1],5)}")
         c += 1
