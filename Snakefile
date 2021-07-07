@@ -1,4 +1,6 @@
 NB_SEQUENCES = [1000, 500, 250, 125]
+REGIONS = ["env", "pol", "gag"]
+SUBTYPES = ["B", "C"]
 
 wildcard_constraints:
     region = "(env|pol|gag)",
@@ -28,9 +30,18 @@ rule figure_mut_rate:
         alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta",
         tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk",
         reference_files_root = expand("data/BH/intermediate_files/pol_{nb}_nt_muts.json", nb=NB_SEQUENCES),
-        branch_length_file = expand("data/BH/intermediate_files/branch_lengths_pol_{nb}.json", nb=NB_SEQUENCES),
+        branch_length_file = expand(
+            "data/BH/intermediate_files/branch_lengths_pol_{nb}.json", nb=NB_SEQUENCES),
         mutation_rates_file = expand("data/BH/mutation_rates/pol_{nb}.json", nb=NB_SEQUENCES)
 
+rule figure_distance:
+    message:
+        """
+        Creating the files for the BH distance in time figure.
+        """
+    input:
+        reference_files = expand("data/BH/alignments/to_HXB2/{region}_1000_consensus.fasta", region=REGIONS),
+        reference_files2 = expand("data/BH/intermediate_files/{region}_1000_nt_muts.json", region=REGIONS)
 
 rule lanl_metadata:
     message:
@@ -70,7 +81,7 @@ rule sub_sample:
 rule align:
     message:
         """
-        Aligning sequences {intput.sequences} to {input.reference} using Augur. Add HXB2 reference to
+        Aligning sequences {input.sequences} to {input.reference} using Augur. Add HXB2 reference to
         alignment and strips gaps relative to reference.
         """
     input:
