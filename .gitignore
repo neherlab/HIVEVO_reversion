@@ -1,5 +1,8 @@
 figures/
-data/
+data/*
+!data/BH
+data/BH/*
+!data/BH/reference
 scripts/__pycache__
 .snakemake
 visualisation/
