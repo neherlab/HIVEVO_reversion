@@ -1,4 +1,4 @@
-import filenames
+# import filenames
 import tools
 import json
 import numpy as np
@@ -235,7 +235,9 @@ if __name__ == '__main__':
     reference = "founder"
 
     import matplotlib.pyplot as plt
-    plt.figure()
+    plt.style.use("tex")
+
+    plt.figure(figsize=(6.5315, 4.0367))
     for ii, key in enumerate(["all", "consensus", "non_consensus"]):
         for jj, key2 in enumerate(["all", "first", "second", "third"]):
             tmp = div_dict[region][reference]["global"][key][key2]["mean"]
@@ -245,6 +247,7 @@ if __name__ == '__main__':
             plt.plot(rate_dict["time"], rate_dict[region][reference]["global"][key][key2], lines[ii],
                      color=colors[jj], label=f"{key} {key2} {estimate} {estimate2}")
     plt.legend()
+    plt.xlabel("test")
     plt.grid()
-    plt.savefig("figures/mutation_rate_divergence.png", format="png")
+    plt.savefig("figures/mutation_rate_divergence.pdf", format='pdf')
     plt.show()
