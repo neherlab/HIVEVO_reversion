@@ -71,12 +71,15 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
         # Distance average per year
         average_distance[position] = []
         std_distance[position] = []
+        nb_seq = []
         for year in years:
+            nb_seq += [distance[position][dates == year].shape[0]]
             average_distance[position] += [np.mean(distance[position][dates == year])]
             std_distance[position] += [np.std(distance[position][dates == year])]
 
         average_distance_in_time[position] = np.array(average_distance[position])
         std_distance_in_time[position] = np.array(std_distance[position])
+        nb_seq = np.array(nb_seq)
 
     # Average over all sites
     average_distance_in_time["all"] = (average_distance_in_time["first"] +
@@ -86,12 +89,12 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
                                    std_distance_in_time["second"] +
                                    std_distance_in_time["third"]) / 3
 
-    return years, average_distance_in_time, std_distance_in_time
+    return years, average_distance_in_time, std_distance_in_time, nb_seq
 
 
 def get_root_to_tip_distance(tree_file, branch_length_file):
     """
-    Computes the mean root to tipe distance for each year.
+    Computes the mean root to tip distance for each year.
     Returns a list of mean root_to_tip distance and a list of corresponding years.
     """
     # Checks
