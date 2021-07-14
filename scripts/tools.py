@@ -246,9 +246,55 @@ def site_mask(aft, position):
     return position_mask
 
 
+def load_root_sequence(root_file):
+    """
+    Loads the root sequence from the .json tree file given as argument.
+    """
+    import json
+    with open(root_file) as f:
+        data = json.load(f)
+        root_sequence = list(data["nodes"]["NODE_0000000"]["sequence"])
+    root_sequence = np.array(root_sequence)
+
+    return root_sequence
+
+
+def sequence_to_indices(sequence):
+    """
+    Returns the index version of the sequence. Translate nucleotides to numbers as in hivevo_access. A=0, C=1,
+    G=2, T=3, -=4, N=5
+    """
+    seq = np.copy(sequence)
+    for nuc, idx in zip(["A", "C", "G", "T", "-", "N"], range(6)):
+        seq[sequence == nuc] = idx
+
+    return np.array(seq, dtype=int)
+
+
+def root_mask(region, aft, root_file):
+    """
+    Returns a 1D vector of size aft.shape[-1] where True are the position that correspond to the root
+    sequence. Position that are seen too often gapped are always False.
+    """
+    import os
+    assert os.path.exists(root_file), f"File {root_file} doesn't exist."
+    root_sequence = load_root_sequence(root_file)
+    root_idxs = sequence_to_indices(root_sequence)
+
+    # ref_filter = reference_filter_mask(patient, region, aft, ref)
+    # consensus_mask = reversion_map(patient, region, aft, ref)
+    # initial_idx = patient.get_initial_indices(region)
+    # # gives reversion mask at initial majority nucleotide
+    # consensus_mask = consensus_mask[initial_idx, np.arange(aft.shape[-1])]
+
+    return root_idxs
+
+
 if __name__ == "__main__":
-    region = "env"
+    region = "pol"
     patient = Patient.load("p1")
     ref = HIVreference(subtype="any")
     aft = patient.get_allele_frequency_trajectories(region)
-    mask = reference_mask(patient, region, aft, ref)
+    root_file = "data/BH/intermediate_files/pol_1000_nt_muts.json"
+    mask = root_mask(region, aft, root_file)
+    seq = np.array(patient.get_initial_sequence(region), dtype="<U1")
