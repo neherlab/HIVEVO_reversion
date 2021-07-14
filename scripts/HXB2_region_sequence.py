@@ -8,6 +8,6 @@ if __name__ == '__main__':
     for region in ["env", "pol", "gag"]:
         patient = Patient.load("p1")  # choice of patient is irrelevant for this
         map = patient.map_to_external_reference(region)
-        region_seq = ref_sequence[map[0, 0]:map[-1, 0]]
+        region_seq = ref_sequence[map[0, 0]:map[-1, 0]+1]
         with open(f"data/BH/reference/HXB2_{region}.fasta", "w") as f:
             SeqIO.write(region_seq, f, "fasta")
