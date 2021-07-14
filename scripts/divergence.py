@@ -26,7 +26,7 @@ def divergence_in_time(patient, region, aft, div_ref):
     """
     # founder is founder sequence, any is global consensus
     assert div_ref in ["founder", "any", "B",
-                       "C"], f"Reference must be 'founder' 'any' 'B' or 'C', got {div_ref}"
+                       "C", "root"], f"Reference must be 'founder' 'any' 'B' 'C' or 'root', got {div_ref}"
 
     initial_idx = patient.get_initial_indices(region)
     if div_ref == "founder":
@@ -36,10 +36,16 @@ def divergence_in_time(patient, region, aft, div_ref):
         raw_mask = np.zeros(aft.shape[-1])
         opposite_mask = aft_initial[0]
         div_3D = divergence_matrix(aft, raw_mask, opposite_mask)
+    elif div_ref == "root":
+        ref = HIVreference(subtype="any")  # just for the mapping
+        root_file = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
+        raw_mask = tools.non_root_mask(patient, region, aft, root_file, ref)
+        opposite_mask = tools.root_mask(patient, region, aft, root_file, ref)
+        div_3D = divergence_matrix(aft, raw_mask, opposite_mask)
     else:
         ref = HIVreference(subtype=div_ref)
-        raw_mask = tools.non_reference_mask(patient, region, aft, ref)
-        opposite_mask = tools.reference_mask(patient, region, aft, ref)
+        raw_mask = tools.non_root_mask(region, aft, ref)
+        opposite_mask = tools.root_mask(region, aft, ref)
         div_3D = divergence_matrix(aft, raw_mask, opposite_mask)
 
     div = div_3D[np.arange(aft.shape[0])[:, np.newaxis, np.newaxis], initial_idx, np.arange(aft.shape[-1])]
@@ -217,37 +223,37 @@ def load_avg_rate_dict(filename):
 
 
 if __name__ == '__main__':
-    # region = "env"
-    # patient = Patient.load("p2")
+    # region = "pol"
+    # patient = Patient.load("p1")
     # aft = patient.get_allele_frequency_trajectories(region)
-    # div = mean_divergence_in_time(patient, region, aft, "founder", HIVreference(subtype="any"))
+    # div = mean_divergence_in_time(patient, region, aft, "root", HIVreference(subtype="any"))
 
-    # make_intermediate_data("data/WH/")
+    make_intermediate_data("data/WH/")
 
-    # Mutation rate plot
-    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
-    rate_dict = load_rate_dict("data/WH/rate_dict.json")
-    avg_rate_dict = load_avg_rate_dict("data/WH/avg_rate_dict.json")
-
-    lines = ["-", "--", ":"]
-    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
-    region = "pol"
-    reference = "founder"
-
-    import matplotlib.pyplot as plt
-    plt.style.use("tex")
-
-    plt.figure(figsize=(6.5315, 4.0367))
-    for ii, key in enumerate(["all", "consensus", "non_consensus"]):
-        for jj, key2 in enumerate(["all", "first", "second", "third"]):
-            tmp = div_dict[region][reference]["global"][key][key2]["mean"]
-            estimate = (tmp[20] - tmp[0]) / (2000 / 365)
-            estimate = round(estimate, 4)
-            estimate2 = round(avg_rate_dict[region][reference]["global"][key][key2], 4)
-            plt.plot(rate_dict["time"], rate_dict[region][reference]["global"][key][key2], lines[ii],
-                     color=colors[jj], label=f"{key} {key2} {estimate} {estimate2}")
-    plt.legend()
-    plt.xlabel("test")
-    plt.grid()
-    plt.savefig("figures/mutation_rate_divergence.pdf", format='pdf')
-    plt.show()
+    # # Mutation rate plot
+    # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    # rate_dict = load_rate_dict("data/WH/rate_dict.json")
+    # avg_rate_dict = load_avg_rate_dict("data/WH/avg_rate_dict.json")
+    #
+    # lines = ["-", "--", ":"]
+    # colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
+    # region = "pol"
+    # reference = "founder"
+    #
+    # import matplotlib.pyplot as plt
+    # plt.style.use("tex")
+    #
+    # plt.figure(figsize=(6.5315, 4.0367))
+    # for ii, key in enumerate(["all", "consensus", "non_consensus"]):
+    #     for jj, key2 in enumerate(["all", "first", "second", "third"]):
+    #         tmp = div_dict[region][reference]["global"][key][key2]["mean"]
+    #         estimate = (tmp[20] - tmp[0]) / (2000 / 365)
+    #         estimate = round(estimate, 4)
+    #         estimate2 = round(avg_rate_dict[region][reference]["global"][key][key2], 4)
+    #         plt.plot(rate_dict["time"], rate_dict[region][reference]["global"][key][key2], lines[ii],
+    #                  color=colors[jj], label=f"{key} {key2} {estimate} {estimate2}")
+    # plt.legend()
+    # plt.xlabel("test")
+    # plt.grid()
+    # plt.savefig("figures/mutation_rate_divergence.pdf", format='pdf')
+    # plt.show()
