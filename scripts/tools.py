@@ -271,7 +271,7 @@ def sequence_to_indices(sequence):
     return np.array(seq, dtype=int)
 
 
-def root_mask(region, aft, root_file):
+def root_mask(patient, region, aft, root_file, ref):
     """
     Returns a 1D vector of size aft.shape[-1] where True are the position that correspond to the root
     sequence. Position that are seen too often gapped are always False.
@@ -280,14 +280,39 @@ def root_mask(region, aft, root_file):
     assert os.path.exists(root_file), f"File {root_file} doesn't exist."
     root_sequence = load_root_sequence(root_file)
     root_idxs = sequence_to_indices(root_sequence)
+    initial_idxs = patient.get_initial_indices(region)
 
-    # ref_filter = reference_filter_mask(patient, region, aft, ref)
-    # consensus_mask = reversion_map(patient, region, aft, ref)
-    # initial_idx = patient.get_initial_indices(region)
-    # # gives reversion mask at initial majority nucleotide
-    # consensus_mask = consensus_mask[initial_idx, np.arange(aft.shape[-1])]
+    ref_filter = reference_filter_mask(patient, region, aft, ref)
+    root_mask = np.zeros(aft.shape[-1], dtype=bool)
+    map_to_ref = patient.map_to_external_reference(region)  # Map to HXB2 sequence
+    root_idxs_mapped = root_idxs[map_to_ref[:, 0] - map_to_ref[0, 0]]
+    initial_idxs_mapped = initial_idxs[map_to_ref[:, 2]]
+    mask = root_idxs_mapped == initial_idxs_mapped
+    root_mask[map_to_ref[:, 2][mask]] = True
 
-    return root_idxs
+    return np.logical_and(root_mask, ref_filter)
+
+
+def non_root_mask(patient, region, aft, root_file, ref):
+    """
+    Returns a 1D vector of size aft.shape[-1] where True are the position that correspond to the root
+    sequence. Position that are seen too often gapped are always False.
+    """
+    import os
+    assert os.path.exists(root_file), f"File {root_file} doesn't exist."
+    root_sequence = load_root_sequence(root_file)
+    root_idxs = sequence_to_indices(root_sequence)
+    initial_idxs = patient.get_initial_indices(region)
+
+    ref_filter = reference_filter_mask(patient, region, aft, ref)
+    root_mask = np.zeros(aft.shape[-1], dtype=bool)
+    map_to_ref = patient.map_to_external_reference(region)  # Map to HXB2 sequence
+    root_idxs_mapped = root_idxs[map_to_ref[:, 0] - map_to_ref[0, 0]]
+    initial_idxs_mapped = initial_idxs[map_to_ref[:, 2]]
+    mask = root_idxs_mapped == initial_idxs_mapped
+    root_mask[map_to_ref[:, 2][mask]] = True
+
+    return np.logical_and(~root_mask, ref_filter)
 
 
 if __name__ == "__main__":
@@ -296,5 +321,22 @@ if __name__ == "__main__":
     ref = HIVreference(subtype="any")
     aft = patient.get_allele_frequency_trajectories(region)
     root_file = "data/BH/intermediate_files/pol_1000_nt_muts.json"
-    mask = root_mask(region, aft, root_file)
-    seq = np.array(patient.get_initial_sequence(region), dtype="<U1")
+    root_mask = root_mask(patient, region, aft, root_file, ref)
+    non_root_mask = non_root_mask(patient, region, aft, root_file, ref)
+
+    for p in ["p1", "p2", "p3", "p4", "p5"]:
+        print(f"Patient {p}")
+        patient = Patient.load(p)
+        map_to_ref = patient.map_to_external_reference(region)
+        consensus_sequence = ref.get_consensus_in_patient_region(map_to_ref)
+        consensus_sequence = np.array(consensus_sequence, dtype="<U1")
+        root_sequence = load_root_sequence(root_file)
+        root_sequence = root_sequence[map_to_ref[:, 0] - map_to_ref[0, 0]]
+        patient_sequence = np.array(patient.get_initial_sequence(region), dtype="<U1")
+        patient_sequence = patient_sequence[map_to_ref[:, 2]]
+
+        d_root_consensus = len(np.where(root_sequence != consensus_sequence)[0])
+        d_root_patient = len(np.where(root_sequence != patient_sequence)[0])
+        d_patient_consensus = len(np.where(patient_sequence != consensus_sequence)[0])
+        str = f"  root to consensus: {d_root_consensus}   root to patient {d_root_patient}   patient to consensus {d_patient_consensus}"
+        print(str)

@@ -71,7 +71,8 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
     Consensus designate the sequence from which we categorize the sites into 'consensus' and 'non_consensus'.
     """
     # founder is founder sequence, any is global consensus
-    assert reference in ["founder", "any", "subtypes"], "Reference must be 'founder' 'any' 'subtypes'"
+    assert reference in ["founder", "any", "subtypes",
+                         "root"], "Reference must be 'founder' 'any' 'subtypes' 'root'"
     assert consensus in ["global", "subtype"], "Consensus must be 'global' or 'subtype'"
     patient_names = copy.copy(patient_names)
 
@@ -135,14 +136,14 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
     """
     Computes the average divergence in time over patients.
     Returns a dictionary of the format:
-        divergence[env/pol/gag][founder/any/subtypes][global/subtype][all/consensus/non_consensus][all/first/second/third][mean/std]
+        divergence[env/pol/gag][founder/any/subtypes/root][global/subtype][all/consensus/non_consensus][all/first/second/third][mean/std]
     There is also the entry for the time vector : divergence[time]
     """
     div_dict = {}
 
     for region in ["env", "pol", "gag"]:
         div_dict[region] = {}
-        for reference in ["founder", "any", "subtypes"]:
+        for reference in ["founder", "any", "subtypes", "root"]:
             div_dict[region][reference] = {}
             for consensus in ["global", "subtype"]:
                 print(f"Computing bootstrapped divergence for {region} {reference} {consensus}")
