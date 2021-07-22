@@ -29,10 +29,9 @@ rule figure_mut_rate:
         reference_file_C = "data/BH/alignments/to_HXB2/pol_1000_C_consensus.fasta",
         alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta",
         tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk",
-        reference_files_root = expand("data/BH/intermediate_files/pol_{nb}_nt_muts.json", nb=NB_SEQUENCES),
-        branch_length_file = expand(
-            "data/BH/intermediate_files/branch_lengths_pol_{nb}.json", nb=NB_SEQUENCES),
-        mutation_rates_file = expand("data/BH/mutation_rates/pol_{nb}.json", nb=NB_SEQUENCES)
+        reference_files_root = "data/BH/intermediate_files/pol_1000_nt_muts.json",
+        branch_length_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json",
+        mutation_rates_file = "data/BH/mutation_rates/pol_1000.json"
 
 rule figure_distance:
     message:
