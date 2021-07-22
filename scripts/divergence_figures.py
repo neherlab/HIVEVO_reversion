@@ -4,7 +4,7 @@ import divergence
 
 if __name__ == '__main__':
     div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
-    lines = ["-", "--", ":"]
+    lines = ["-", "--", ":", "-."]
     colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
     fontsize = 16
 

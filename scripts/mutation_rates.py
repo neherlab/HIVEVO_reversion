@@ -66,7 +66,7 @@ def plot_mutation_rates():
     Plot for the mutation rates.
     """
     rates = compute_mutation_rates("pol")
-    labels = ["H-root", "H-subtype", "RTT", "GTR", "WH_global", "WH_subtypes", "WH_founder"]
+    labels = ["H-root", "H-subtype", "RTT", "GTR", "WH_root", "WH_subtypes", "WH_founder"]
 
     markersize = 5
     colors = ["k", "C0", "C1", "C2", "C3", "C4", "C5", "C6"]
@@ -74,7 +74,8 @@ def plot_mutation_rates():
     plt.figure()
     # BH stuff
     for ii, key in enumerate(["root", "subtypes"]):
-        for jj, key2 in enumerate(["all", "first", "second", "third"]):
+        # for jj, key2 in enumerate(["all", "first", "second", "third"]):
+        for jj, key2 in enumerate(["all"]):
             if ii == 0 and jj == 0:  # For labelling
                 plt.plot(ii, rates[key]["B"][key2], 's',
                          color=colors[jj], markersize=markersize, label="B")
@@ -91,7 +92,7 @@ def plot_mutation_rates():
 
     # WH stuff
     for ii, key in enumerate(["all", "first", "second", "third"]):
-        plt.plot(4, rates["WH"]["any"]["global"]["all"][key], 'o',
+        plt.plot(4, rates["WH"]["root"]["global"]["all"][key], 'o',
                  color=colors[ii], markersize=markersize)
         plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key], 'o',
                  color=colors[ii], markersize=markersize)
