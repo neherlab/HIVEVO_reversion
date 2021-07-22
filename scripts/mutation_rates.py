@@ -5,31 +5,25 @@ import numpy as np
 from Bio import AlignIO, Phylo
 from distance_in_time import get_reference_sequence, get_mean_distance_in_time, get_root_to_tip_distance
 import divergence
+plt.style.use("tex")
 
 
-def compute_mutation_rates(nb_sequences=[1000, 500, 250, 125]):
+def compute_mutation_rates(region):
     """
     Returns the mutation rates from the distance to root, distance to subtype consensus and root to tip
     distance.
     """
     # BH rate files
     reference_file = {}
-    reference_file["root"] = "data/BH/intermediate_files/pol_1000_nt_muts.json"
-    reference_file["B"] = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
-    reference_file["C"] = "data/BH/alignments/to_HXB2/pol_1000_C_consensus.fasta"
-    alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta"
-    tree_file = {}
-    branch_length_file = {}
-    for nb in nb_sequences:
-        tree_file[str(nb)] = f"data/BH/intermediate_files/timetree_pol_{nb}.nwk"
-        branch_length_file[str(nb)] = f"data/BH/intermediate_files/branch_lengths_pol_{nb}.json"
+    reference_file["root"] = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
+    reference_file["B"] = f"data/BH/alignments/to_HXB2/{region}_1000_B_consensus.fasta"
+    reference_file["C"] = f"data/BH/alignments/to_HXB2/{region}_1000_C_consensus.fasta"
+    alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
+    tree_file = f"data/BH/intermediate_files/timetree_{region}_1000.nwk"
+    branch_length_file = f"data/BH/intermediate_files/branch_lengths_{region}_1000.json"
 
     # BH GTR files
-    gtr_file = "data/BH/mutation_rates/pol_1000.json"
-
-    # WH rates
-    WH_file = "data/WH/avg_rate_dict.json"
-    WH_rate_dict = divergence.load_avg_rate_dict(WH_file)
+    gtr_file = f"data/BH/mutation_rates/{region}_1000.json"
 
     # Rates from hamming distance
     rates = {"root": {}, "subtypes": {}}
@@ -37,7 +31,7 @@ def compute_mutation_rates(nb_sequences=[1000, 500, 250, 125]):
     reference_sequence = get_reference_sequence(reference_file["root"])
     for subtype in ["B", "C"]:
         rates["root"][subtype] = {}
-        years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
+        years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
         for key in ["first", "second", "third", "all"]:
             fit = np.polyfit(years, dist[key], deg=1)
             rates["root"][subtype][key] = fit[0]
@@ -45,26 +39,23 @@ def compute_mutation_rates(nb_sequences=[1000, 500, 250, 125]):
     for subtype in ["B", "C"]:
         reference_sequence = get_reference_sequence(reference_file[subtype])
         rates["subtypes"][subtype] = {}
-        years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
+        years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
         for key in ["first", "second", "third", "all"]:
             fit = np.polyfit(years, dist[key], deg=1)
             rates["subtypes"][subtype][key] = fit[0]
 
     # Rates from root to tip distance
-    dates = {}
-    lengths = {}
-    rates["rtt"] = {}
-
-    for key in tree_file.keys():
-        dates[key], lengths[key] = get_root_to_tip_distance(tree_file[key], branch_length_file[key])
-        fit = np.polyfit(dates[key], lengths[key], deg=1)
-        rates["rtt"][key] = fit[0]
+    dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
+    fit = np.polyfit(dates, lengths, deg=1)
+    rates["rtt"] = fit[0]
 
     # BH rates from GTR estimates
     with open(gtr_file) as f:
         rates["GTR"] = json.load(f)
 
-    # WH rates from divergence
+    # WH rates
+    WH_file = "data/WH/avg_rate_dict.json"
+    WH_rate_dict = divergence.load_avg_rate_dict(WH_file)
     rates["WH"] = WH_rate_dict["pol"]
 
     return rates
@@ -74,48 +65,43 @@ def plot_mutation_rates():
     """
     Plot for the mutation rates.
     """
-    rates = compute_mutation_rates()
+    rates = compute_mutation_rates("pol")
     labels = ["H-root", "H-subtype", "RTT", "GTR", "WH_global", "WH_subtypes", "WH_founder"]
 
-    fontsize = 16
-    markersize = 8
+    markersize = 5
     colors = ["k", "C0", "C1", "C2", "C3", "C4", "C5", "C6"]
-    cmap = matplotlib.cm.get_cmap('Purples')
-    cmap_colors = [cmap(x) for x in np.linspace(1, 0.3, len(rates["rtt"].keys()))]
 
-    plt.figure(figsize=(10, 7))
+    plt.figure()
     # BH stuff
     for ii, key in enumerate(["root", "subtypes"]):
         for jj, key2 in enumerate(["all", "first", "second", "third"]):
             if ii == 0 and jj == 0:  # For labelling
-                plt.plot(ii, rates[key]["B"][key2] * 1e4, 'o',
+                plt.plot(ii, rates[key]["B"][key2], 's',
                          color=colors[jj], markersize=markersize, label="B")
-                plt.plot(ii, rates[key]["C"][key2] * 1e4, 'X',
+                plt.plot(ii, rates[key]["C"][key2], 'X',
                          color=colors[jj], markersize=markersize, label="C")
             else:
-                plt.plot(ii, rates[key]["B"][key2] * 1e4, 'o', color=colors[jj], markersize=markersize)
-                plt.plot(ii, rates[key]["C"][key2] * 1e4, 'X', color=colors[jj], markersize=markersize)
+                plt.plot(ii, rates[key]["B"][key2], 's', color=colors[jj])
+                plt.plot(ii, rates[key]["C"][key2], 'X', color=colors[jj], markersize=markersize)
 
-    for ii, key in enumerate(rates["rtt"].keys()):
-        plt.plot(2, rates["rtt"][key] * 1e4, 'o', color=cmap_colors[ii], markersize=markersize, label=key)
+    plt.plot(2, rates["rtt"], 'o', color=colors[0], markersize=markersize)
 
     for ii, key in enumerate(rates["GTR"].keys()):
-        plt.plot(3, rates["GTR"][key] * 1e4, "o", color=colors[ii], markersize=markersize, label=key)
+        plt.plot(3, rates["GTR"][key], "o", color=colors[ii], markersize=markersize, label=key)
 
     # WH stuff
     for ii, key in enumerate(["all", "first", "second", "third"]):
-        plt.plot(4, rates["WH"]["any"]["global"]["all"][key] * 1e4, 'o',
+        plt.plot(4, rates["WH"]["any"]["global"]["all"][key], 'o',
                  color=colors[ii], markersize=markersize)
-        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key] * 1e4, 'o',
+        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key], 'o',
                  color=colors[ii], markersize=markersize)
-        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key] * 1e4, 'o',
+        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key], 'o',
                  color=colors[ii], markersize=markersize)
 
-    plt.xticks(range(len(labels)), labels, fontsize=fontsize, rotation=14)
-    plt.ylabel("Mutation rates (per year) * e-4", fontsize=fontsize)
-    plt.legend(fontsize=fontsize)
-    plt.grid()
-    plt.savefig("figures/mutation_rates.png", format="png")
+    plt.xticks(range(len(labels)), labels, rotation=14)
+    plt.ylabel("Mutation rates")
+    plt.legend()
+    plt.savefig("figures/Rates.pdf")
     plt.show()
 
 

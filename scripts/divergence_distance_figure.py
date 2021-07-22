@@ -82,7 +82,7 @@ def make_figure(region, text_pos, ylim, sharey, savefig=False):
         ii += 1
 
     axs[1].set_xlabel("Time [years]")
-    if sharey:
+    if not sharey:
         axs[1].set_ylabel("Divergence")
     axs[1].legend()
     axs[1].set_xlim([-0.3, 5.5])
@@ -100,5 +100,5 @@ if __name__ == '__main__':
     sharey = {"env": False, "pol": True, "gag": True}
 
     for region in ["env", "pol", "gag"]:
-        make_figure(region, text[region], ylim[region], sharey[region])
+        make_figure(region, text[region], ylim[region], sharey[region], savefig=True)
     plt.show()
