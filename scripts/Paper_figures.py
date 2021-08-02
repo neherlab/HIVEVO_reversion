@@ -238,7 +238,6 @@ def compute_rates(region):
     years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
     for key in dist.keys():
         fit = np.polyfit(years, dist[key], deg=1)
-        print(key, fit)
         rates["root"][key] = fit[0]
 
     ref_sequence = get_reference_sequence(reference_file["B"])
@@ -313,8 +312,8 @@ if __name__ == '__main__':
     fig1 = False
     fig2 = False
     fig3 = False
-    fig4 = False
-    savefig = False
+    fig4 = True
+    savefig = True
 
     if fig1:
         text = {"env": [(2000, 0.36), (2000, 0.16), (2000, 0.03), (1.2, 0.079), (1.2, 0.045), (1.2, 0.024)],
@@ -343,5 +342,3 @@ if __name__ == '__main__':
     if fig4:
         make_figure_4("pol", savefig)
     plt.show()
-
-    rates = compute_rates("pol")
