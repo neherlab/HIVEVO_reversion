@@ -7,7 +7,7 @@ import json
 plt.style.use("tex")
 
 
-def make_figure_1(region, text_pos, ylim, sharey, savefig=False):
+def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     colors = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"]
     fill_alpha = 0.15
     figsize = (6.7315, 3)
@@ -28,8 +28,8 @@ def make_figure_1(region, text_pos, ylim, sharey, savefig=False):
 
     ii = 0
     dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
-    lengths = np.array(lengths)[dates >= 1977]
-    dates = dates[dates >= 1977]
+    lengths = np.array(lengths)[dates >= cutoff]
+    dates = dates[dates >= cutoff]
     fit = np.polyfit(dates, lengths, deg=1)
     axs[ii].plot(dates, lengths, '.', label="RTT", color=colors[ii])
     axs[ii].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
@@ -53,9 +53,10 @@ def make_figure_1(region, text_pos, ylim, sharey, savefig=False):
             reference_sequence = get_reference_sequence(ref_files[key])
             years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
 
+        dist["all"] = dist["all"][years >= cutoff]
+        years = years[years >= cutoff]
         fit = np.polyfit(years, dist["all"], deg=1)
         axs[0].plot(years, dist["all"], '.', color=colors[ii], label=key)
-        # axs[0].plot(years, np.polyval(fit, years), "-", linewidth=1, color=colors[ii])
         axs[0].plot(years, np.polyval(fit, years), "-", color=colors[ii])
         axs[0].text(text_pos[ii][0], text_pos[ii][1],
                     f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
@@ -232,21 +233,26 @@ def compute_rates(region):
     # Rates from hamming distance
     rates = {"root": {}, "subtypes": {}}
 
+    # BH to root
     reference_sequence = get_reference_sequence(reference_file["root"])
-    for subtype in ["B", "C"]:
-        rates["root"][subtype] = {}
-        years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
-        for key in ["first", "second", "third", "all"]:
-            fit = np.polyfit(years, dist[key], deg=1)
-            rates["root"][subtype][key] = fit[0]
+    years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
+    for key in dist.keys():
+        fit = np.polyfit(years, dist[key], deg=1)
+        print(key, fit)
+        rates["root"][key] = fit[0]
 
-    for subtype in ["B", "C"]:
-        reference_sequence = get_reference_sequence(reference_file[subtype])
-        rates["subtypes"][subtype] = {}
-        years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
-        for key in ["first", "second", "third", "all"]:
-            fit = np.polyfit(years, dist[key], deg=1)
-            rates["subtypes"][subtype][key] = fit[0]
+    ref_sequence = get_reference_sequence(reference_file["B"])
+    years, dist, std, nb = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="B")
+    ref_sequence = get_reference_sequence(reference_file["C"])
+    years2, dist2, std2, nb2 = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="C")
+
+    # Averaging the subtypes distance
+    for key in dist.keys():
+        idxs = np.isin(years, years2)
+        dist[key][idxs] = (nb[idxs] * dist[key][idxs] + nb2 *
+                           dist2[key]) / (nb[idxs] + nb2)
+        fit = np.polyfit(years, dist[key], deg=1)
+        rates["subtypes"][key] = fit[0]
 
     # Rates from root to tip distance
     dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
@@ -270,7 +276,7 @@ def make_figure_4(region, savefig=False):
     Plot for the mutation rates.
     """
     markersize = 5
-    colors = ["k", "C0", "C1", "C2", "C3", "C4", "C5", "C6"]
+    colors = {"all": "k", "first": "C0", "second": "C1", "third": "C2"}
     labels = ["H-root", "H-subtype", "RTT", "GTR", "WH_root", "WH_subtypes", "WH_founder"]
 
     rates = compute_rates(region)
@@ -278,23 +284,22 @@ def make_figure_4(region, savefig=False):
     plt.figure()
     # BH stuff
     for ii, key in enumerate(["root", "subtypes"]):
-        # for jj, key2 in enumerate(["all", "first", "second", "third"]):
-        for jj, key2 in enumerate(["first", "second", "third", "all"]):
-            plt.plot(ii, rates[key]["B"][key2], 'o', color=colors[jj])
+        for key2 in ["all", "first", "second", "third"]:
+            plt.plot(ii, rates[key][key2], 'o', color=colors[key2])
 
-    plt.plot(2, rates["rtt"], 'o', color=colors[0], markersize=markersize)
+    plt.plot(2, rates["rtt"], 'o', color=colors["all"], markersize=markersize)
 
-    for ii, key in enumerate(rates["GTR"].keys()):
-        plt.plot(3, rates["GTR"][key], "o", color=colors[ii], markersize=markersize, label=key)
+    for key in rates["GTR"].keys():
+        plt.plot(3, rates["GTR"][key], "o", color=colors[key], markersize=markersize, label=key)
 
     # WH stuff
-    for ii, key in enumerate(["all", "first", "second", "third"]):
-        plt.plot(4, rates["WH"]["root"]["global"]["all"][key], 'o',
-                 color=colors[ii], markersize=markersize)
-        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key], 'o',
-                 color=colors[ii], markersize=markersize)
-        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key], 'o',
-                 color=colors[ii], markersize=markersize)
+    for key in ["all", "first", "second", "third"]:
+        plt.plot(4, rates["WH"]["root"]["global"]["all"][key],
+                 'o', color=colors[key], markersize=markersize)
+        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key],
+                 'o', color=colors[key], markersize=markersize)
+        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key],
+                 'o', color=colors[key], markersize=markersize)
 
     plt.xticks(range(len(labels)), labels, rotation=14)
     plt.ylabel("Mutation rates")
@@ -305,7 +310,10 @@ def make_figure_4(region, savefig=False):
 
 
 if __name__ == '__main__':
-    fig1, fig2, fig3, fig4 = False, False, False, True
+    fig1 = False
+    fig2 = False
+    fig3 = False
+    fig4 = False
     savefig = False
 
     if fig1:
@@ -335,3 +343,5 @@ if __name__ == '__main__':
     if fig4:
         make_figure_4("pol", savefig)
     plt.show()
+
+    rates = compute_rates("pol")

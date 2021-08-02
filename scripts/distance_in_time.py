@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from Bio import AlignIO, Phylo
+import tools
 
 
 def get_reference_sequence(filename):
@@ -34,13 +35,14 @@ def get_gap_mask(alignment_array, threshold=0.1):
     return gap_proportion < threshold
 
 
-def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
+def get_mean_distance_in_time(alignment_file, reference_sequence, subtype=""):
     """
     Computes the hamming distance to the reference_sequence. Does this for all sites, for first second and
     third positions. Returns dictionaries average_distance_in_time[all/first/second/third]
     """
     # Checks
     assert os.path.exists(alignment_file), f"{alignment_file} doesn't exist."
+    assert type(reference_sequence) == np.ndarray, f"reference sequence must be a numpy array."
 
     # Data loading
     alignment = AlignIO.read(alignment_file, "fasta")
@@ -56,6 +58,7 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
 
     # Distance to consensus sequence
     gap_mask = get_gap_mask(alignment_array)
+    # Changes the shape so I have to do the same for the position mask
     distance_matrix = (alignment_array != reference_sequence)[:, gap_mask]
 
     distance = {}
@@ -65,7 +68,9 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype="B"):
     average_distance_in_time = {}
     std_distance_in_time = {}
     for ii, position in enumerate(["first", "second", "third"]):
-        distance[position] = np.sum(distance_matrix[:, ii::3], axis=1,
+        position_mask = tools.site_mask(alignment_array, ii + 1)
+        position_mask = position_mask[gap_mask]
+        distance[position] = np.sum(distance_matrix[:, position_mask], axis=1,
                                     dtype=int) / (distance_matrix.shape[-1] / 3)
 
         # Distance average per year
@@ -209,9 +214,13 @@ def plot_root_to_tip(savefig):
 
 
 if __name__ == '__main__':
-    savefig = False
-    plot_mean_distance_in_time("global", savefig)
-    plot_mean_distance_in_time("root", savefig)
-    plot_mean_distance_in_time("subtypes", savefig)
-    plot_root_to_tip(savefig)
-    plt.show()
+    # savefig = False
+    # plot_mean_distance_in_time("global", savefig)
+    # plot_mean_distance_in_time("root", savefig)
+    # plot_mean_distance_in_time("subtypes", savefig)
+    # plot_root_to_tip(savefig)
+    # plt.show()
+
+    reference_sequence = get_reference_sequence("data/BH/intermediate_files/pol_1000_nt_muts.json")
+    years, dist, _, _ = get_mean_distance_in_time(
+        "data/BH/alignments/to_HXB2/pol_1000.fasta", reference_sequence)
