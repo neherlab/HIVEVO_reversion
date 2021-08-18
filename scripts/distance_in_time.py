@@ -38,7 +38,7 @@ def get_gap_mask(alignment_array, threshold=0.1):
 def get_mean_distance_in_time(alignment_file, reference_sequence, subtype=""):
     """
     Computes the hamming distance to the reference_sequence. Does this for all sites, for first second and
-    third positions. Returns dictionaries average_distance_in_time[all/first/second/third]
+    third positions. Returns dictionaries with format average_distance_in_time[all/first/second/third].
     """
     # Checks
     assert os.path.exists(alignment_file), f"{alignment_file} doesn't exist."
@@ -115,8 +115,8 @@ def get_root_to_tip_distance(tree_file, branch_length_file):
         nodes = file["nodes"]
 
     # Replacing the branch length by the mutation_length entry of the branch_length_file
-    for tip in tips:
-        tip.branch_length = nodes[tip.name]["mutation_length"]
+    for clade in list(tree.find_clades()):
+        clade.branch_length = nodes[clade.name]["mutation_length"]
 
     # Getting the years of the tips
     dates = []
@@ -214,13 +214,13 @@ def plot_root_to_tip(savefig):
 
 
 if __name__ == '__main__':
-    # savefig = False
+    savefig = False
     # plot_mean_distance_in_time("global", savefig)
     # plot_mean_distance_in_time("root", savefig)
     # plot_mean_distance_in_time("subtypes", savefig)
-    # plot_root_to_tip(savefig)
-    # plt.show()
+    plot_root_to_tip(savefig)
+    plt.show()
 
-    reference_sequence = get_reference_sequence("data/BH/intermediate_files/pol_1000_nt_muts.json")
-    years, dist, _, _ = get_mean_distance_in_time(
-        "data/BH/alignments/to_HXB2/pol_1000.fasta", reference_sequence)
+    # reference_sequence = get_reference_sequence("data/BH/intermediate_files/pol_1000_nt_muts.json")
+    # years, dist, _, _ = get_mean_distance_in_time(
+    #     "data/BH/alignments/to_HXB2/pol_1000.fasta", reference_sequence)
