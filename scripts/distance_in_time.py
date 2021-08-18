@@ -125,12 +125,16 @@ def get_root_to_tip_distance(tree_file, branch_length_file):
         dates += [int(date)]
     dates = np.unique(dates)
 
+    # mean_lengths = [tree.distance(tip) for tip in tips]
+
     mean_lengths = []
+    std_lengths = []
     for date in dates:
         lengths = [tree.distance(tip) for tip in tips if int(tip.name.split(".")[2]) == date]
         mean_lengths += [np.mean(lengths)]
+        std_lengths += [np.std(lengths)]
 
-    return dates, mean_lengths
+    return dates, mean_lengths, std_lengths
 
 
 def plot_mean_distance_in_time(consensus="global", savefig=False):
@@ -198,7 +202,7 @@ def plot_root_to_tip(savefig):
     branch_length_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json"
     fontsize = 16
 
-    dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
+    dates, lengths, errors = get_root_to_tip_distance(tree_file, branch_length_file)
 
     plt.figure()
     plt.plot(dates, lengths, '.', label="Data")
