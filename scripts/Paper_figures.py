@@ -27,12 +27,14 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
 
     ii = 0
-    dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
+    dates, lengths, errors = get_root_to_tip_distance(tree_file, branch_length_file)
     lengths = np.array(lengths)[dates >= cutoff]
+    errors = np.array(errors)[dates >= cutoff]
     dates = dates[dates >= cutoff]
     fit = np.polyfit(dates, lengths, deg=1)
     axs[ii].plot(dates, lengths, '.', label="RTT", color=colors[ii])
     axs[ii].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
+    axs[ii].fill_between(dates, lengths + errors, lengths - errors, alpha=fill_alpha, color=colors[ii])
     axs[ii].text(text_pos[0][0], text_pos[0][1],
                  f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
     ii += 1
@@ -313,7 +315,7 @@ if __name__ == '__main__':
     fig2 = False
     fig3 = False
     fig4 = False
-    savefig = True
+    savefig = False
 
     if fig1:
         text = {"env": [(2000, 0.39), (2000, 0.14), (2000, 0.03), (1.2, 0.079), (1.2, 0.045), (1.2, 0.024)],
