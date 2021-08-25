@@ -3,6 +3,7 @@ import numpy as np
 
 import trajectory
 import divergence
+import distance_in_time
 from hivevo.HIVreference import HIVreference
 from hivevo.patients import Patient
 
@@ -47,13 +48,17 @@ def make_bootstrap_mean_dict(trajectory_list, nb_bootstrap=10):
     windows and rev / non_rev mutations. The trajectory list should contain the trajectories from all patients
     Keys are the following : dict["rev"/"non_rev"]["[0.2,0.4]","[0.4,0.6]","[0.6,0.8]"]
     """
-    bootstrap_dict = {"rev": {}, "non_rev": {}}
-    for mut_type in ["rev", "non_rev"]:
+    bootstrap_dict = {"rev": {}, "non_rev": {}, "syn": {}, "non_syn": {}}
+    for mut_type in ["rev", "non_rev", "syn", "non_syn"]:
         for freq_range in [[0.2, 0.4], [0.4, 0.6], [0.6, 0.8]]:
             if mut_type == "rev":
                 trajectories = [traj for traj in trajectory_list if traj.reversion]
-            else:
+            elif mut_type == "non_rev":
                 trajectories = [traj for traj in trajectory_list if ~traj.reversion]
+            elif mut_type == "syn":
+                trajectories = [traj for traj in trajectory_list if traj.synonymous]
+            elif mut_type == "non_syn":
+                trajectories = [traj for traj in trajectory_list if ~traj.synonymous]
 
             times, mean, std = bootstrap_mean_in_time(trajectories, freq_range, nb_bootstrap)
             bootstrap_dict[mut_type][str(freq_range)] = {"mean": mean, "std": std}
@@ -73,7 +78,7 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
     # founder is founder sequence, any is global consensus
     assert reference in ["founder", "any", "subtypes",
                          "root"], "Reference must be 'founder' 'any' 'subtypes' 'root'"
-    assert consensus in ["global", "subtype"], "Consensus must be 'global' or 'subtype'"
+    assert consensus in ["global", "subtype", "root"], "Consensus must be 'global' 'root' or 'subtype'"
     patient_names = copy.copy(patient_names)
 
     if reference == "subtypes" or consensus == "subtype":
@@ -92,6 +97,21 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
         # Loading reference for categorisation into consensus and non consensus sites
         if consensus == "global":
             hivreference = HIVreference(subtype="any")
+        elif consensus == "root":
+            hivreference = HIVreference(subtype="any")
+            # Small hacks to load the root sequence in this object
+            map = patient.map_to_external_reference(region)[:, 0]
+            root_sequence = distance_in_time.get_reference_sequence(
+                f"data/BH/intermediate_files/{region}_1000_nt_muts.json")
+            hivreference.consensus[map] = root_sequence.astype("S1")[map-map[0]]
+            tmp = np.zeros_like(root_sequence)
+            tmp[root_sequence == "A"] = 0
+            tmp[root_sequence == "C"] = 1
+            tmp[root_sequence == "G"] = 2
+            tmp[root_sequence == "T"] = 3
+            tmp[root_sequence == "-"] = 4
+            tmp[root_sequence == "N"] = 5
+            hivreference.consensus_indices[map] = tmp[map-map[0]]
         else:
             hivreference = HIVreference(subtype=subtypes[ii])
 
@@ -136,7 +156,7 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
     """
     Computes the average divergence in time over patients.
     Returns a dictionary of the format:
-        divergence[env/pol/gag][founder/any/subtypes/root][global/subtype][all/consensus/non_consensus][all/first/second/third][mean/std]
+        divergence[env/pol/gag][founder/any/subtypes/root][global/subtype/root][all/consensus/non_consensus][all/first/second/third][mean/std]
     There is also the entry for the time vector : divergence[time]
     """
     div_dict = {}
@@ -145,7 +165,7 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
         div_dict[region] = {}
         for reference in ["founder", "any", "subtypes", "root"]:
             div_dict[region][reference] = {}
-            for consensus in ["global", "subtype"]:
+            for consensus in ["global", "subtype", "root"]:
                 print(f"Computing bootstrapped divergence for {region} {reference} {consensus}")
                 time, bootstrap_dict = bootstrap_divergence_in_time(
                     region, reference, consensus, nb_bootstrap)
@@ -156,7 +176,7 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
 
 
 if __name__ == '__main__':
-    # trajectories = trajectory.load_trajectory_list("data/Trajectory_list_any.json")
+    # trajectories = trajectory.load_trajectory_list("data/WH/Trajectory_list_any.json")
     # bootstrap_dict, times = make_bootstrap_mean_dict(trajectories)
 
     div_dict = make_bootstrap_div_dict(5)
