@@ -97,7 +97,7 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype=""):
     return years, average_distance_in_time, std_distance_in_time, nb_seq
 
 
-def get_root_to_tip_distance(tree_file, branch_length_file):
+def get_root_to_tip_distance(tree_file, branch_length_file, subtype=""):
     """
     Computes the mean root to tip distance for each year.
     Returns a list of mean root_to_tip distance and a list of corresponding years.
@@ -109,6 +109,8 @@ def get_root_to_tip_distance(tree_file, branch_length_file):
     # Loading the tree and branch_length file
     tree = Phylo.read(tree_file, "newick")
     tips = tree.get_terminals()
+    if subtype != "":
+        tips = [tip for tip in tips if tip.name.split('.')[0] == subtype]
 
     with open(branch_length_file) as f:
         file = json.load(f)

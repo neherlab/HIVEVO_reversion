@@ -436,7 +436,7 @@ def offset_trajectories(trajectories, freq_range):
 
 
 if __name__ == "__main__":
-    make_intermediate_data()
+    make_intermediate_data("data/WH/")
 
     # Not equal because reference (and hence reference mask) is not the same
     # trajectories = create_all_patient_trajectories("env", "any")

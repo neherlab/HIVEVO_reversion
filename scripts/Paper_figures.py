@@ -27,7 +27,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
 
     ii = 0
-    dates, lengths, errors = get_root_to_tip_distance(tree_file, branch_length_file)
+    dates, lengths, errors = get_root_to_tip_distance(tree_file, branch_length_file, subtype="")
     lengths = np.array(lengths)[dates >= cutoff]
     errors = np.array(errors)[dates >= cutoff]
     dates = dates[dates >= cutoff]
@@ -51,9 +51,11 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
                 idxs = np.isin(years, years2)
                 dist[key2][idxs] = (nb[idxs] * dist[key2][idxs] + nb2 *
                                     dist2[key2]) / (nb[idxs] + nb2)
+
         else:
             reference_sequence = get_reference_sequence(ref_files[key])
-            years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
+            years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence, subtype="")
+            # years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
 
         dist["all"] = dist["all"][years >= cutoff]
         years = years[years >= cutoff]
@@ -112,8 +114,8 @@ def make_figure_2(region, text, savefig=False):
     # Left plot
     labels = ["all", "consensus", "non-consensus"]
     for ii, key in enumerate(["all", "consensus", "non_consensus"]):
-        data = div_dict[region]["founder"]["global"][key]["all"]["mean"][idxs]
-        std = div_dict[region]["founder"]["global"][key]["all"]["std"][idxs]
+        data = div_dict[region]["founder"]["subtype"][key]["all"]["mean"][idxs]
+        std = div_dict[region]["founder"]["subtype"][key]["all"]["std"][idxs]
 
         axs[0].plot(time, data, lines[ii], color=colors[ii], label=labels[ii])
         axs[0].fill_between(time, data + std, data - std, color=colors[ii], alpha=fill_alpha)
@@ -129,8 +131,8 @@ def make_figure_2(region, text, savefig=False):
     # Right plot
     for ii, key in enumerate(["consensus", "non_consensus"]):
         for jj, key2 in enumerate(["first", "second", "third"]):
-            data = div_dict["pol"]["founder"]["global"][key][key2]["mean"][idxs]
-            std = div_dict[region]["founder"]["global"][key][key2]["std"][idxs]
+            data = div_dict["pol"]["founder"]["subtype"][key][key2]["mean"][idxs]
+            std = div_dict[region]["founder"]["subtype"][key][key2]["std"][idxs]
             axs[1].plot(time, data, lines[ii + 1], color=colors[jj + 3])
             axs[1].fill_between(time, data + std, data - std, color=colors[jj + 3], alpha=fill_alpha)
     axs[1].text(text[2][1][0], text[2][1][1], text[2][0], color=colors[3])
@@ -256,7 +258,7 @@ def compute_rates(region):
         rates["subtypes"][key] = fit[0]
 
     # Rates from root to tip distance
-    dates, lengths = get_root_to_tip_distance(tree_file, branch_length_file)
+    dates, lengths, err = get_root_to_tip_distance(tree_file, branch_length_file)
     fit = np.polyfit(dates, lengths, deg=1)
     rates["rtt"] = fit[0]
 
@@ -310,11 +312,76 @@ def make_figure_4(region, savefig=False):
     plt.show()
 
 
+def make_figure_5(savefig=False):
+    reference = "any"  # "any" or "subtypes"
+    fill_alpha = 0.15
+    figsize = (6.7315, 3)
+    colors = ["C0", "C1", "C2", "C4"]
+
+    trajectory_file = f"data/WH/Trajectory_list_{reference}.json"
+    mean_in_time_file = f"data/WH/bootstrap_mean_dict_{reference}.json"
+
+    # Data loading
+    trajectories = trajectory.load_trajectory_list(trajectory_file)
+    times = trajectory.create_time_bins(400)
+    times = 0.5 * (times[:-1] + times[1:]) / 365  # In years
+    bootstrap_dict = trajectory.load_mean_in_time_dict(mean_in_time_file)
+
+    # Selecting reversion trajectories in [0.4, 0.6] for left pannel
+    freq_ranges = [[0.2, 0.4], [0.4, 0.6], [0.6, 0.8]]
+    trajectories_scheme = [traj for traj in trajectories if traj.synonymous]
+    trajectories_scheme = trajectory.offset_trajectories(trajectories_scheme, [0.4, 0.6])
+
+    fig, axs = plt.subplots(ncols=2, nrows=1, figsize=figsize, sharey=True, sharex=True)
+
+    # Plot left
+    for traj in trajectories_scheme:
+        axs[0].plot(traj.t / 365, traj.frequencies, "k-", alpha=0.2, linewidth=0.5)
+
+    mean = bootstrap_dict["syn"]["[0.4, 0.6]"]["mean"]
+    std = bootstrap_dict["syn"]["[0.4, 0.6]"]["std"]
+    axs[0].plot(times, mean, '-', color=colors[1])
+    axs[0].fill_between(times, mean - std, mean + std, color=colors[1], alpha=fill_alpha)
+
+    axs[0].set_xlabel("Time [years]")
+    axs[0].set_ylabel("Frequency")
+    axs[0].set_ylim([-0.03, 1.03])
+    axs[0].set_xlim([-2, 8.5])
+
+    line1, = axs[0].plot([0], [0], "k-")
+    line2, = axs[0].plot([0], [0], "-", color=colors[1])
+    axs[0].legend([line1, line2], ["Individual trajectories", "Average"], loc="lower right")
+
+    # Plot right
+    for ii, freq_range in enumerate(freq_ranges):
+        for key, line in zip(["syn", "non_syn"], ["-", "--"]):
+            mean = bootstrap_dict[key][str(freq_range)]["mean"]
+            std = bootstrap_dict[key][str(freq_range)]["std"]
+            axs[1].plot(times, mean, line, color=colors[ii])
+            axs[1].fill_between(times, mean - std, mean + std, color=colors[ii], alpha=fill_alpha)
+
+    line1, = axs[1].plot([0], [0], "k-")
+    line2, = axs[1].plot([0], [0], "k--")
+    line3, = axs[1].plot([0], [0], "-", color=colors[0])
+    line4, = axs[1].plot([0], [0], "-", color=colors[1])
+    line5, = axs[1].plot([0], [0], "-", color=colors[2])
+
+    axs[1].set_xlabel("Time [years]")
+    axs[1].set_ylim([-0.03, 1.03])
+    axs[1].legend([line3, line4, line5, line1, line2],
+                  ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "synonymous", "non-synonymous"],
+                  ncol=2, loc="upper left")
+
+    if savefig:
+        plt.savefig(f"figures/mean_in_time_syn_{reference}.pdf")
+
+
 if __name__ == '__main__':
-    fig1 = True
-    fig2 = False
+    fig1 = False
+    fig2 = True
     fig3 = False
     fig4 = False
+    fig5 = False
     savefig = False
 
     if fig1:
@@ -343,4 +410,6 @@ if __name__ == '__main__':
         make_figure_3(savefig)
     if fig4:
         make_figure_4("pol", savefig)
+    if fig5:
+        make_figure_5(savefig)
     plt.show()
