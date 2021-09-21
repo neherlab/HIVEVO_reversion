@@ -90,7 +90,8 @@ def mean_divergence_in_time(patient, region, aft, div_ref, consensus):
 
 def make_intermediate_data(folder_path):
     """
-    Creates the bootstrapped divergence in time dictionaries and saves them in the defined folder.
+    Creates the bootstrapped divergence in time dictionaries and saves them in the defined folder as
+    intermediate data for the Within Host analysis.
     """
     import bootstrap
 

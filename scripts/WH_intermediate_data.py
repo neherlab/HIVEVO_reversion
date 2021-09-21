@@ -1,7 +1,30 @@
 import trajectory
 import divergence
+import click
+import shutil
+
+WH_DATA_FOLDER = "data/WH/"
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+def make_data(folder_path=WH_DATA_FOLDER):
+    "Creates all the intermediate data necessary for the WH analysis."
+    print("--- Generating trajectory data ---")
+    trajectory.make_intermediate_data(folder_path)
+    print("--- Generating divergence data ---")
+    divergence.make_intermediate_data(folder_path)
+
+
+@cli.command()
+def clean_data(folder_path=WH_DATA_FOLDER):
+    "Removes all the intermediate data generated for the WH analysis."
+    shutil.rmtree(WH_DATA_FOLDER)
+
 
 if __name__ == '__main__':
-    folder_path = "data/WH/"
-    trajectory.make_intermediate_data(folder_path)
-    divergence.make_intermediate_data(folder_path)
+    cli()

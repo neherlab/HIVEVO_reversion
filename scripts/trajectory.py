@@ -236,7 +236,8 @@ def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[])
 
 def make_intermediate_data(folder_path):
     """
-    Creates all the intermediate data files for the Within Host analysis.
+    Creates all the intermediate data files for the trajectory Within Host analysis and saves them in the
+    defined folder.
     """
     import bootstrap
     traj_list_names = ["Trajectory_list_any", "Trajectory_list_subtypes"]
