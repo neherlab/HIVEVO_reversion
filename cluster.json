@@ -7,7 +7,7 @@
   },
   "align": {
     "time": "05:58:00",
-    "qos": "3hours",
+    "qos": "6hours",
     "n": 4,
     "mem": "12G"
   },
