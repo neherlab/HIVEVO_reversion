@@ -36,11 +36,16 @@ rule figure_mut_rate:
 rule figure_distance:
     message:
         """
-        Creating the files for the BH distance in time figure.
+        Creating the files for the BH distance in time figure left panel (figure 1 5 and 6).
         """
     input:
-        reference_files = expand("data/BH/alignments/to_HXB2/{region}_1000_consensus.fasta", region=REGIONS),
-        reference_files2 = expand("data/BH/intermediate_files/{region}_1000_nt_muts.json", region=REGIONS)
+        consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_1000_{subtype}_consensus.fasta",
+                                     region=REGIONS, subtype=SUBTYPES),
+        root_files = expand("data/BH/intermediate_files/{region}_1000_nt_muts.json", region=REGIONS),
+        tree_files = expand("data/BH/intermediate_files/timetree_{region}_.nwk", region=REGIONS),
+        branch_length_files = expand(
+            "data/BH/intermediate_files/branch_lengths_{region}_1000.json", region=REGIONS),
+        alignment_files = expand("data/BH/alignments/to_HXB2/{region}_1000.fasta", region=REGIONS)
 
 rule lanl_metadata:
     message:
@@ -302,6 +307,19 @@ rule mean_branch_length:
     shell:
         """
         python scripts/snakecommands.py mean-branch-length {input.refine_file} {output.mean_branch_length}
+        """
+
+rule HXB2_regions:
+    message: "Cutting HXB2 sequence in data/BH/reference/HXB2.fasta to the env pol and gag regions."
+    input:
+        HXB2_original = "data/BH/reference/HXB2.fasta"
+    output:
+        HXB2_env = "data/BH/reference/HXB2_env.fasta",
+        HXB2_pol = "data/BH/reference/HXB2_pol.fasta",
+        HXB2_gag = "data/BH/reference/HXB2_gag.fasta"
+    shell:
+        """
+        python scripts/HXB2_region_sequence.py
         """
 
 rule clean:
