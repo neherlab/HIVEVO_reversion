@@ -17,7 +17,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
 
     fig, axs = plt.subplots(ncols=2, nrows=1, figsize=figsize, sharey=sharey)
 
-    # BH plot pol
+    # BH plot
     ref_files = {"root": f"data/BH/intermediate_files/{region}_1000_nt_muts.json",
                  "B": f"data/BH/alignments/to_HXB2/{region}_1000_B_consensus.fasta",
                  "C": f"data/BH/alignments/to_HXB2/{region}_1000_C_consensus.fasta"}
@@ -34,9 +34,10 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     fit = np.polyfit(dates, lengths, deg=1)
     axs[ii].plot(dates, lengths, '.', label="RTT", color=colors[ii])
     axs[ii].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
-    axs[ii].fill_between(dates, lengths + errors, lengths - errors, alpha=fill_alpha, color=colors[ii])
+    # axs[ii].fill_between(dates, lengths + errors, lengths - errors, alpha=fill_alpha, color=colors[ii])
     axs[ii].text(text_pos[0][0], text_pos[0][1],
                  f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
+    axs[ii].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
     ii += 1
 
     for key in ["root", "subtypes"]:
@@ -94,12 +95,13 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
         axs[1].set_ylabel("Divergence")
     axs[1].legend()
     axs[1].set_xlim([-0.3, 5.5])
+    axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
     if savefig:
         fig.savefig(f"figures/Distance_{region}.pdf")
 
 
-def make_figure_2(region, text, savefig=False):
+def make_figure_2(region, text, savefig=False, reference="global"):
     fill_alpha = 0.15
     colors = ["C3", "C0", "C1", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
     lines = ["-", "-", "--"]
@@ -114,14 +116,16 @@ def make_figure_2(region, text, savefig=False):
     # Left plot
     labels = ["all", "consensus", "non-consensus"]
     for ii, key in enumerate(["all", "consensus", "non_consensus"]):
-        data = div_dict[region]["founder"]["root"][key]["all"]["mean"][idxs]
-        std = div_dict[region]["founder"]["root"][key]["all"]["std"][idxs]
+        data = div_dict[region]["founder"][reference][key]["all"]["mean"][idxs]
+        std = div_dict[region]["founder"][reference][key]["all"]["std"][idxs]
+        print(data[-1])
 
         axs[0].plot(time, data, lines[ii], color=colors[ii], label=labels[ii])
         axs[0].fill_between(time, data + std, data - std, color=colors[ii], alpha=fill_alpha)
 
     axs[0].text(text[0][1][0], text[0][1][1], text[0][0], color=colors[1])
     axs[0].text(text[1][1][0], text[1][1][1], text[1][0], color=colors[2])
+    axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
     axs[0].set_xlabel("Time [years]")
     axs[0].set_ylabel("Divergence from founder")
@@ -131,13 +135,14 @@ def make_figure_2(region, text, savefig=False):
     # Right plot
     for ii, key in enumerate(["consensus", "non_consensus"]):
         for jj, key2 in enumerate(["first", "second", "third"]):
-            data = div_dict["pol"]["founder"]["root"][key][key2]["mean"][idxs]
-            std = div_dict[region]["founder"]["root"][key][key2]["std"][idxs]
+            data = div_dict["pol"]["founder"][reference][key][key2]["mean"][idxs]
+            std = div_dict[region]["founder"][reference][key][key2]["std"][idxs]
             axs[1].plot(time, data, lines[ii + 1], color=colors[jj + 3])
             axs[1].fill_between(time, data + std, data - std, color=colors[jj + 3], alpha=fill_alpha)
     axs[1].text(text[2][1][0], text[2][1][1], text[2][0], color=colors[3])
     axs[1].text(text[3][1][0], text[3][1][1], text[3][0], color=colors[4])
     axs[1].text(text[4][1][0], text[4][1][1], text[4][0], color=colors[5])
+    axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
     axs[1].set_xlabel("Time [years]")
 
@@ -192,6 +197,7 @@ def make_figure_3(savegif=False):
     line1, = axs[0].plot([0], [0], "k-")
     line2, = axs[0].plot([0], [0], "-", color=colors[1])
     axs[0].legend([line1, line2], ["Individual trajectories", "Average"], loc="lower right")
+    axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
     # Plot right
     for ii, freq_range in enumerate(freq_ranges):
@@ -212,6 +218,7 @@ def make_figure_3(savegif=False):
     axs[1].legend([line3, line4, line5, line1, line2],
                   ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "reversion", "non-reversion"],
                   ncol=2, loc="lower right")
+    axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
     if savefig:
         plt.savefig(f"figures/mean_in_time_{reference}.pdf")
@@ -351,6 +358,7 @@ def make_figure_5(savefig=False):
     line1, = axs[0].plot([0], [0], "k-")
     line2, = axs[0].plot([0], [0], "-", color=colors[1])
     axs[0].legend([line1, line2], ["Individual trajectories", "Average"], loc="lower right")
+    axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
     # Plot right
     for ii, freq_range in enumerate(freq_ranges):
@@ -371,18 +379,19 @@ def make_figure_5(savefig=False):
     axs[1].legend([line3, line4, line5, line1, line2],
                   ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "synonymous", "non-synonymous"],
                   ncol=2, loc="upper left")
+    axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
     if savefig:
         plt.savefig(f"figures/mean_in_time_syn_{reference}.pdf")
 
 
 if __name__ == '__main__':
-    fig1 = False
-    fig2 = True
+    fig1 = True
+    fig2 = False
     fig3 = False
     fig4 = False
     fig5 = False
-    savefig = True
+    savefig = False
 
     if fig1:
         text = {"env": [(2000, 0.39), (2000, 0.14), (2000, 0.03), (1.2, 0.079), (1.2, 0.045), (1.2, 0.024)],
@@ -398,21 +407,24 @@ if __name__ == '__main__':
     if fig2:
         # from the fraction_consensus.py file
         # for root
-        text = {"env": [("90%", [4.1, 0.003]), ("10%", [4.1, 0.062]), ("9%", [4.1, 0.045]),
-                        ("7%", [4.1, 0.082]), ("14%", [4.1, 0.026])],
-                "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.05]), ("5%", [4.1, 0.048]),
-                        ("2%", [4.1, 0.09]), ("12%", [4.1, 0.023])],
-                "gag": [("93%", [4.1, 0.001]), ("7%", [4.1, 0.065]), ("5%", [4.1, 0.051]),
-                        ("4%", [4.1, 0.082]), ("13%", [4.1, 0.028])]}
+        # text = {"env": [("90%", [4.1, 0.003]), ("10%", [4.1, 0.062]), ("9%", [4.1, 0.045]),
+        #                 ("7%", [4.1, 0.082]), ("14%", [4.1, 0.026])],
+        #         "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.05]), ("5%", [4.1, 0.048]),
+        #                 ("2%", [4.1, 0.09]), ("12%", [4.1, 0.023])],
+        #         "gag": [("93%", [4.1, 0.001]), ("7%", [4.1, 0.065]), ("5%", [4.1, 0.051]),
+        #                 ("4%", [4.1, 0.082]), ("13%", [4.1, 0.028])]}
+        # for region in ["env", "pol", "gag"]:
+        #     make_figure_2(region, text[region], savefig, reference="root")
+
         # for global consensus
-        # text = {"env": [("92%", [4.1, 0.003]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.018]),
-        #                 ("6%", [4.1, 0.09]), ("12%", [4.1, 0.058])],
-        #         "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.054]), ("4%", [4.1, 0.048]),
-        #                 ("2%", [4.1, 0.111]), ("11%", [4.1, 0.023])],
-        #         "gag": [("93%", [4.1, 0.001]), ("7%", [4.1, 0.078]), ("5%", [4.1, 0.051]),
-        #                 ("4%", [4.1, 0.09]), ("11%", [4.1, 0.029])]}
+        text = {"env": [("92%", [4.1, 0.003]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.018]),
+                        ("6%", [4.1, 0.09]), ("12%", [4.1, 0.058])],
+                "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.054]), ("4%", [4.1, 0.048]),
+                        ("2%", [4.1, 0.111]), ("11%", [4.1, 0.023])],
+                "gag": [("93%", [4.1, 0.001]), ("7%", [4.1, 0.078]), ("5%", [4.1, 0.051]),
+                        ("4%", [4.1, 0.09]), ("11%", [4.1, 0.029])]}
         for region in ["env", "pol", "gag"]:
-            make_figure_2(region, text[region], savefig)
+            make_figure_2(region, text[region], savefig, reference="global")
 
     if fig3:
         make_figure_3(savefig)
