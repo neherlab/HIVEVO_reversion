@@ -22,7 +22,7 @@ rule figure_data:
         consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_1000_{subtype}_consensus.fasta",
                                      region=REGIONS, subtype=SUBTYPES),
         root_files = expand("data/BH/intermediate_files/{region}_1000_nt_muts.json", region=REGIONS),
-        tree_files = expand("data/BH/intermediate_files/timetree_{region}_.nwk", region=REGIONS),
+        tree_files = expand("data/BH/intermediate_files/timetree_{region}_1000.nwk", region=REGIONS),
         branch_length_files = expand(
             "data/BH/intermediate_files/branch_lengths_{region}_1000.json", region=REGIONS),
         alignment_files = expand("data/BH/alignments/to_HXB2/{region}_1000.fasta", region=REGIONS),
@@ -59,7 +59,7 @@ rule sub_sample:
         """
         python scripts/snakecommands.py subsample {input.lanl_data} {input.lanl_metadata} \
         {wildcards.nb_sequences} {output.sequences} {output.metadata} \
-        --remove_subtype_o
+        --remove_subtype_o --remove_subtype_n
         """
 
 

@@ -54,7 +54,9 @@ def metadata_from_names(sequences, output):
 @click.argument("output_sequences", type=click.Path(exists=False))
 @click.argument("output_metadata", type=click.Path(exists=False))
 @click.option("--remove_subtype_o", is_flag=True, help="Removes subtype O from the sequences.")
-def subsample(sequences, metadata, number, output_sequences, output_metadata, remove_subtype_o):
+@click.option("--remove_subtype_n", is_flag=True, help="Removes subtype N from the sequences.")
+def subsample(sequences, metadata, number, output_sequences, output_metadata,
+              remove_subtype_o, remove_subtype_n):
     """
     Subsamples the data in SEQUENCES and METADATA homegeneously in time and returns OUTPUT_SEQUENCES and
     OUTPUT_METADATA.
@@ -63,6 +65,8 @@ def subsample(sequences, metadata, number, output_sequences, output_metadata, re
     df = pd.read_csv(metadata, sep='\t')
     if remove_subtype_o:
         df = df[df["subtype"] != "O"]  # removing subtype O
+    if remove_subtype_n:
+        df = df[df["subtype"] != "N"]  # removing subtype N
     df["date"] = [int(date[:4]) for date in df["date"]]
     df = df.sort_values("date")
 
