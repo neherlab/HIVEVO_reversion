@@ -240,30 +240,39 @@ def make_intermediate_data(folder_path):
     defined folder.
     """
     import bootstrap
+    import os
     traj_list_names = ["Trajectory_list_any", "Trajectory_list_subtypes"]
     ref_subtypes = ["any", "subtypes"]
 
     for name, ref_subtype in zip(traj_list_names, ref_subtypes):
-        print(f"Creating trajectories for {ref_subtype}")
-        trajectories = create_all_patient_trajectories("env", ref_subtype) + \
-            create_all_patient_trajectories("pol", ref_subtype) + \
-            create_all_patient_trajectories("gag", ref_subtype)
+        if os.path.exists(folder_path + name + ".json"):
+            print(folder_path + name + ".json already exists, skipping computation.")
+            trajectories = load_trajectory_list(folder_path + name + ".json")
+        else:
+            print(f"Creating trajectory list for reference {ref_subtype}")
+            trajectories = create_all_patient_trajectories("env", ref_subtype) + \
+                create_all_patient_trajectories("pol", ref_subtype) + \
+                create_all_patient_trajectories("gag", ref_subtype)
 
-        print(f"Saving trajectories for {ref_subtype}")
-        with open(folder_path + name + ".json", "w") as f:
-            json.dump([traj.to_json() for traj in trajectories], f, indent=4)
+            print(f"Saving trajectories for {ref_subtype}")
+            with open(folder_path + name + ".json", "w") as f:
+                json.dump([traj.to_json() for traj in trajectories], f, indent=4)
 
-        print(f"Computing bootstrapped mean in time for {ref_subtype}")
-        bootstrap_dict, _ = bootstrap.make_bootstrap_mean_dict(trajectories, nb_bootstrap=100)
-        # json formating of numpy arrays
-        for key1 in bootstrap_dict.keys():
-            for key2 in bootstrap_dict[key1].keys():
-                bootstrap_dict[key1][key2]["mean"] = bootstrap_dict[key1][key2]["mean"].tolist()
-                bootstrap_dict[key1][key2]["std"] = bootstrap_dict[key1][key2]["std"].tolist()
+        if os.path.exists(folder_path + "bootstrap_mean_dict_" + ref_subtype + ".json"):
+            print(folder_path + "bootstrap_mean_dict_" + ref_subtype +
+                  ".json already exists, skipping computation.")
+        else:
+            print(f"Computing bootstrapped mean in time for reference {ref_subtype}")
+            bootstrap_dict, _ = bootstrap.make_bootstrap_mean_dict(trajectories, nb_bootstrap=100)
+            # json formating of numpy arrays
+            for key1 in bootstrap_dict.keys():
+                for key2 in bootstrap_dict[key1].keys():
+                    bootstrap_dict[key1][key2]["mean"] = bootstrap_dict[key1][key2]["mean"].tolist()
+                    bootstrap_dict[key1][key2]["std"] = bootstrap_dict[key1][key2]["std"].tolist()
 
-        print(f"Saving mean in time for {ref_subtype}")
-        with open(folder_path + "bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
-            json.dump(bootstrap_dict, f, indent=4)
+            print(f"Saving mean in time for {ref_subtype}")
+            with open(folder_path + "bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
+                json.dump(bootstrap_dict, f, indent=4)
 
 
 def instanciate_trajectory(traj_dict):
