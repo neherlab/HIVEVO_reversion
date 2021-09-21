@@ -94,23 +94,30 @@ def make_intermediate_data(folder_path):
     intermediate data for the Within Host analysis.
     """
     import bootstrap
+    import os
 
-    div_dict = bootstrap.make_bootstrap_div_dict(nb_bootstrap=100)
-    div_dict["time"] = (div_dict["time"] / 365).tolist()
-    for key in ["env", "pol", "gag"]:  # Region
-        for key2 in div_dict[key].keys():  # Reference to which compute the divergence
-            for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
-                for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
-                    for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        # Converting numpy to list for .json compatibility
-                        div_dict[key][key2][key3][key4][key5]["mean"] = \
-                            div_dict[key][key2][key3][key4][key5]["mean"].tolist()
-                        div_dict[key][key2][key3][key4][key5]["std"] = \
-                            div_dict[key][key2][key3][key4][key5]["std"].tolist()
+    if os.path.exists(folder_path + "bootstrap_div_dict.json"):
+        print(folder_path + "bootstrap_div_dict.json already exists, skipping computation.")
+        div_dict = load_div_dict(folder_path + "bootstrap_div_dict.json")
+    else:
+        print("Computing " + folder_path + "boostrap_div_dict.json")
+        div_dict = bootstrap.make_bootstrap_div_dict(nb_bootstrap=100)
+        div_dict["time"] = (div_dict["time"] / 365).tolist()
+        for key in ["env", "pol", "gag"]:  # Region
+            for key2 in div_dict[key].keys():  # Reference to which compute the divergence
+                for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+                    for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+                        for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
+                            # Converting numpy to list for .json compatibility
+                            div_dict[key][key2][key3][key4][key5]["mean"] = \
+                                div_dict[key][key2][key3][key4][key5]["mean"].tolist()
+                            div_dict[key][key2][key3][key4][key5]["std"] = \
+                                div_dict[key][key2][key3][key4][key5]["std"].tolist()
 
-    with open(folder_path + "bootstrap_div_dict" + ".json", "w") as f:
-        json.dump(div_dict, f, indent=4)
+        with open(folder_path + "bootstrap_div_dict.json", "w") as f:
+            json.dump(div_dict, f, indent=4)
 
+    print("Computing " + folder_path + "rate_dict.json and " + folder_path + "avg_rate_dict.json")
     rate_dict = make_rate_dict(div_dict)
     avg_rate_dict = average_rate_dict(rate_dict)
     if type(rate_dict) != "list":
