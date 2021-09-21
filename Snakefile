@@ -11,29 +11,9 @@ wildcard_constraints:
 
 rule all:
     input:
-        consensus = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta",
-        auspice_json = "visualisation/pol_1000.json",
-        rates = "data/BH/mutation_rates/pol_1000.json",
-        tree = "data/BH/intermediate_files/timetree_pol_1000.nwk",
-        branch = "data/BH/branch_lengths/pol_1000.json",
-        subtype = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
+        auspice_jsons = expand("visualisation/{region}_1000.json", region=REGIONS)
 
-
-rule figure_mut_rate:
-    message:
-        """
-        Creating the files for the mutation rate figure.
-        """
-    input:
-        reference_file_B = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta",
-        reference_file_C = "data/BH/alignments/to_HXB2/pol_1000_C_consensus.fasta",
-        alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta",
-        tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk",
-        reference_files_root = "data/BH/intermediate_files/pol_1000_nt_muts.json",
-        branch_length_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json",
-        mutation_rates_file = "data/BH/mutation_rates/pol_1000.json"
-
-rule figure_distance:
+rule figure_data:
     message:
         """
         Creating the files for the BH distance in time figure left panel (figure 1 5 and 6).
@@ -45,7 +25,8 @@ rule figure_distance:
         tree_files = expand("data/BH/intermediate_files/timetree_{region}_.nwk", region=REGIONS),
         branch_length_files = expand(
             "data/BH/intermediate_files/branch_lengths_{region}_1000.json", region=REGIONS),
-        alignment_files = expand("data/BH/alignments/to_HXB2/{region}_1000.fasta", region=REGIONS)
+        alignment_files = expand("data/BH/alignments/to_HXB2/{region}_1000.fasta", region=REGIONS),
+        gtr_files = expand("data/BH/mutation_rates/{region}_1000.json", region=REGIONS)
 
 rule lanl_metadata:
     message:
