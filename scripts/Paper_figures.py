@@ -70,10 +70,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     axs[0].set_xlabel("Sample date")
     axs[0].set_ylabel("Distance")
     axs[0].set_ylim(ylim)
-    if region == "env":
-        axs[0].legend(loc="center left")
-    else:
-        axs[0].legend()
+    axs[0].legend()
     axs[0].ticklabel_format(axis="x", style="plain")
 
     # WH plot references
@@ -118,7 +115,7 @@ def make_figure_2(region, text, savefig=False, reference="global"):
     for ii, key in enumerate(["all", "consensus", "non_consensus"]):
         data = div_dict[region]["founder"][reference][key]["all"]["mean"][idxs]
         std = div_dict[region]["founder"][reference][key]["all"]["std"][idxs]
-        print(data[-1])
+        # print(data[-1])
 
         axs[0].plot(time, data, lines[ii], color=colors[ii], label=labels[ii])
         axs[0].fill_between(time, data + std, data - std, color=colors[ii], alpha=fill_alpha)
@@ -135,7 +132,7 @@ def make_figure_2(region, text, savefig=False, reference="global"):
     # Right plot
     for ii, key in enumerate(["consensus", "non_consensus"]):
         for jj, key2 in enumerate(["first", "second", "third"]):
-            data = div_dict["pol"]["founder"][reference][key][key2]["mean"][idxs]
+            data = div_dict[region]["founder"][reference][key][key2]["mean"][idxs]
             std = div_dict[region]["founder"][reference][key][key2]["std"][idxs]
             axs[1].plot(time, data, lines[ii + 1], color=colors[jj + 3])
             axs[1].fill_between(time, data + std, data - std, color=colors[jj + 3], alpha=fill_alpha)
@@ -304,11 +301,11 @@ def make_figure_4(region, savefig=False):
 
     # WH stuff
     for key in ["all", "first", "second", "third"]:
-        plt.plot(4, rates["WH"]["root"]["global"]["all"][key],
+        plt.plot(4, rates["WH"]["root"]["global"]["all"][key]["mean"],
                  'o', color=colors[key], markersize=markersize)
-        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key],
+        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key]["mean"],
                  'o', color=colors[key], markersize=markersize)
-        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key],
+        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key]["mean"],
                  'o', color=colors[key], markersize=markersize)
 
     plt.xticks(range(len(labels)), labels, rotation=14)
@@ -386,19 +383,19 @@ def make_figure_5(savefig=False):
 
 
 if __name__ == '__main__':
-    fig1 = True
-    fig2 = False
+    fig1 = False
+    fig2 = True
     fig3 = False
     fig4 = False
     fig5 = False
     savefig = False
 
     if fig1:
-        text = {"env": [(2000, 0.39), (2000, 0.14), (2000, 0.03), (1.2, 0.079), (1.2, 0.045), (1.2, 0.024)],
-                "pol": [(2000, 0.095), (2000, 0.0585), (2000, 0.024), (1.2, 0.072), (1.2, 0.042), (1.2, 0.01)],
-                "gag": [(2000, 0.135), (2000, 0.068), (2000, 0.03), (1.2, 0.077), (1.2, 0.047), (1.2, 0.0165)]}
+        text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.079), (1.2, 0.045), (1.2, 0.024)],
+                "pol": [(2000, 0.085), (2000, 0.0578), (2000, 0.024), (1.2, 0.072), (1.2, 0.042), (1.2, 0.01)],
+                "gag": [(2000, 0.125), (2000, 0.072), (2000, 0.03), (1.2, 0.077), (1.2, 0.047), (1.2, 0.0165)]}
 
-        ylim = {"env": [0, 0.5], "pol": [0, 0.13], "gag": [0, 0.2]}
+        ylim = {"env": [0, 0.28], "pol": [0, 0.13], "gag": [0, 0.18]}
         sharey = {"env": False, "pol": True, "gag": True}
 
         for region in ["env", "pol", "gag"]:
@@ -406,6 +403,7 @@ if __name__ == '__main__':
 
     if fig2:
         # from the fraction_consensus.py file
+        #
         # for root
         # text = {"env": [("90%", [4.1, 0.003]), ("10%", [4.1, 0.062]), ("9%", [4.1, 0.045]),
         #                 ("7%", [4.1, 0.082]), ("14%", [4.1, 0.026])],
