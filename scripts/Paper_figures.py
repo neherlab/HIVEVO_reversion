@@ -273,7 +273,7 @@ def compute_rates(region):
     # WH rates
     WH_file = "data/WH/avg_rate_dict.json"
     WH_rate_dict = divergence.load_avg_rate_dict(WH_file)
-    rates["WH"] = WH_rate_dict["pol"]
+    rates["WH"] = WH_rate_dict[region]
 
     return rates
 
@@ -384,7 +384,7 @@ def make_figure_5(savefig=False):
 
 if __name__ == '__main__':
     fig1 = False
-    fig2 = True
+    fig2 = False
     fig3 = False
     fig4 = False
     fig5 = False
@@ -414,13 +414,12 @@ if __name__ == '__main__':
         # for region in ["env", "pol", "gag"]:
         #     make_figure_2(region, text[region], savefig, reference="root")
 
-        # for global consensus
-        text = {"env": [("92%", [4.1, 0.003]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.018]),
-                        ("6%", [4.1, 0.09]), ("12%", [4.1, 0.058])],
+        text = {"env": [("92%", [4.1, 0.001]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.145]),
+                        ("6%", [4.1, 0.085]), ("12%", [4.1, 0.042])],
                 "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.054]), ("4%", [4.1, 0.048]),
                         ("2%", [4.1, 0.111]), ("11%", [4.1, 0.023])],
-                "gag": [("93%", [4.1, 0.001]), ("7%", [4.1, 0.078]), ("5%", [4.1, 0.051]),
-                        ("4%", [4.1, 0.09]), ("11%", [4.1, 0.029])]}
+                "gag": [("93%", [4.1, -0.002]), ("7%", [4.1, 0.078]), ("5%", [4.1, 0.122]),
+                        ("4%", [4.1, 0.065]), ("11%", [4.1, 0.026])]}
         for region in ["env", "pol", "gag"]:
             make_figure_2(region, text[region], savefig, reference="global")
 
@@ -431,3 +430,7 @@ if __name__ == '__main__':
     if fig5:
         make_figure_5(savefig)
     plt.show()
+
+
+    WH_file = "data/WH/avg_rate_dict.json"
+    rate_dict = divergence.load_avg_rate_dict(WH_file)
