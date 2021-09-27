@@ -390,7 +390,7 @@ if __name__ == '__main__':
     fig3 = False
     fig4 = False
     fig5 = False
-    savefig = False
+    savefig = True
 
     if fig1:
         text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.079), (1.2, 0.06), (1.2, 0.028)],
