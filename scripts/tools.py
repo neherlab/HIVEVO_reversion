@@ -315,28 +315,46 @@ def non_root_mask(patient, region, aft, root_file, ref):
     return np.logical_and(~root_mask, ref_filter)
 
 
+def get_diversity(alignment_file):
+    from Bio import AlignIO
+    "Compute BH diversity at each site of the multiple sequence alignment."
+    alignment = AlignIO.read(alignment_file, "fasta")
+    alignment = np.array(alignment)
+
+    probabilities = []
+    for nuc in ["A", "T", "G", "C", "-"]:
+        probabilities += [(alignment == nuc).sum(axis=0) / alignment.shape[0]]
+    probabilities = np.array(probabilities)
+
+    eps = 1e-8
+    entropy = np.sum(probabilities * np.log(probabilities + eps), axis=0) / np.log(1 / 5)
+    entropy[entropy < eps] = 0
+    return entropy
+
+
+def mask_diversity_percentile(diversity, p_low, p_high):
+    """
+    Returns a 1D boolean vector where True are the position corresponding to BH diversity in [p_low, p_high].
+    Sites close to 0 are the lowest diversity, while sites close to 1 are the highest.
+    """
+    from scipy.stats import scoreatpercentile
+    thresholds = [scoreatpercentile(diversity, p) for p in [p_low, p_high]]
+    return np.logical_and(diversity > thresholds[0], diversity <= thresholds[1])
+
+
+def diversity_mask(patient, region, p_low, p_high):
+    """
+    Uses BH multiple sequence alignment to compute BH diversity at each site. Returns a mask of sites in the
+    quantile defined by [p_low, p_high].
+    """
+    diversity = get_diversity(f"data/BH/alignments/to_HXB2/{region}_1000.fasta")
+    mask = mask_diversity_percentile(diversity, p_low, p_high)
+    map_to_ref = patient.map_to_external_reference(region)  # Map to HXB2 sequence
+
+    return map_to_ref[:, 2][mask]
+
+
 if __name__ == "__main__":
     region = "pol"
     patient = Patient.load("p1")
-    ref = HIVreference(subtype="any")
-    aft = patient.get_allele_frequency_trajectories(region)
-    root_file = "data/BH/intermediate_files/pol_1000_nt_muts.json"
-    root_mask = root_mask(patient, region, aft, root_file, ref)
-    non_root_mask = non_root_mask(patient, region, aft, root_file, ref)
-
-    for p in ["p1", "p2", "p3", "p4", "p5"]:
-        print(f"Patient {p}")
-        patient = Patient.load(p)
-        map_to_ref = patient.map_to_external_reference(region)
-        consensus_sequence = ref.get_consensus_in_patient_region(map_to_ref)
-        consensus_sequence = np.array(consensus_sequence, dtype="<U1")
-        root_sequence = load_root_sequence(root_file)
-        root_sequence = root_sequence[map_to_ref[:, 0] - map_to_ref[0, 0]]
-        patient_sequence = np.array(patient.get_initial_sequence(region), dtype="<U1")
-        patient_sequence = patient_sequence[map_to_ref[:, 2]]
-
-        d_root_consensus = len(np.where(root_sequence != consensus_sequence)[0])
-        d_root_patient = len(np.where(root_sequence != patient_sequence)[0])
-        d_patient_consensus = len(np.where(patient_sequence != consensus_sequence)[0])
-        str = f"  root to consensus: {d_root_consensus}   root to patient {d_root_patient}   patient to consensus {d_patient_consensus}"
-        print(str)
+    mask = diversity_mask(patient, region, 0, 20)
