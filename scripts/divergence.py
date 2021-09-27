@@ -119,18 +119,25 @@ def make_intermediate_data(folder_path):
 
     print("Computing " + folder_path + "rate_dict.json and " + folder_path + "avg_rate_dict.json")
     rate_dict = make_rate_dict(div_dict)
-    avg_rate_dict = average_rate_dict(rate_dict)
-    if type(rate_dict) != "list":
+    avg_rate_dict = average_rate_dict(div_dict)
+    if type(rate_dict["time"]) != "list":
         rate_dict["time"] = rate_dict["time"].tolist()
+        avg_rate_dict["time"] = avg_rate_dict["time"].tolist()
 
     for key in ["env", "pol", "gag"]:  # Region
         for key2 in rate_dict[key].keys():  # Reference to which compute the divergence
             for key3 in rate_dict[key][key2].keys():  # Reference to define consensus and non-consensus
                 for key4 in rate_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
                     for key5 in rate_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        # Converting numpy to list for .json compatibility
-                        rate_dict[key][key2][key3][key4][key5] = \
-                            rate_dict[key][key2][key3][key4][key5].tolist()
+                        # mean, low, high (mean, mean-std, mean+std)
+                        for key6 in rate_dict[key][key2][key3][key4][key5].keys():
+                            # Converting numpy to list for .json compatibility
+                            rate_dict[key][key2][key3][key4][key5][key6] = \
+                                rate_dict[key][key2][key3][key4][key5][key6].tolist()
+                        for key6 in avg_rate_dict[key][key2][key3][key4][key5].keys():
+                            # Converting numpy to list for .json compatibility
+                            avg_rate_dict[key][key2][key3][key4][key5][key6] = \
+                                avg_rate_dict[key][key2][key3][key4][key5][key6].tolist()
 
     with open(folder_path + "rate_dict" + ".json", "w") as f:
         json.dump(rate_dict, f, indent=4)
@@ -178,30 +185,55 @@ def make_rate_dict(div_dict):
             for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
                 for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
                     for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        rate_dict[key][key2][key3][key4][key5] = np.gradient(
-                            rate_dict[key][key2][key3][key4][key5]["mean"],
-                            rate_dict["time"][1] - rate_dict["time"][0])
+                        rate_dict[key][key2][key3][key4][key5] = {}
+                        mean = div_dict[key][key2][key3][key4][key5]["mean"]
+                        std = div_dict[key][key2][key3][key4][key5]["std"]
+                        dt = div_dict["time"][1] - rate_dict["time"][0]
+
+                        rate_dict[key][key2][key3][key4][key5]["low"] = np.gradient(mean - std, dt)
+                        rate_dict[key][key2][key3][key4][key5]["mean"] = np.gradient(mean, dt)
+                        rate_dict[key][key2][key3][key4][key5]["high"] = np.gradient(mean + std, dt)
     return rate_dict
 
 
-def average_rate_dict(rate_dict, first_idx=2, last_idx=20):
+def average_rate_dict(div_dict, first_idx=0, last_idx=20):
     """
-    Average the rates for the rate dictionary between 200 and 2000 days (by default). Returns a dictionary
+    Average the rates for the rate dictionary between 0 and 2000 days (by default). Returns a dictionary
     with the same structure but with scalars instead of vectors at the leafs.
     """
     import copy
+    from scipy.optimize import curve_fit
 
-    avg_dict = copy.deepcopy(rate_dict)
-    del avg_dict["time"]
+    # avg_dict = copy.deepcopy(rate_dict)
+    # del avg_dict["time"]
+    # for key in ["env", "pol", "gag"]:  # Region
+    #     for key2 in avg_dict[key].keys():  # Reference to which compute the divergence
+    #         for key3 in avg_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+    #             for key4 in avg_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+    #                 for key5 in avg_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
+    #                     for key6 in avg_dict[key][key2][key3][key4][key5].keys():  # mean, low, high
+    #                         tmp = avg_dict[key][key2][key3][key4][key5][key6]
+    #                         rate = np.mean(tmp[first_idx:last_idx])  # between 200 and 2000 days by default
+    #                         avg_dict[key][key2][key3][key4][key5][key6] = rate
+
+    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    fit_dict = copy.deepcopy(div_dict)
+    time = div_dict["time"][:last_idx]
+    def f(x, a, b): return a * x + b  # function to fit
     for key in ["env", "pol", "gag"]:  # Region
-        for key2 in avg_dict[key].keys():  # Reference to which compute the divergence
-            for key3 in avg_dict[key][key2].keys():  # Reference to define consensus and non-consensus
-                for key4 in avg_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
-                    for key5 in avg_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        tmp = avg_dict[key][key2][key3][key4][key5]
-                        rate = np.mean(tmp[first_idx:last_idx])  # between 200 and 2000 days by default
-                        avg_dict[key][key2][key3][key4][key5] = rate
-    return avg_dict
+        for key2 in div_dict[key].keys():  # Reference to which compute the divergence
+            for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+                for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+                    for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
+                        mean = div_dict[key][key2][key3][key4][key5]["mean"][:last_idx]
+                        std = div_dict[key][key2][key3][key4][key5]["std"][:last_idx]
+                        p, pcov = curve_fit(f, time, mean, sigma=std, p0=[1e-3, 1e-3])
+                        perr = np.sqrt(np.diag(pcov))
+                        fit_dict[key][key2][key3][key4][key5] = {}
+                        fit_dict[key][key2][key3][key4][key5]["rate"] = p[0]
+                        fit_dict[key][key2][key3][key4][key5]["std"] = perr[0]
+
+    return fit_dict
 
 
 def load_rate_dict(filename):

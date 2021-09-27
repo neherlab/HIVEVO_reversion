@@ -76,15 +76,17 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     # WH plot references
     idxs = time < 5.3  # Time around which some patients stop being followed
     time = time[idxs]
+    rate_dict = divergence.load_avg_rate_dict("data/WH/avg_rate_dict.json")
     keys = ["root", "subtypes", "founder"]
     for key in keys:
         data = div_dict[region][key]["global"]["all"]["all"]["mean"][idxs]
         std = div_dict[region][key]["global"]["all"]["all"]["std"][idxs]
         axs[1].plot(time, data, "-", color=colors[ii - 2], label=key)
         axs[1].fill_between(time, data + std, data - std, color=colors[ii - 2], alpha=fill_alpha)
-        fit = np.polyfit(time, data, deg=1)
+        fit2 = rate_dict[region][key]["global"]["all"]["all"]["rate"]
+        fit2_std = rate_dict[region][key]["global"]["all"]["all"]["std"]
         axs[1].text(text_pos[ii][0], text_pos[ii][1],
-                    f"$\\propto{round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii - 2])
+                    f"$\\propto{round(fit2*1e4,1)} \pm {round(fit2_std*1e4,1)} \\cdot 10^{{-4}} t$", color=colors[ii - 2])
         ii += 1
 
     axs[1].set_xlabel("Time [years]")
@@ -301,11 +303,11 @@ def make_figure_4(region, savefig=False):
 
     # WH stuff
     for key in ["all", "first", "second", "third"]:
-        plt.plot(4, rates["WH"]["root"]["global"]["all"][key]["mean"],
+        plt.plot(4, rates["WH"]["root"]["global"]["all"][key]["rate"],
                  'o', color=colors[key], markersize=markersize)
-        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key]["mean"],
+        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key]["rate"],
                  'o', color=colors[key], markersize=markersize)
-        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key]["mean"],
+        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key]["rate"],
                  'o', color=colors[key], markersize=markersize)
 
     plt.xticks(range(len(labels)), labels, rotation=14)
@@ -383,7 +385,7 @@ def make_figure_5(savefig=False):
 
 
 if __name__ == '__main__':
-    fig1 = False
+    fig1 = True
     fig2 = False
     fig3 = False
     fig4 = False
@@ -391,7 +393,7 @@ if __name__ == '__main__':
     savefig = False
 
     if fig1:
-        text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.079), (1.2, 0.045), (1.2, 0.024)],
+        text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.079), (1.2, 0.06), (1.2, 0.028)],
                 "pol": [(2000, 0.085), (2000, 0.0578), (2000, 0.024), (1.2, 0.072), (1.2, 0.042), (1.2, 0.01)],
                 "gag": [(2000, 0.125), (2000, 0.072), (2000, 0.03), (1.2, 0.077), (1.2, 0.047), (1.2, 0.0165)]}
 
@@ -432,5 +434,5 @@ if __name__ == '__main__':
     plt.show()
 
 
-    WH_file = "data/WH/avg_rate_dict.json"
-    rate_dict = divergence.load_avg_rate_dict(WH_file)
+    # WH_file = "data/WH/avg_rate_dict.json"
+    # rate_dict = divergence.load_avg_rate_dict(WH_file)
