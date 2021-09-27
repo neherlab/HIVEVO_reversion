@@ -125,26 +125,26 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
         # Interpolation of divergence value as samples are not homogeneous in time. Fine because monotonic
         for key in ["all", "consensus", "non_consensus"]:
             patient_div_dict[patient_name][key] = {}
-            for key2 in ["all", "first", "second", "third"]:
+            for key2 in tmp_div_dict[key].keys():
                 patient_div_dict[patient_name][key][key2] = np.interp(
                     time, patient.dsi, tmp_div_dict[key][key2])
 
     # Initializing dictionary to store the different bootstrap values
     means = {"all": {}, "consensus": {}, "non_consensus": {}}
     for key in means.keys():
-        for key2 in ["all", "first", "second", "third"]:
+        for key2 in tmp_div_dict[key].keys():
             means[key][key2] = []
 
     for ii in range(nb_bootstrap):
         bootstrap_names = bootstrap_patient_names(patient_names)
         for key in ["all", "consensus", "non_consensus"]:
-            for key2 in ["all", "first", "second", "third"]:
+            for key2 in means[key].keys():
                 divergences = np.array([patient_div_dict[name][key][key2] for name in bootstrap_names])
                 means[key][key2] += [np.mean(divergences, axis=0)]
 
     bootstrapped_dict = {"all": {}, "consensus": {}, "non_consensus": {}}
     for key in ["all", "consensus", "non_consensus"]:
-        for key2 in ["all", "first", "second", "third"]:
+        for key2 in means[key].keys():
             bootstrapped_dict[key][key2] = {}
             bootstrapped_dict[key][key2]["mean"] = np.mean(means[key][key2], axis=0)
             bootstrapped_dict[key][key2]["std"] = np.std(means[key][key2], axis=0)
@@ -176,7 +176,17 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
 
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     # trajectories = trajectory.load_trajectory_list("data/WH/Trajectory_list_any.json")
     # bootstrap_dict, times = make_bootstrap_mean_dict(trajectories)
 
-    div_dict = make_bootstrap_div_dict(5)
+    # div_dict = make_bootstrap_div_dict(5)
+
+    time, bootstrapped_dict = bootstrap_divergence_in_time("pol", "founder", "global")
+
+    plt.figure()
+    for key in bootstrapped_dict["all"].keys():
+        plt.plot(time, bootstrapped_dict["all"][key]["mean"], label=key)
+    plt.legend()
+    plt.grid()
+    plt.show()

@@ -64,13 +64,23 @@ def mean_divergence_in_time(patient, region, aft, div_ref, consensus):
     first_mask = tools.site_mask(aft, 1)
     second_mask = tools.site_mask(aft, 2)
     third_mask = tools.site_mask(aft, 3)
+    mask_20 = tools.diversity_mask(patient, region, 0, 20)
+    mask_40 = tools.diversity_mask(patient, region, 20, 40)
+    mask_60 = tools.diversity_mask(patient, region, 40, 60)
+    mask_80 = tools.diversity_mask(patient, region, 60, 80)
+    mask_100 = tools.diversity_mask(patient, region, 80, 100)
 
     div_dict = {}
     div_dict["all"] = {
         "all": np.mean(divergence, axis=1),
         "first": np.mean(divergence[:, first_mask], axis=1),
         "second": np.mean(divergence[:, second_mask], axis=1),
-        "third": np.mean(divergence[:, third_mask], axis=1)
+        "third": np.mean(divergence[:, third_mask], axis=1),
+        "0-20%": np.mean(divergence[:, mask_20], axis=1),
+        "20-40%": np.mean(divergence[:, mask_40], axis=1),
+        "40-60%": np.mean(divergence[:, mask_60], axis=1),
+        "60-80%": np.mean(divergence[:, mask_80], axis=1),
+        "80-100%": np.mean(divergence[:, mask_100], axis=1)
     }
     div_dict["consensus"] = {
         "all": np.mean(divergence[:, consensus_mask], axis=1),
