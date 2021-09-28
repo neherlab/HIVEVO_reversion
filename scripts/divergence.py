@@ -64,11 +64,11 @@ def mean_divergence_in_time(patient, region, aft, div_ref, consensus):
     first_mask = tools.site_mask(aft, 1)
     second_mask = tools.site_mask(aft, 2)
     third_mask = tools.site_mask(aft, 3)
-    mask_20 = tools.diversity_mask(patient, region, 0, 20)
-    mask_40 = tools.diversity_mask(patient, region, 20, 40)
-    mask_60 = tools.diversity_mask(patient, region, 40, 60)
-    mask_80 = tools.diversity_mask(patient, region, 60, 80)
-    mask_100 = tools.diversity_mask(patient, region, 80, 100)
+    mask_20 = tools.diversity_mask(patient, region, aft, 0, 20)
+    mask_40 = tools.diversity_mask(patient, region, aft, 20, 40)
+    mask_60 = tools.diversity_mask(patient, region, aft, 40, 60)
+    mask_80 = tools.diversity_mask(patient, region, aft, 60, 80)
+    mask_100 = tools.diversity_mask(patient, region, aft, 80, 100)
 
     div_dict = {}
     div_dict["all"] = {
@@ -86,13 +86,23 @@ def mean_divergence_in_time(patient, region, aft, div_ref, consensus):
         "all": np.mean(divergence[:, consensus_mask], axis=1),
         "first": np.mean(divergence[:, np.logical_and(consensus_mask, first_mask)], axis=1),
         "second": np.mean(divergence[:, np.logical_and(consensus_mask, second_mask)], axis=1),
-        "third": np.mean(divergence[:, np.logical_and(consensus_mask, third_mask)], axis=1)
+        "third": np.mean(divergence[:, np.logical_and(consensus_mask, third_mask)], axis=1),
+        "0-20%": np.mean(divergence[:, np.logical_and(consensus_mask, mask_20)], axis=1),
+        "20-40%": np.mean(divergence[:, np.logical_and(consensus_mask, mask_40)], axis=1),
+        "40-60%": np.mean(divergence[:, np.logical_and(consensus_mask, mask_60)], axis=1),
+        "60-80%": np.mean(divergence[:, np.logical_and(consensus_mask, mask_80)], axis=1),
+        "80-100%": np.mean(divergence[:, np.logical_and(consensus_mask, mask_100)], axis=1)
     }
     div_dict["non_consensus"] = {
         "all": np.mean(divergence[:, non_consensus_mask], axis=1),
         "first": np.mean(divergence[:, np.logical_and(non_consensus_mask, first_mask)], axis=1),
         "second": np.mean(divergence[:, np.logical_and(non_consensus_mask, second_mask)], axis=1),
-        "third": np.mean(divergence[:, np.logical_and(non_consensus_mask, third_mask)], axis=1)
+        "third": np.mean(divergence[:, np.logical_and(non_consensus_mask, third_mask)], axis=1),
+        "0-20%": np.mean(divergence[:, np.logical_and(non_consensus_mask, mask_20)], axis=1),
+        "20-40%": np.mean(divergence[:, np.logical_and(non_consensus_mask, mask_40)], axis=1),
+        "40-60%": np.mean(divergence[:, np.logical_and(non_consensus_mask, mask_60)], axis=1),
+        "60-80%": np.mean(divergence[:, np.logical_and(non_consensus_mask, mask_80)], axis=1),
+        "80-100%": np.mean(divergence[:, np.logical_and(non_consensus_mask, mask_100)], axis=1)
     }
 
     return div_dict

@@ -185,8 +185,23 @@ if __name__ == '__main__':
     time, bootstrapped_dict = bootstrap_divergence_in_time("pol", "founder", "global")
 
     plt.figure()
+    plt.title("all")
     for key in bootstrapped_dict["all"].keys():
         plt.plot(time, bootstrapped_dict["all"][key]["mean"], label=key)
+    plt.legend()
+    plt.grid()
+
+    plt.figure()
+    plt.title("consensus")
+    for key in bootstrapped_dict["consensus"].keys():
+        plt.plot(time, bootstrapped_dict["consensus"][key]["mean"], label=key)
+    plt.legend()
+    plt.grid()
+
+    plt.figure()
+    plt.title('non_consensus')
+    for key in bootstrapped_dict["non_consensus"].keys():
+        plt.plot(time, bootstrapped_dict["non_consensus"][key]["mean"], label=key)
     plt.legend()
     plt.grid()
     plt.show()

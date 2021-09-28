@@ -342,7 +342,7 @@ def mask_diversity_percentile(diversity, p_low, p_high):
     return np.logical_and(diversity > thresholds[0], diversity <= thresholds[1])
 
 
-def diversity_mask(patient, region, p_low, p_high):
+def diversity_mask(patient, region, aft, p_low, p_high):
     """
     Uses BH multiple sequence alignment to compute BH diversity at each site. Returns a mask of sites in the
     quantile defined by [p_low, p_high].
@@ -351,7 +351,9 @@ def diversity_mask(patient, region, p_low, p_high):
     mask = mask_diversity_percentile(diversity, p_low, p_high)
     map_to_ref = patient.map_to_external_reference(region)  # Map to HXB2 sequence
     mask_mapped = mask[map_to_ref[:, 0] - map_to_ref[0, 0]]
-    return map_to_ref[:, 2][mask_mapped]
+    diversity_mask = np.zeros(aft.shape[-1], dtype=bool)
+    diversity_mask[map_to_ref[:, 2][mask_mapped]] = True
+    return diversity_mask
 
 
 if __name__ == "__main__":
