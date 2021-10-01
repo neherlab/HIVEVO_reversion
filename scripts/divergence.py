@@ -206,7 +206,7 @@ def make_rate_dict(div_dict):
                 for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
                     for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
                         rate_dict[key][key2][key3][key4][key5] = {}
-                        mean = div_dict[key][key2][key3][key4][key5]["mean"]
+                        mean = np.array(div_dict[key][key2][key3][key4][key5]["mean"])
                         std = div_dict[key][key2][key3][key4][key5]["std"]
                         dt = div_dict["time"][1] - rate_dict["time"][0]
 
@@ -249,6 +249,8 @@ def average_rate_dict(div_dict, first_idx=0, last_idx=20):
                         std = div_dict[key][key2][key3][key4][key5]["std"][:last_idx]
                         p, pcov = curve_fit(f, time, mean, sigma=std, p0=[1e-3, 1e-3])
                         perr = np.sqrt(np.diag(pcov))
+                        if not np.isfinite(perr[0]):
+                            print(key, key2, key3, key4, key5)
                         fit_dict[key][key2][key3][key4][key5] = {}
                         fit_dict[key][key2][key3][key4][key5]["rate"] = p[0]
                         fit_dict[key][key2][key3][key4][key5]["std"] = perr[0]
@@ -290,32 +292,36 @@ if __name__ == '__main__':
     # aft = patient.get_allele_frequency_trajectories(region)
     # div = mean_divergence_in_time(patient, region, aft, "root", HIVreference(subtype="any"))
 
-    make_intermediate_data("data/WH/")
+    # make_intermediate_data("data/WH/")
+    # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+
 
     # Mutation rate plot
-    # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
     # rate_dict = load_rate_dict("data/WH/rate_dict.json")
     # avg_rate_dict = load_avg_rate_dict("data/WH/avg_rate_dict.json")
     #
-    # lines = ["-", "--", ":"]
-    # colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
-    # region = "pol"
-    # reference = "founder"
-    #
-    # import matplotlib.pyplot as plt
-    # plt.style.use("tex")
-    #
-    # plt.figure(figsize=(6.5315, 4.0367))
-    # for ii, key in enumerate(["all", "consensus", "non_consensus"]):
-    #     for jj, key2 in enumerate(["all", "first", "second", "third"]):
-    #         tmp = div_dict[region][reference]["global"][key][key2]["mean"]
-    #         estimate = (tmp[20] - tmp[0]) / (2000 / 365)
-    #         estimate = round(estimate, 4)
-    #         estimate2 = round(avg_rate_dict[region][reference]["global"][key][key2], 4)
-    #         plt.plot(rate_dict["time"], rate_dict[region][reference]["global"][key][key2], lines[ii],
-    #                  color=colors[jj], label=f"{key} {key2} {estimate} {estimate2}")
-    # plt.legend()
-    # plt.xlabel("test")
-    # plt.grid()
-    # plt.savefig("figures/mutation_rate_divergence.pdf", format='pdf')
-    # plt.show()
+
+    import matplotlib.pyplot as plt
+    plt.style.use("tex")
+    plt.figure()
+    lines = ["-", "--", ":"]
+    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
+    region = "pol"
+    reference = "global"
+    time = div_dict["time"]
+    idxs = time < 5.3  # Time around which some patients stop being followed
+    time = time[idxs]
+    for ii, key in enumerate(["consensus", "non_consensus"]):
+        for jj, key2 in enumerate(["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]):
+            data = div_dict[region]["founder"][reference][key][key2]["mean"][idxs]
+            std = div_dict[region]["founder"][reference][key][key2]["std"][idxs]
+            plt.plot(time, data, lines[ii], color=colors[jj])
+            plt.fill_between(time, data + std, data - std, color=colors[jj], alpha=0.15)
+
+    for ii, label in enumerate(["consensus", "non-consensus"]):
+        plt.plot([0], [0], lines[ii], color="k", label=label)
+    for jj, label in enumerate(["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]):
+        plt.plot([0], [0], lines[0], color=colors[jj], label=label)
+    plt.legend()
+    plt.show()

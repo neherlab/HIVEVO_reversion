@@ -180,28 +180,28 @@ if __name__ == '__main__':
     # trajectories = trajectory.load_trajectory_list("data/WH/Trajectory_list_any.json")
     # bootstrap_dict, times = make_bootstrap_mean_dict(trajectories)
 
-    # div_dict = make_bootstrap_div_dict(5)
+    div_dict = make_bootstrap_div_dict(5)
 
-    time, bootstrapped_dict = bootstrap_divergence_in_time("pol", "founder", "global")
-
-    plt.figure()
-    plt.title("all")
-    for key in bootstrapped_dict["all"].keys():
-        plt.plot(time, bootstrapped_dict["all"][key]["mean"], label=key)
-    plt.legend()
-    plt.grid()
-
-    plt.figure()
-    plt.title("consensus")
-    for key in bootstrapped_dict["consensus"].keys():
-        plt.plot(time, bootstrapped_dict["consensus"][key]["mean"], label=key)
-    plt.legend()
-    plt.grid()
-
-    plt.figure()
-    plt.title('non_consensus')
-    for key in bootstrapped_dict["non_consensus"].keys():
-        plt.plot(time, bootstrapped_dict["non_consensus"][key]["mean"], label=key)
-    plt.legend()
-    plt.grid()
-    plt.show()
+    # time, bootstrapped_dict = bootstrap_divergence_in_time("pol", "founder", "global")
+    #
+    # plt.figure()
+    # plt.title("all")
+    # for key in bootstrapped_dict["all"].keys():
+    #     plt.plot(time, bootstrapped_dict["all"][key]["mean"], label=key)
+    # plt.legend()
+    # plt.grid()
+    #
+    # plt.figure()
+    # plt.title("consensus")
+    # for key in bootstrapped_dict["consensus"].keys():
+    #     plt.plot(time, bootstrapped_dict["consensus"][key]["mean"], label=key)
+    # plt.legend()
+    # plt.grid()
+    #
+    # plt.figure()
+    # plt.title('non_consensus')
+    # for key in bootstrapped_dict["non_consensus"].keys():
+    #     plt.plot(time, bootstrapped_dict["non_consensus"][key]["mean"], label=key)
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
