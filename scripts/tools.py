@@ -322,11 +322,11 @@ def get_diversity(alignment_file):
     alignment = np.array(alignment)
 
     probabilities = []
-    for nuc in ["A", "T", "G", "C", "-"]:
+    for nuc in ["A", "T", "G", "C", "N"]:
         probabilities += [(alignment == nuc).sum(axis=0) / alignment.shape[0]]
     probabilities = np.array(probabilities)
 
-    eps = 1e-8
+    eps = 1e-10
     entropy = np.sum(probabilities * np.log(probabilities + eps), axis=0) / np.log(1 / 5)
     entropy[entropy < eps] = 0
     return entropy
