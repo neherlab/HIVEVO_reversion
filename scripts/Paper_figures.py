@@ -384,13 +384,44 @@ def make_figure_5(savefig=False):
         plt.savefig(f"figures/mean_in_time_syn_{reference}.pdf")
 
 
+def make_figure_6(region, savefig):
+    div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
+
+    plt.figure()
+    lines = ["-", "--", ":"]
+    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
+    time = div_dict["time"]
+    idxs = time < 5.3  # Time around which some patients stop being followed
+    time = time[idxs]
+    for ii, key in enumerate(["consensus", "non_consensus"]):
+        for jj, key2 in enumerate(["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]):
+            data = div_dict[region]["founder"]["global"][key][key2]["mean"][idxs]
+            std = div_dict[region]["founder"]["global"][key][key2]["std"][idxs]
+            plt.plot(time, data, lines[ii], color=colors[jj])
+            plt.fill_between(time, data + std, data - std, color=colors[jj], alpha=0.15)
+
+    for ii, label in enumerate(["consensus", "non-consensus"]):
+        plt.plot([0], [0], lines[ii], color="k", label=label)
+    for jj, label in enumerate(["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]):
+        plt.plot([0], [0], lines[0], color=colors[jj], label=label)
+    plt.legend()
+    plt.xlabel("Time [years]")
+    plt.ylabel("Divergence")
+
+    if savefig:
+        plt.savefig(f"figures/Divergence_by_diversity_{region}.pdf")
+
+    plt.show()
+
+
 if __name__ == '__main__':
-    fig1 = True
+    fig1 = False
     fig2 = False
     fig3 = False
     fig4 = False
     fig5 = False
-    savefig = True
+    fig6 = True
+    savefig = False
 
     if fig1:
         text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.079), (1.2, 0.06), (1.2, 0.028)],
@@ -432,6 +463,9 @@ if __name__ == '__main__':
     if fig5:
         make_figure_5(savefig)
     plt.show()
+
+    if fig6:
+        make_figure_6("pol", savefig)
 
 
     # WH_file = "data/WH/avg_rate_dict.json"
