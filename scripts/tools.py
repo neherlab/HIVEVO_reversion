@@ -342,14 +342,14 @@ def mask_diversity_percentile(diversity, p_low, p_high):
     return np.logical_and(diversity > thresholds[0], diversity <= thresholds[1])
 
 
-def diversity_per_site(patient, region):
+def diversity_per_site(patient, region, aft):
     """
     Returns the diversity at each site of the sequence, computed from the between host alignment. Sites that
     are unmapped to HSB2 have np.nan as diversity value.
     """
     HXB2_diversity = get_diversity(f"data/BH/alignments/to_HXB2/{region}_1000.fasta")
     map_to_HXB2 = patient.map_to_external_reference(region)  # Map to HXB2 sequence
-    diversity = np.zeros(map_to_HXB2[-1, 2] + 1)
+    diversity = np.zeros(aft.shape[-1])
     diversity[:] = np.nan
     diversity[map_to_HXB2[:, 2]] = HXB2_diversity[map_to_HXB2[:, 0] - map_to_HXB2[0, 0]]
     return diversity

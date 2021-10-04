@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import filenames
 import tools
 from hivevo.patients import Patient
@@ -8,67 +9,93 @@ from hivevo.HIVreference import HIVreference
 from scipy.interpolate import interp1d
 
 
+def smooth(y, box_pts):
+    box = np.ones(box_pts) / box_pts
+    y_smooth = np.convolve(y, box, mode='same')
+    return y_smooth
+
+
 if __name__ == "__main__":
     region = "pol"
     patient_names = ["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p11", "p9"]
     time_interpolation = np.arange(0, 5.1, 0.1)
     ref = HIVreference(subtype="any")
-    # This is just to load the correct length of the region in HXB2, patient independant
-    patient = Patient.load("p1")
-    map_to_HXB2 = patient.map_to_external_reference(region)
-    dim = map_to_HXB2[-1, 0] - map_to_HXB2[0, 0] + 1
-    nb_consensus = np.zeros(dim)
-    nb_non_consensus = np.zeros(dim)
-    div_consensus = np.zeros((time_interpolation.shape[0], dim))
-    div_non_consensus = np.zeros((time_interpolation.shape[0], dim))
 
-    for patient_name in patient_names:
+    diversity_consensus = []
+    diversity_non_consensus = []
+    divergence_consensus = []
+    divergence_non_consensus = []
+
+    plt.figure()
+    for ii, patient_name in enumerate(patient_names):
         patient = Patient.load(patient_name)
-        map_to_HXB2 = patient.map_to_external_reference(region)
         aft = patient.get_allele_frequency_trajectories(region)
-
         div = divergence.divergence_in_time(patient, region, aft, "founder")
+        map_to_HXB2 = patient.map_to_external_reference(region)
+        diversity = tools.diversity_per_site(patient, region, aft)
+
         f = interp1d(patient.ysi, div, axis=0, bounds_error=False, fill_value=0)
         div_interpolated = f(time_interpolation)
 
         consensus_mask = tools.reference_mask(patient, region, aft, ref)
         non_consensus_mask = tools.non_reference_mask(patient, region, aft, ref)
-        consensus_div = div_interpolated * consensus_mask
-        non_consensus_div = div_interpolated * non_consensus_mask
-        div_non_consensus[:, map_to_HXB2[:, 0] - map_to_HXB2[0, 0]] += non_consensus_div[:, map_to_HXB2[:, 2]]
-        div_consensus[:, map_to_HXB2[:, 0] - map_to_HXB2[0, 0]] += consensus_div[:, map_to_HXB2[:, 2]]
-        nb_consensus[map_to_HXB2[:, 0] - map_to_HXB2[0, 0]] += consensus_mask[map_to_HXB2[:, 2]]
-        nb_non_consensus[map_to_HXB2[:, 0] - map_to_HXB2[0, 0]] += non_consensus_mask[map_to_HXB2[:, 2]]
+        div_consensus = div_interpolated[-1, :] * consensus_mask
+        div_non_consensus = div_interpolated[-1, :] * non_consensus_mask
 
-    div_consensus[:, nb_consensus != 0] /= nb_consensus[nb_consensus != 0]
-    div_non_consensus[:, nb_non_consensus != 0] /= nb_non_consensus[nb_non_consensus != 0]
-    alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
-    diversity = tools.get_diversity(alignment_file)
+        mask = (diversity != np.nan)
+        mask2 = np.logical_and(mask, consensus_mask)
+        mask3 = np.logical_and(mask, non_consensus_mask)
 
-    def smooth(y, box_pts):
-        box = np.ones(box_pts) / box_pts
-        y_smooth = np.convolve(y, box, mode='same')
-        return y_smooth
+        diversity_consensus += diversity[mask2].tolist()
+        diversity_non_consensus += diversity[mask3].tolist()
+        divergence_consensus += div_consensus[mask2].tolist()
+        divergence_non_consensus += div_non_consensus[mask3].tolist()
 
-    lsmooth = 20
+    idxs = np.argsort(diversity_consensus)
+    diversity_consensus = np.array(diversity_consensus)[idxs]
+    divergence_consensus = np.array(divergence_consensus)[idxs]
+    idxs = np.argsort(diversity_non_consensus)
+    diversity_non_consensus = np.array(diversity_non_consensus)[idxs]
+    divergence_non_consensus = np.array(divergence_non_consensus)[idxs]
 
-    plt.figure()
-    ds = diversity[nb_consensus != 0]
-    dcs = div_consensus[-1, nb_consensus != 0]
-    sort_idxs = np.argsort(ds)
-    plt.plot(ds[sort_idxs], dcs[sort_idxs], ".", label="consensus", color="C0")
-    plt.plot(ds[sort_idxs], smooth(dcs[sort_idxs], lsmooth), "-", label="smoothed", color="C0")
-
-    ds = diversity[nb_non_consensus != 0]
-    dncs = div_non_consensus[-1, nb_non_consensus != 0]
-    sort_idxs = np.argsort(ds)
-    plt.plot(ds[sort_idxs], dncs[sort_idxs], ".", label="non_consensus", color="C1")
-    plt.plot(ds[sort_idxs], smooth(dncs[sort_idxs], lsmooth), "-", label="smoothed", color="C1")
-
+    plt.plot(diversity_consensus, divergence_consensus, ".", label="consensus", color="C0")
+    plt.plot(diversity_non_consensus, divergence_non_consensus, ".", label="non_consensus", color="C1")
     plt.legend()
     plt.ylabel("Divergence at 5y")
     plt.xlabel("Diversity")
     plt.grid()
-    plt.yscale("log")
-    plt.xscale("log")
+    # plt.yscale("log")
+    # plt.xscale("log")
+
+    from scipy import stats
+    X, Y = np.mgrid[0:1:100j, 0:1:100j]
+    data = [diversity_non_consensus, divergence_non_consensus]
+    data = np.array(data)
+    positions = np.vstack([X.ravel(), Y.ravel()])
+    kernel = stats.gaussian_kde(data)
+    Z = np.reshape(kernel(positions).T, X.shape)
+
+    plt.figure()
+    plt.title("Unormalized")
+    plt.imshow(np.rot90(Z), extent=[0, 1, 0, 1])
+    plt.ylabel("Divergence at 5y")
+    plt.xlabel("Diversity")
+    plt.colorbar(label="Probability")
+
+    Z = Z / np.sum(Z, axis=1)[:, np.newaxis]
+    plt.figure()
+    plt.title("Normalized")
+    plt.imshow(np.rot90(Z), extent=[0, 1, 0, 1])
+    plt.ylabel("Divergence at 5y")
+    plt.xlabel("Diversity")
+    plt.colorbar(label="Probability")
+
+    plt.figure()
+    cmap = matplotlib.cm.get_cmap('plasma')
+    for ii in [0, 10, 20, 30, 40, 50, 60, 70, 80]:
+        plt.plot(Z[ii, :], '-', color=cmap(ii / 100), label=f"Diversity {ii/100}")
+    plt.grid()
+    plt.xlabel("Divergence at 5y")
+    plt.ylabel("Probability")
+    plt.legend()
     plt.show()
