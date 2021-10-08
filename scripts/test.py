@@ -60,6 +60,13 @@ if __name__ == "__main__":
 
     plt.plot(diversity_consensus, divergence_consensus, ".", label="consensus", color="C0")
     plt.plot(diversity_non_consensus, divergence_non_consensus, ".", label="non_consensus", color="C1")
+    fit = np.polyfit(diversity_consensus, divergence_consensus, deg=1)
+    plt.plot(diversity_consensus, np.polyval(fit, diversity_consensus), "-",
+             color="C0", label=f"{round(fit[0],3)}x + {round(fit[1],3)}")
+    fit = np.polyfit(diversity_non_consensus, divergence_non_consensus, deg=1)
+    plt.plot(diversity_non_consensus, np.polyval(fit, diversity_non_consensus),
+             "-", color="C1", label=f"{round(fit[0],3)}x + {round(fit[1],3)}")
+
     plt.legend()
     plt.ylabel("Divergence at 5y")
     plt.xlabel("Diversity")
@@ -67,35 +74,35 @@ if __name__ == "__main__":
     # plt.yscale("log")
     # plt.xscale("log")
 
-    from scipy import stats
-    X, Y = np.mgrid[0:1:100j, 0:1:100j]
-    data = [diversity_non_consensus, divergence_non_consensus]
-    data = np.array(data)
-    positions = np.vstack([X.ravel(), Y.ravel()])
-    kernel = stats.gaussian_kde(data)
-    Z = np.reshape(kernel(positions).T, X.shape)
-
-    plt.figure()
-    plt.title("Unormalized")
-    plt.imshow(np.rot90(Z), extent=[0, 1, 0, 1])
-    plt.ylabel("Divergence at 5y")
-    plt.xlabel("Diversity")
-    plt.colorbar(label="Probability")
-
-    Z = Z / np.sum(Z, axis=1)[:, np.newaxis]
-    plt.figure()
-    plt.title("Normalized")
-    plt.imshow(np.rot90(Z), extent=[0, 1, 0, 1])
-    plt.ylabel("Divergence at 5y")
-    plt.xlabel("Diversity")
-    plt.colorbar(label="Probability")
-
-    plt.figure()
-    cmap = matplotlib.cm.get_cmap('plasma')
-    for ii in [0, 10, 20, 30, 40, 50, 60, 70, 80]:
-        plt.plot(Z[ii, :], '-', color=cmap(ii / 100), label=f"Diversity {ii/100}")
-    plt.grid()
-    plt.xlabel("Divergence at 5y")
-    plt.ylabel("Probability")
-    plt.legend()
+    # from scipy import stats
+    # X, Y = np.mgrid[0:1:100j, 0:1:100j]
+    # data = [diversity_non_consensus, divergence_non_consensus]
+    # data = np.array(data)
+    # positions = np.vstack([X.ravel(), Y.ravel()])
+    # kernel = stats.gaussian_kde(data)
+    # Z = np.reshape(kernel(positions).T, X.shape)
+    #
+    # plt.figure()
+    # plt.title("Unormalized")
+    # plt.imshow(np.rot90(Z), extent=[0, 1, 0, 1])
+    # plt.ylabel("Divergence at 5y")
+    # plt.xlabel("Diversity")
+    # plt.colorbar(label="Probability")
+    #
+    # Z = Z / np.sum(Z, axis=1)[:, np.newaxis]
+    # plt.figure()
+    # plt.title("Normalized")
+    # plt.imshow(np.rot90(Z), extent=[0, 1, 0, 1])
+    # plt.ylabel("Divergence at 5y")
+    # plt.xlabel("Diversity")
+    # plt.colorbar(label="Probability")
+    #
+    # plt.figure()
+    # cmap = matplotlib.cm.get_cmap('plasma')
+    # for ii in [0, 10, 20, 30, 40, 50, 60, 70, 80]:
+    #     plt.plot(Z[ii, :], '-', color=cmap(ii / 100), label=f"Diversity {ii/100}")
+    # plt.grid()
+    # plt.xlabel("Divergence at 5y")
+    # plt.ylabel("Probability")
+    # plt.legend()
     plt.show()
