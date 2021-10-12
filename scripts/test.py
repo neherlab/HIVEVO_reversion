@@ -63,7 +63,9 @@ if __name__ == "__main__":
     fit = np.polyfit(diversity_consensus, divergence_consensus, deg=1)
     plt.plot(diversity_consensus, np.polyval(fit, diversity_consensus), "-",
              color="C0", label=f"{round(fit[0],3)}x + {round(fit[1],3)}")
+    consensus_fit = fit
     fit = np.polyfit(diversity_non_consensus, divergence_non_consensus, deg=1)
+    non_consensus_fit = fit
     plt.plot(diversity_non_consensus, np.polyval(fit, diversity_non_consensus),
              "-", color="C1", label=f"{round(fit[0],3)}x + {round(fit[1],3)}")
 
@@ -74,35 +76,35 @@ if __name__ == "__main__":
     # plt.yscale("log")
     # plt.xscale("log")
 
-    # from scipy import stats
-    # X, Y = np.mgrid[0:1:100j, 0:1:100j]
-    # data = [diversity_non_consensus, divergence_non_consensus]
-    # data = np.array(data)
-    # positions = np.vstack([X.ravel(), Y.ravel()])
-    # kernel = stats.gaussian_kde(data)
-    # Z = np.reshape(kernel(positions).T, X.shape)
-    #
-    # plt.figure()
-    # plt.title("Unormalized")
-    # plt.imshow(np.rot90(Z), extent=[0, 1, 0, 1])
-    # plt.ylabel("Divergence at 5y")
-    # plt.xlabel("Diversity")
-    # plt.colorbar(label="Probability")
-    #
-    # Z = Z / np.sum(Z, axis=1)[:, np.newaxis]
-    # plt.figure()
-    # plt.title("Normalized")
-    # plt.imshow(np.rot90(Z), extent=[0, 1, 0, 1])
-    # plt.ylabel("Divergence at 5y")
-    # plt.xlabel("Diversity")
-    # plt.colorbar(label="Probability")
-    #
-    # plt.figure()
-    # cmap = matplotlib.cm.get_cmap('plasma')
-    # for ii in [0, 10, 20, 30, 40, 50, 60, 70, 80]:
-    #     plt.plot(Z[ii, :], '-', color=cmap(ii / 100), label=f"Diversity {ii/100}")
-    # plt.grid()
-    # plt.xlabel("Divergence at 5y")
-    # plt.ylabel("Probability")
-    # plt.legend()
+    plt.figure()
+    hist, bins = np.histogram(diversity_consensus, bins=40)
+    bins = 0.5 * (bins[:-1] + bins[1:])
+    plt.plot(bins, hist, ".-", label="consensus")
+    hist, bins = np.histogram(diversity_non_consensus, bins=40)
+    bins = 0.5 * (bins[:-1] + bins[1:])
+    plt.plot(bins, hist, ".-", label="non-consensus")
+    plt.ylabel("Counts")
+    plt.xlabel("Diversity")
+    plt.legend()
+    plt.yscale("log")
+    plt.grid()
+
+    def model_prediction(diversity, fit_consensus, fit_non_consensus):
+        mu_plus = diversity * fit_consensus[0] / 5 + fit_consensus[1] / 5
+        mu_minus = diversity * fit_non_consensus[0] / 5 + fit_non_consensus[1] / 5
+
+        t = 20
+        saturation_time = 1 / (mu_plus + mu_minus)
+        d_err_20y = (mu_plus + mu_minus) * t / (1 - np.exp(-(mu_plus + mu_minus)*t)) - 1
+
+        return saturation_time, d_err_20y
+
+    x = np.linspace(0, 0.8, 20)
+    saturation_time, d_err_20y = model_prediction(x, consensus_fit, non_consensus_fit)
+    plt.figure()
+    plt.plot(x, d_err_20y)
+    plt.xlabel("Diversity")
+    plt.ylabel("Relative distance error after 20y")
+    plt.grid()
+
     plt.show()
