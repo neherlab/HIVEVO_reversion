@@ -416,11 +416,11 @@ def make_figure_6(region, savefig):
 
 if __name__ == '__main__':
     fig1 = False
-    fig2 = False
+    fig2 = True
     fig3 = False
     fig4 = False
     fig5 = False
-    fig6 = True
+    fig6 = False
     savefig = False
 
     if fig1:
