@@ -1,7 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
-import filenames
 import tools
 from hivevo.patients import Patient
 import divergence
@@ -9,30 +7,22 @@ from hivevo.HIVreference import HIVreference
 from scipy.interpolate import interp1d
 
 
-def smooth(x, y, box_pts):
-    box = np.ones(box_pts) / box_pts
-    y_smooth = np.convolve(y, box, mode='valid')
-    x_smooth = np.convolve(x, box, mode="valid")
-    return x_smooth, y_smooth
-
-
-if __name__ == "__main__":
-    region = "pol"
-    patient_names = ["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p11", "p9"]
-    time_interpolation = np.arange(0, 5.1, 0.1)
-    ref = HIVreference(subtype="any")
-
+def get_diversity_divergence(region, ref=HIVreference(subtype="any"),
+                             time_interpolation=np.arange(0, 5.1, 0.1),
+                             patient_names=["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p11", "p9"]):
+    """
+    Computes the divergence for all patients at 5 years, concatenate all values and return them with the
+    corresponding diversity values.
+    """
     diversity_consensus = []
     diversity_non_consensus = []
     divergence_consensus = []
     divergence_non_consensus = []
 
-    plt.figure()
     for ii, patient_name in enumerate(patient_names):
         patient = Patient.load(patient_name)
         aft = patient.get_allele_frequency_trajectories(region)
         div = divergence.divergence_in_time(patient, region, aft, "founder")
-        map_to_HXB2 = patient.map_to_external_reference(region)
         diversity = tools.diversity_per_site(patient, region, aft)
 
         f = interp1d(patient.ysi, div, axis=0, bounds_error=False, fill_value=0)
@@ -59,18 +49,20 @@ if __name__ == "__main__":
     diversity_non_consensus = np.array(diversity_non_consensus)[idxs]
     divergence_non_consensus = np.array(divergence_non_consensus)[idxs]
 
-    window = 50
+    return diversity_consensus, divergence_consensus, diversity_non_consensus, divergence_non_consensus
 
-    x, y = smooth(diversity_consensus, divergence_consensus, window)
+
+def plot_diversity_divergence(diversity_consensus, divergence_consensus, diversity_non_consensus,
+                              divergence_non_consensus, smooth_window=50):
+    plt.figure()
+    x, y = smooth(diversity_consensus, divergence_consensus, smooth_window)
     plt.plot(x, y, ".", label="consensus", color="C0")
-    x, y = smooth(diversity_non_consensus, divergence_non_consensus, window)
+    x, y = smooth(diversity_non_consensus, divergence_non_consensus, smooth_window)
     plt.plot(x, y, ".", label="non_consensus", color="C1")
-    fit = np.polyfit(diversity_consensus, divergence_consensus, deg=1)
+    fit = compute_diversity_divergence_fit(diversity_consensus, divergence_consensus)
     plt.plot(diversity_consensus, np.polyval(fit, diversity_consensus), "-",
              color="C0", label=f"{round(fit[0],3)}x + {round(fit[1],3)}")
-    consensus_fit = fit
-    fit = np.polyfit(diversity_non_consensus, divergence_non_consensus, deg=1)
-    non_consensus_fit = fit
+    fit = compute_diversity_divergence_fit(diversity_non_consensus, divergence_non_consensus)
     plt.plot(diversity_non_consensus, np.polyval(fit, diversity_non_consensus),
              "-", color="C1", label=f"{round(fit[0],3)}x + {round(fit[1],3)}")
 
@@ -80,6 +72,40 @@ if __name__ == "__main__":
     plt.grid()
     # plt.yscale("log")
     # plt.xscale("log")
+
+
+def compute_diversity_divergence_fit(diversity, divergence):
+    "Computes the linear regression of divergence vs diversity."
+    return np.polyfit(diversity, divergence, deg=1)
+
+
+def model_prediction(diversity, fit_consensus, fit_non_consensus, t):
+    mu_plus = diversity * fit_consensus[0] / 5 + fit_consensus[1] / 5
+    mu_minus = diversity * fit_non_consensus[0] / 5 + fit_non_consensus[1] / 5
+
+    saturation_time = 1 / (mu_plus + mu_minus)
+    d_err_20y = (mu_plus + mu_minus) * t / (1 - np.exp(-(mu_plus + mu_minus) * t)) - 1
+
+    return saturation_time, d_err_20y
+
+
+def smooth(x, y, box_pts):
+    box = np.ones(box_pts) / box_pts
+    y_smooth = np.convolve(y, box, mode='valid')
+    x_smooth = np.convolve(x, box, mode="valid")
+    return x_smooth, y_smooth
+
+
+if __name__ == "__main__":
+    region = "pol"
+    tmp = get_diversity_divergence(region)
+    diversity_consensus = tmp[0]
+    divergence_consensus = tmp[1]
+    diversity_non_consensus = tmp[2]
+    divergence_non_consensus = tmp[3]
+
+    plot_diversity_divergence(diversity_consensus, divergence_consensus, diversity_non_consensus,
+                              divergence_non_consensus)
 
     plt.figure()
     hist_consensus, bins = np.histogram(diversity_consensus, bins=40)
@@ -94,14 +120,8 @@ if __name__ == "__main__":
     plt.yscale("log")
     plt.grid()
 
-    def model_prediction(diversity, fit_consensus, fit_non_consensus, t):
-        mu_plus = diversity * fit_consensus[0] / 5 + fit_consensus[1] / 5
-        mu_minus = diversity * fit_non_consensus[0] / 5 + fit_non_consensus[1] / 5
-
-        saturation_time = 1 / (mu_plus + mu_minus)
-        d_err_20y = (mu_plus + mu_minus) * t / (1 - np.exp(-(mu_plus + mu_minus) * t)) - 1
-
-        return saturation_time, d_err_20y
+    consensus_fit = compute_diversity_divergence_fit(diversity_consensus, divergence_consensus)
+    non_consensus_fit = compute_diversity_divergence_fit(diversity_non_consensus, divergence_non_consensus)
 
     x = np.linspace(0, 0.8, 20)
     t = 20  # years
