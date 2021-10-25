@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from Bio import Phylo
 import tools
+import json
 from hivevo.patients import Patient
 import divergence
 from hivevo.HIVreference import HIVreference
@@ -67,7 +69,7 @@ def plot_diversity_divergence(diversity_consensus, divergence_consensus, diversi
              "-", color="C1", label=f"{round(fit[0],3)}x + {round(fit[1],3)}")
 
     plt.legend()
-    plt.ylabel("Divergence at 5y")
+    plt.ylabel("Divergence at 5y (smoothed)")
     plt.xlabel("Diversity")
     plt.grid()
     # plt.yscale("log")
@@ -84,9 +86,25 @@ def model_prediction(diversity, fit_consensus, fit_non_consensus, t):
     mu_minus = diversity * fit_non_consensus[0] / 5 + fit_non_consensus[1] / 5
 
     saturation_time = 1 / (mu_plus + mu_minus)
-    d_err_20y = (mu_plus + mu_minus) * t / (1 - np.exp(-(mu_plus + mu_minus) * t)) - 1
+    d_err = (mu_plus + mu_minus) * t / (1 - np.exp(-(mu_plus + mu_minus) * t)) - 1
 
-    return saturation_time, d_err_20y
+    return saturation_time, d_err
+
+
+def plot_diversity_histo(diversity_consensus, diversity_non_consensus):
+    "Plots the histogram of diversity values."
+    plt.figure()
+    hist_consensus, bins = np.histogram(diversity_consensus, bins=40)
+    bins = 0.5 * (bins[:-1] + bins[1:])
+    plt.plot(bins, hist_consensus, ".-", label="consensus")
+    hist_non_consensus, bins = np.histogram(diversity_non_consensus, bins=40)
+    bins = 0.5 * (bins[:-1] + bins[1:])
+    plt.plot(bins, hist_non_consensus, ".-", label="non-consensus")
+    plt.ylabel("Counts")
+    plt.xlabel("Diversity")
+    plt.legend()
+    plt.yscale("log")
+    plt.grid()
 
 
 def smooth(x, y, box_pts):
@@ -94,6 +112,94 @@ def smooth(x, y, box_pts):
     y_smooth = np.convolve(y, box, mode='valid')
     x_smooth = np.convolve(x, box, mode="valid")
     return x_smooth, y_smooth
+
+
+def predict_average_error(times, diversity, consensus_fit, non_consensus_fit):
+    """
+    Computes the average relative error in branch length over all sites for the given times and returns it.
+    """
+    errors = np.array([])
+    for t in times:
+        tau, err = model_prediction(diversity, consensus_fit, non_consensus_fit, t)
+        error = np.mean(err)
+        errors = np.concatenate((errors, np.array([error])))
+    return errors
+
+
+def compute_RTT_errors(region, consensus_fit, non_consensus_fit):
+    """
+    Computes the relative error for each of the leaves in the tree of a given region using the divergence
+    diversity fits.
+    """
+    tree = Phylo.read(f"data/BH/intermediate_files/timetree_{region}_1000.nwk", format="newick")
+    diversity = tools.get_diversity(f"data/BH/alignments/to_HXB2/{region}_1000.fasta")
+    with open(f"data/BH/intermediate_files/branch_lengths_{region}_1000.json") as f:
+        data = json.load(f)
+    rate = data["clock"]["rate"]
+    tips = tree.get_terminals()
+
+    relative_error = np.array([])
+    for tip in tips:
+        path = tree.get_path(tip)
+        lengths = np.array([c.branch_length / rate for c in path])
+        lengths = lengths[lengths > 0]  # Due to time constraints, sometime you have branch of length 0
+        errors = predict_average_error(lengths, diversity, consensus_fit, non_consensus_fit)
+        errors *= np.array(lengths)
+        relative_error = np.append(relative_error, np.sum(errors) / np.sum(lengths))
+
+    return relative_error
+
+
+def model_prediction_3class(t, rate_dict):
+    """
+    Computes and returns the relative error made on length for the 1st 2nd and 3rd sites according to the
+    rates provided.
+    """
+    error_3class = []
+    for key in ["first", "second", ["third"]]:
+        mu_plus = rate_dict[key]["consensus"]
+        mu_minus = rate_dict[key]["non_consensus"]
+        err = (mu_plus + mu_minus) * t / (1 - np.exp(-(mu_plus + mu_minus) * t)) - 1
+        error_3class = error_3class + [err]
+
+    return error_3class
+
+
+def predict_3class_average_error(times, rate_dict):
+    """
+    Computes the average relative error in branch length over all sites for the given times and region and
+    returns it.
+    """
+    errors = np.array([])
+    for t in times:
+        error_3class = model_prediction_3class(t, rate_dict)
+        error = np.mean(error_3class)
+        errors = np.concatenate((errors, np.array([error])))
+    return errors
+
+
+def compute_RTT_3class_errors(region, rate_dict):
+    """
+    Computes the relative error for each of the leaves in the tree of a given region using the 3 class model
+    rates.
+    rate_dict is a dictionnary containing the rates: rate_dict[first/second/third][consensus/non_consensus]
+    """
+    tree = Phylo.read(f"data/BH/intermediate_files/timetree_{region}_1000.nwk", format="newick")
+    with open(f"data/BH/intermediate_files/branch_lengths_{region}_1000.json") as f:
+        data = json.load(f)
+    rate = data["clock"]["rate"]
+    tips = tree.get_terminals()
+
+    relative_error = np.array([])
+    for tip in tips:
+        path = tree.get_path(tip)
+        lengths = np.array([c.branch_length / rate for c in path])
+        lengths = lengths[lengths > 0]  # Due to time constraints, sometime you have branch of length 0
+        errors = predict_3class_average_error(lengths, rate_dict)
+        errors *= np.array(lengths)
+        relative_error = np.append(relative_error, np.sum(errors) / np.sum(lengths))
+
+    return relative_error
 
 
 if __name__ == "__main__":
@@ -107,18 +213,7 @@ if __name__ == "__main__":
     plot_diversity_divergence(diversity_consensus, divergence_consensus, diversity_non_consensus,
                               divergence_non_consensus)
 
-    plt.figure()
-    hist_consensus, bins = np.histogram(diversity_consensus, bins=40)
-    bins = 0.5 * (bins[:-1] + bins[1:])
-    plt.plot(bins, hist_consensus, ".-", label="consensus")
-    hist_non_consensus, bins = np.histogram(diversity_non_consensus, bins=40)
-    bins = 0.5 * (bins[:-1] + bins[1:])
-    plt.plot(bins, hist_non_consensus, ".-", label="non-consensus")
-    plt.ylabel("Counts")
-    plt.xlabel("Diversity")
-    plt.legend()
-    plt.yscale("log")
-    plt.grid()
+    plot_diversity_histo(diversity_consensus, diversity_non_consensus)
 
     consensus_fit = compute_diversity_divergence_fit(diversity_consensus, divergence_consensus)
     non_consensus_fit = compute_diversity_divergence_fit(diversity_non_consensus, divergence_non_consensus)
@@ -133,17 +228,31 @@ if __name__ == "__main__":
     plt.grid()
 
     times = np.linspace(1, 50, 20)
-    errors = np.array([])
     diversity = tools.get_diversity(f"data/BH/alignments/to_HXB2/{region}_1000.fasta")
-    for t in times:
-        tau, err = model_prediction(diversity, consensus_fit, non_consensus_fit, t)
-        error = np.mean(err)
-        errors = np.concatenate((errors, np.array([error])))
-
+    errors = predict_average_error(times, diversity, consensus_fit, non_consensus_fit)
     plt.figure()
     plt.plot(times, errors, ".")
     plt.xlabel("Time [years]")
     plt.ylabel("Average predicted error over all sites")
     plt.grid()
+
+    rate_dict = divergence.load_avg_rate_dict("data/WH/avg_rate_dict.json")
+    rates = {}
+    for key in ["first", "second", "third"]:
+        rates[key] = {}
+        for key2 in ["consensus", "non_consensus"]:
+            rates[key][key2] = rate_dict[region]["founder"]["global"][key2][key]["rate"]
+
+    relative_error = compute_RTT_3class_errors(region, rates)
+    hist, bins = np.histogram(relative_error, bins=20)
+    bins = 0.5 * (bins[:-1] + bins[1:])
+    plt.figure()
+    plt.plot(bins, hist, '.-', label=f"Mean: {np.round(np.mean(relative_error),2)}")
+    plt.xlabel("Relative error on RTT length")
+    plt.ylabel("Counts")
+    plt.grid()
+    plt.xlim([0, 1])
+    plt.legend()
+    plt.show()
 
     plt.show()
