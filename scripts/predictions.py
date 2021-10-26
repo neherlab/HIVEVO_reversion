@@ -156,7 +156,7 @@ def model_prediction_3class(t, rate_dict):
     rates provided.
     """
     error_3class = []
-    for key in ["first", "second", ["third"]]:
+    for key in ["first", "second", "third"]:
         mu_plus = rate_dict[key]["consensus"]
         mu_minus = rate_dict[key]["non_consensus"]
         err = (mu_plus + mu_minus) * t / (1 - np.exp(-(mu_plus + mu_minus) * t)) - 1
@@ -236,6 +236,18 @@ if __name__ == "__main__":
     plt.ylabel("Average predicted error over all sites")
     plt.grid()
 
+    relative_error = compute_RTT_errors(region, consensus_fit, non_consensus_fit)
+    hist, bins = np.histogram(relative_error, bins=20)
+    bins = 0.5 * (bins[:-1] + bins[1:])
+    plt.figure()
+    plt.title("Diversity divergence model")
+    plt.plot(bins, hist, '.-', label=f"Mean: {np.round(np.mean(relative_error),2)}")
+    plt.xlabel("Relative error on RTT length")
+    plt.ylabel("Counts")
+    plt.grid()
+    plt.xlim([0, 1])
+    plt.legend()
+
     rate_dict = divergence.load_avg_rate_dict("data/WH/avg_rate_dict.json")
     rates = {}
     for key in ["first", "second", "third"]:
@@ -247,12 +259,12 @@ if __name__ == "__main__":
     hist, bins = np.histogram(relative_error, bins=20)
     bins = 0.5 * (bins[:-1] + bins[1:])
     plt.figure()
+    plt.title("3 class model")
     plt.plot(bins, hist, '.-', label=f"Mean: {np.round(np.mean(relative_error),2)}")
     plt.xlabel("Relative error on RTT length")
     plt.ylabel("Counts")
     plt.grid()
     plt.xlim([0, 1])
     plt.legend()
-    plt.show()
 
     plt.show()
