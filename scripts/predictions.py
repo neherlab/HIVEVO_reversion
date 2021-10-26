@@ -202,8 +202,24 @@ def compute_RTT_3class_errors(region, rate_dict):
     return relative_error
 
 
+def plot_RTT_error(relative_error, bins=20):
+    """
+    Plot the histogram of relative error for all the tips in the tree.
+    """
+    hist, bins = np.histogram(relative_error, bins=bins)
+    bins = 0.5 * (bins[:-1] + bins[1:])
+    plt.figure()
+    plt.title("Diversity divergence model")
+    plt.plot(bins, hist, '.-', label=f"Mean: {np.round(np.mean(relative_error),2)}")
+    plt.xlabel("Relative error on RTT length")
+    plt.ylabel("Counts")
+    plt.grid()
+    plt.xlim([0, 1])
+    plt.legend()
+
+
 if __name__ == "__main__":
-    region = "pol"
+    region = "gag"
     tmp = get_diversity_divergence(region)
     diversity_consensus = tmp[0]
     divergence_consensus = tmp[1]
@@ -211,7 +227,7 @@ if __name__ == "__main__":
     divergence_non_consensus = tmp[3]
 
     plot_diversity_divergence(diversity_consensus, divergence_consensus, diversity_non_consensus,
-                              divergence_non_consensus)
+                              divergence_non_consensus, smooth_window=50)
 
     plot_diversity_histo(diversity_consensus, diversity_non_consensus)
 
@@ -237,16 +253,7 @@ if __name__ == "__main__":
     plt.grid()
 
     relative_error = compute_RTT_errors(region, consensus_fit, non_consensus_fit)
-    hist, bins = np.histogram(relative_error, bins=20)
-    bins = 0.5 * (bins[:-1] + bins[1:])
-    plt.figure()
-    plt.title("Diversity divergence model")
-    plt.plot(bins, hist, '.-', label=f"Mean: {np.round(np.mean(relative_error),2)}")
-    plt.xlabel("Relative error on RTT length")
-    plt.ylabel("Counts")
-    plt.grid()
-    plt.xlim([0, 1])
-    plt.legend()
+    plot_RTT_error(relative_error)
 
     rate_dict = divergence.load_avg_rate_dict("data/WH/avg_rate_dict.json")
     rates = {}
@@ -256,15 +263,6 @@ if __name__ == "__main__":
             rates[key][key2] = rate_dict[region]["founder"]["global"][key2][key]["rate"]
 
     relative_error = compute_RTT_3class_errors(region, rates)
-    hist, bins = np.histogram(relative_error, bins=20)
-    bins = 0.5 * (bins[:-1] + bins[1:])
-    plt.figure()
-    plt.title("3 class model")
-    plt.plot(bins, hist, '.-', label=f"Mean: {np.round(np.mean(relative_error),2)}")
-    plt.xlabel("Relative error on RTT length")
-    plt.ylabel("Counts")
-    plt.grid()
-    plt.xlim([0, 1])
-    plt.legend()
+    plot_RTT_error(relative_error)
 
     plt.show()
