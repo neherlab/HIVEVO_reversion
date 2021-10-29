@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from Bio import Phylo
 from treetime import TreeTime
 from treetime.utils import parse_dates
+import json
 
 if __name__ == "__main__":
     region = "pol"
@@ -12,12 +13,16 @@ if __name__ == "__main__":
     alignment_path = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
     dates = parse_dates(metadata_path)
 
-    tt = TreeTime(gtr='Jukes-Cantor', tree=tree_path, precision=1, aln=alignment_path, verbose=2, dates=dates)
-
-    rates = np.linspace(8.8e-4, 12.8e-4, 10)
+    rates = np.linspace(5e-4, 15e-4, 10)
     likelihood = []
     for rate in rates:
+        tt = TreeTime(gtr='Jukes-Cantor', tree=tree_path, precision=1,
+                      aln=alignment_path, verbose=2, dates=dates)
         result = tt.run(root='best', infer_gtr=True, relaxed_clock=False, max_iter=2,
-                        branch_length_mode='input', n_iqd=3, resolve_polytomies=True, fixed_rate = rate,
+                        branch_length_mode='input', n_iqd=3, resolve_polytomies=True, fixed_clock_rate=rate,
                         Tc='skyline', time_marginal="assign")
         likelihood += [tt.timetree_likelihood()]
+    tmp = {"rates": rates, "likelihood": likelihood}
+
+    with open("likelihood.json", "w") as output:
+        json.dump(tmp, output, indent=4)
