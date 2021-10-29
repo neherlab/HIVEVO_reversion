@@ -23,6 +23,7 @@ if __name__ == "__main__":
                         Tc='skyline', time_marginal="assign")
         likelihood += [tt.timetree_likelihood()]
     tmp = {"rates": rates, "likelihood": likelihood}
+    print(tmp)
 
     with open("likelihood.json", "w") as output:
         json.dump(tmp, output, indent=4)
