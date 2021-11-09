@@ -219,7 +219,7 @@ def plot_RTT_error(relative_error, bins=20):
 
 
 if __name__ == "__main__":
-    region = "gag"
+    region = "pol"
     tmp = get_diversity_divergence(region)
     diversity_consensus = tmp[0]
     divergence_consensus = tmp[1]
