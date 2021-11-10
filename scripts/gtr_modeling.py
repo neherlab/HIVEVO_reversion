@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from treetime.gtr_site_specific import GTR_site_specific
 from treetime.seqgen import SeqGen
 from treetime.treeanc import TreeAnc
@@ -24,7 +25,10 @@ def homogeneous_p(consensus_seq, r_minus, r_plus):
     return p
 
 
-if __name__ == "__main__":
+def SeqGen_homogeneous():
+    """
+    Generates an MSA based on a homogeneous (same for all site) model for the reversion and non-reversion rates.
+    """
     tree_path = "data/BH/intermediate_files/tree_pol_1000.nwk"
     root_path = "data/BH/intermediate_files/pol_1000_nt_muts.json"
     consensus_path = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta"
@@ -53,3 +57,52 @@ if __name__ == "__main__":
     MySeq.evolve(root_seq=root_seq)
     with open("data/modeling/homogeneous/generated_MSA/homogeneous.fasta", "wt") as f:
         AlignIO.write(MySeq.get_aln(), f, "fasta")
+
+
+def get_ATGC_content(alignment):
+    """
+    Returns a nb_sequence*4 vector that gives the proportion of ATGC in each sequence.
+    """
+    prop = np.zeros((alignment.shape[0], 4))
+    for ii, nuc in enumerate(["A", "T", "G", "C"]):
+        prop[:, ii] = np.sum(alignment == nuc, axis=1)
+    for ii in range(prop.shape[0]):
+        prop[ii] /= np.sum(prop[ii])
+    return prop
+
+
+def compare_ATGC_distributions(original_MSA, generated_MSA):
+    """
+    Plots the distribution for the original and generated proportion of ATGC from the MSA.
+    """
+    ATGC_original = get_ATGC_content(original_MSA)
+    ATGC_generated = get_ATGC_content(generated_MSA)
+
+    for ii in range(4):
+        hist_or, bins = np.histogram(ATGC_original[:, ii], bins=200, range=[0, 0.5])
+        hist_gen, _ = np.histogram(ATGC_generated[:, ii], bins=200, range=[0, 0.5])
+        bins = 0.5 * (bins[:-1] + bins[1:])
+
+        plt.figure()
+        plt.title(["A", "T", "G", "C"][ii])
+        plt.plot(bins, hist_or, '-', label="orginal")
+        plt.plot(bins, hist_gen, '--', label="generated")
+        plt.legend()
+        plt.grid()
+        plt.xlabel("Frequency")
+        plt.ylabel("Counts")
+    plt.show()
+
+
+if __name__ == "__main__":
+    original_MSA = "data/BH/alignments/to_HXB2/pol_1000.fasta"
+    generated_MSA = "data/modeling/generated_MSA/homogeneous.fasta"
+    original_tree = "data/BH/intermediate_files/tree_pol_1000.nwk"
+    generated_tree = "data/modeling/generated_trees/homogeneous.nwk"
+
+    original_MSA = AlignIO.read(original_MSA, "fasta")
+    original_MSA = np.array(original_MSA)
+    generated_MSA = AlignIO.read(generated_MSA, "fasta")
+    generated_MSA = np.array(generated_MSA)
+
+    compare_ATGC_distributions(original_MSA, generated_MSA)

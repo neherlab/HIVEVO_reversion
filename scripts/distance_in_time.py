@@ -127,8 +127,6 @@ def get_root_to_tip_distance(tree_file, branch_length_file, subtype=""):
         dates += [int(date)]
     dates = np.unique(dates)
 
-    # mean_lengths = [tree.distance(tip) for tip in tips]
-
     mean_lengths = []
     std_lengths = []
     for date in dates:
