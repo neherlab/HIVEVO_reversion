@@ -10,6 +10,7 @@ from Bio import Phylo
 from distance_in_time import get_reference_sequence
 import filenames
 import tools
+import os
 
 
 def homogeneous_p(consensus_seq, r_minus, r_plus):
@@ -37,16 +38,16 @@ def binary_p(consensus_seq, r_minus, r_plus):
     Returns a p matrix of shape (4*len(consensus_seq)) where the equilibrium frequencies are set
     according to the global reversion and non-reversion mutation rate.
     """
-    p = np.zeros((4, len(consensus_seq)))
+    cons_fraction = r_minus / (r_plus + r_minus)
+    p = np.ones((4, len(consensus_seq))) * (1-cons_fraction) * 0.1
     consensus_idxs = tools.sequence_to_indices(consensus_seq)
     for ii in range(len(consensus_seq)):
-        cons_fraction = r_minus / (r_plus + r_minus)
         p[consensus_idxs[ii], ii] = cons_fraction
-        p[transition_idx(consensus_idxs[ii]), ii] = 1 - cons_fraction
+        p[transition_idx(consensus_idxs[ii]), ii] = (1 - cons_fraction) * 0.8
     return p
 
 
-def Generate_data(tree_path, root_path, consensus_path, MSA, metadata, p_type="homogeneous"):
+def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path, p_type="homogeneous"):
     """
     Generates an MSA based on a homogeneous (same for all site) model for the reversion and non-reversion
     rates.
@@ -86,7 +87,7 @@ def Generate_data(tree_path, root_path, consensus_path, MSA, metadata, p_type="h
     MySeq = SeqGen(3012, gtr=myGTR, tree=tree)
     MySeq.evolve(root_seq=root_seq)
     # MySeq.evolve()
-    with open("data/modeling/generated_MSA/homogeneous.fasta", "wt") as f:
+    with open(save_path, "wt") as f:
         AlignIO.write(MySeq.get_aln(), f, "fasta")
 
 
@@ -250,35 +251,52 @@ def compare_RTT(tree_or, MSA_or, tree_gen, MSA_gen, metadata):
     #                                                             rates["non_consensus"]["third"]["rate"])
 
 
+def generate_tree(MSA_path, output_path, builder_args="-m GTR+F+R10 -czb"):
+    """
+    Generates a tree from the given MSA using augur tree command.
+    """
+    cmd_str = f"""augur tree --method iqtree --tree-builder-args='{builder_args}' --alignment {MSA_path} --output {output_path} --nthreads 4"""
+    print("Executing command: " + cmd_str)
+    os.system(cmd_str)
+
+
 if __name__ == "__main__":
     original_MSA_path = "data/BH/alignments/to_HXB2/pol_1000.fasta"
-    generated_MSA_path = "data/modeling/generated_MSA/homogeneous.fasta"
-    # generated_MSA_path = "data/modeling/generated_MSA/homogeneous_consensus.fasta"
     original_tree_path = "data/BH/intermediate_files/tree_pol_1000.nwk"
-    generated_tree_path = "data/modeling/generated_trees/homogeneous.nwk"
-    # generated_tree_path = "data/modeling/generated_trees/homogeneous_consensus.nwk"
     root_path = "data/BH/intermediate_files/pol_1000_nt_muts.json"
     consensus_path = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta"
     original_metadata_path = "data/BH/raw/pol_1000_subsampled_metadata.tsv"
+    generated_MSA_folder = "data/modeling/generated_MSA/"
+    generated_tree_folder = "data/modeling/generated_trees/"
+
+    p_type = "homogeneous"
+    # p_type = "binary"
     regenerate = False
+    analysis = True
+
+    generated_MSA_path = os.path.join(generated_MSA_folder, p_type + ".fasta")
+    generated_tree_path = os.path.join(generated_tree_folder, p_type + ".fasta")
 
     if regenerate:
-        Generate_data(original_tree_path, root_path, consensus_path,
-                      original_MSA_path, original_metadata_path)
+        generate_MSA(original_tree_path, root_path, consensus_path,
+                     original_MSA_path, original_metadata_path, generated_MSA_path, p_type)
+        generate_tree(generated_MSA_path, generated_tree_path)
 
-    original_MSA = AlignIO.read(original_MSA_path, "fasta")
-    original_MSA = np.array(original_MSA)
-    generated_MSA = AlignIO.read(generated_MSA_path, "fasta")
-    generated_MSA = np.array(generated_MSA)
+    # --- Data analysis ---
+    if analysis:
+        original_MSA = AlignIO.read(original_MSA_path, "fasta")
+        original_MSA = np.array(original_MSA)
+        generated_MSA = AlignIO.read(generated_MSA_path, "fasta")
+        generated_MSA = np.array(generated_MSA)
 
-    compare_ATGC_distributions(original_MSA, generated_MSA)
+        compare_ATGC_distributions(original_MSA, generated_MSA)
 
-    ref_seq = get_reference_sequence(root_path)
-    compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to root")
-    ref_seq = get_reference_sequence(consensus_path)
-    compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to consensus")
+        ref_seq = get_reference_sequence(root_path)
+        compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to root")
+        ref_seq = get_reference_sequence(consensus_path)
+        compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to consensus")
 
-    compare_RTT(original_tree_path, original_MSA_path,
-                generated_tree_path, generated_MSA_path, original_metadata_path)
+        compare_RTT(original_tree_path, original_MSA_path,
+                    generated_tree_path, generated_MSA_path, original_metadata_path)
 
-    plt.show()
+        plt.show()
