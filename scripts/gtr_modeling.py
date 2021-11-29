@@ -11,6 +11,7 @@ from distance_in_time import get_reference_sequence
 import filenames
 import tools
 import os
+import divergence
 
 
 def homogeneous_p(consensus_seq, r_minus, r_plus):
@@ -39,7 +40,7 @@ def binary_p(consensus_seq, r_minus, r_plus):
     according to the global reversion and non-reversion mutation rate.
     """
     cons_fraction = r_minus / (r_plus + r_minus)
-    p = np.ones((4, len(consensus_seq))) * (1-cons_fraction) * 0.1
+    p = np.ones((4, len(consensus_seq))) * (1 - cons_fraction) * 0.1
     consensus_idxs = tools.sequence_to_indices(consensus_seq)
     for ii in range(len(consensus_seq)):
         p[consensus_idxs[ii], ii] = cons_fraction
@@ -47,12 +48,123 @@ def binary_p(consensus_seq, r_minus, r_plus):
     return p
 
 
-def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path, p_type="homogeneous"):
+def site_mask(consensus_seq, position):
+    """
+    Returns a bolean of shape len(consensus_seq) where True are the sites corresponding to the given
+    position (first, second or third)
+    """
+    assert position in [1, 2, 3], "Position must be 1 2 or 3."
+    position_mask = np.zeros(consensus_seq.shape[-1], dtype=bool)
+    position_mask[position - 1::3] = True
+    return position_mask
+
+
+def consensus_mask(consensus_seq):
+    """
+    Returns a bolean of shape 4*len(consensus_seq) where True are the positions that correspond to the
+    consensus sequence.
+    """
+    mask = np.zeros((4, len(consensus_seq)), dtype=bool)
+    consensus_idxs = tools.sequence_to_indices(consensus_seq)
+
+    for ii in range(len(consensus_seq)):
+        mask[consensus_idxs[ii], ii] = True
+    return mask
+
+
+def transition_mask(consensus_seq):
+    """
+    Returns a bolean of shape 4*len(consensus_seq) where True are the positions that correspond to the
+    transition nucleotide from the consensus.
+    """
+    mask = np.zeros((4, len(consensus_seq)), dtype=bool)
+    consensus_idxs = tools.sequence_to_indices(consensus_seq)
+
+    for ii in range(len(consensus_seq)):
+        mask[transition_idx(consensus_idxs[ii]), ii] = True
+    return mask
+
+
+def p_3class_homogeneous(consensus_seq, rates):
+    """
+    Returns the p matrix for a 3 class homogeneous model.
+    """
+    def p_consensus(rate_consensus, rate_non_consensus):
+        return rate_non_consensus / (3 * rate_consensus + rate_non_consensus)
+
+    def p_non_consensus(rate_consensus, rate_non_consensus):
+        return (1 - p_consensus(rate_consensus, rate_non_consensus)) / 3
+
+    mask_first = site_mask(consensus_seq, 1)
+    mask_second = site_mask(consensus_seq, 2)
+    mask_third = site_mask(consensus_seq, 3)
+    mask_consensus = consensus_mask(consensus_seq)
+
+    p = np.zeros((4, len(consensus_seq)))
+    p[:, mask_first] = p_non_consensus(rates["consensus"]["first"]["rate"],
+                                       rates["non_consensus"]["first"]["rate"])
+    p[:, mask_second] = p_non_consensus(rates["consensus"]["second"]["rate"],
+                                        rates["non_consensus"]["second"]["rate"])
+    p[:, mask_third] = p_non_consensus(rates["consensus"]["third"]["rate"],
+                                       rates["non_consensus"]["third"]["rate"])
+    p[np.logical_and(mask_first, mask_consensus)] = p_consensus(rates["consensus"]["first"]["rate"],
+                                                                rates["non_consensus"]["first"]["rate"])
+    p[np.logical_and(mask_second, mask_consensus)] = p_consensus(rates["consensus"]["second"]["rate"],
+                                                                 rates["non_consensus"]["second"]["rate"])
+    p[np.logical_and(mask_third, mask_consensus)] = p_consensus(rates["consensus"]["third"]["rate"],
+                                                                rates["non_consensus"]["third"]["rate"])
+    return p
+
+
+def p_3class_binary(consensus_seq, rates):
+    """
+    Returns the p matrix for a 3 class homogeneous model.
+    """
+    def p_consensus(rate_consensus, rate_non_consensus):
+        return rate_non_consensus / (rate_consensus + rate_non_consensus)
+
+    def p_non_consensus(rate_consensus, rate_non_consensus):
+        return (1 - p_consensus(rate_consensus, rate_non_consensus))
+
+    mask_first = site_mask(consensus_seq, 1)
+    mask_second = site_mask(consensus_seq, 2)
+    mask_third = site_mask(consensus_seq, 3)
+    mask_consensus = consensus_mask(consensus_seq)
+    mask_transition = transition_mask(consensus_seq)
+
+    # Non consensus transversion
+    p = np.zeros((4, len(consensus_seq)))
+    p[:, mask_first] = p_non_consensus(rates["consensus"]["first"]["rate"],
+                                       rates["non_consensus"]["first"]["rate"]) * 0.1
+    p[:, mask_second] = p_non_consensus(rates["consensus"]["second"]["rate"],
+                                        rates["non_consensus"]["second"]["rate"]) * 0.1
+    p[:, mask_third] = p_non_consensus(rates["consensus"]["third"]["rate"],
+                                       rates["non_consensus"]["third"]["rate"]) * 0.1
+    # Non consensus transitions
+    p[np.logical_and(mask_first, mask_transition)] = p_non_consensus(rates["consensus"]["first"]["rate"],
+                                                                     rates["non_consensus"]["first"]["rate"]) * 0.8
+    p[np.logical_and(mask_second, mask_transition)] = p_non_consensus(rates["consensus"]["second"]["rate"],
+                                                                      rates["non_consensus"]["second"]["rate"]) * 0.8
+    p[np.logical_and(mask_third, mask_transition)] = p_non_consensus(rates["consensus"]["third"]["rate"],
+                                                                     rates["non_consensus"]["third"]["rate"]) * 0.8
+    # Consensus
+    p[np.logical_and(mask_first, mask_consensus)] = p_consensus(rates["consensus"]["first"]["rate"],
+                                                                rates["non_consensus"]["first"]["rate"])
+    p[np.logical_and(mask_second, mask_consensus)] = p_consensus(rates["consensus"]["second"]["rate"],
+                                                                 rates["non_consensus"]["second"]["rate"])
+    p[np.logical_and(mask_third, mask_consensus)] = p_consensus(rates["consensus"]["third"]["rate"],
+                                                                rates["non_consensus"]["third"]["rate"])
+    return p
+
+
+def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path, rates,
+                 p_type="homogeneous", scaling=1.3):
     """
     Generates an MSA based on a homogeneous (same for all site) model for the reversion and non-reversion
     rates.
     """
-    assert p_type in ["homogeneous", "binary"], f"p_type must be 'homogeneous' or 'binary', got {p_type}"
+    assert p_type in ["homogeneous", "binary", "3class_homogeneous",
+                      "3class_binary"], f"p_type must be 'homogeneous' 'binary' '3class_homogeneous' or '3class_binary', got {p_type}"
 
     root_seq = get_reference_sequence(root_path)
     root_seq = Seq("".join(root_seq))
@@ -81,14 +193,28 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
         p = homogeneous_p(consensus_seq, reversion_rate, non_reversion_rate)
     elif p_type == "binary":
         p = binary_p(consensus_seq, reversion_rate, non_reversion_rate)
+    elif p_type == "3class_homogeneous":
+        p = p_3class_homogeneous(consensus_seq, rates)
+    elif p_type == "3class_binary":
+        p = p_3class_binary(consensus_seq, rates)
 
     myGTR = GTR_site_specific.custom(mu, p, W, alphabet="nuc_nogap")
     myGTR.mu /= myGTR.average_rate().mean()
+    myGTR.mu *= scaling
     MySeq = SeqGen(3012, gtr=myGTR, tree=tree)
     MySeq.evolve(root_seq=root_seq)
     # MySeq.evolve()
     with open(save_path, "wt") as f:
         AlignIO.write(MySeq.get_aln(), f, "fasta")
+
+
+def generate_tree(MSA_path, output_path, builder_args="-m GTR+F+R10 -czb"):
+    """
+    Generates a tree from the given MSA using augur tree command.
+    """
+    cmd_str = f"""augur tree --method iqtree --tree-builder-args='{builder_args}' --alignment {MSA_path} --output {output_path} --nthreads 4"""
+    print("Executing command: " + cmd_str)
+    os.system(cmd_str)
 
 
 def get_ATGC_content(alignment):
@@ -188,76 +314,20 @@ def compare_RTT(tree_or, MSA_or, tree_gen, MSA_gen, metadata):
 
     rtt_or, dates_or = get_RTT(tree_or)
     rtt_gen, dates_gen = get_RTT(tree_gen)
+    fit_or = np.polyfit(dates_or, rtt_or, deg=1)
+    fit_gen = np.polyfit(dates_gen, rtt_gen, deg=1)
 
     plt.figure()
-    plt.plot(dates_or, rtt_or, '.', label="original")
-    plt.plot(dates_gen, rtt_gen, '.', label="generated")
+    plt.plot(dates_or, rtt_or, '.', label="original", color="C0")
+    plt.plot(dates_or, np.polyval(fit_or, dates_or), "-", color="C0",
+             label=f"$\\propto {round(fit_or[0]*1e4,1)}\\cdot 10^{{-4}} t$")
+    plt.plot(dates_gen, rtt_gen, '.', label="generated", color="C1")
+    plt.plot(dates_gen, np.polyval(fit_gen, dates_gen), "-", color="C1",
+             label=f"$\\propto {round(fit_gen[0]*1e4,1)}\\cdot 10^{{-4}} t$")
     plt.legend()
     plt.grid()
     plt.xlabel("Years")
     plt.ylabel("RTT")
-
-    # def site_mask(consensus_seq, position):
-    #     """
-    #     Returns a bolean of shape len(consensus_seq) where True are the sites corresponding to the given
-    #     position (first, second or third)
-    #     """
-    #     assert position in [1, 2, 3], "Position must be 1 2 or 3."
-    #     position_mask = np.zeros(consensus_seq.shape[-1], dtype=bool)
-    #     position_mask[position - 1::3] = True
-    #     return position_mask
-    #
-    # def consensus_mask(consensus_seq):
-    #     """
-    #     Returns a bolean of shape 4*len(consensus_seq) where True are the position that correspond to the
-    #     consensus sequence.
-    #     """
-    #     mask = np.zeros((4, len(consensus_seq)), dtype=bool)
-    #     consensus_idxs = tools.sequence_to_indices(consensus_seq)
-    #
-    #     for ii in range(len(consensus_seq)):
-    #         mask[consensus_idxs[ii], ii] = True
-    #     return mask
-    #
-    # def p_consensus(rate_consensus, rate_non_consensus):
-    #     return rate_non_consensus / (3 * rate_consensus + rate_non_consensus)
-    #
-    # def p_non_consensus(rate_consensus, rate_non_consensus):
-    #     return (1 - (rate_non_consensus / (3 * rate_consensus + rate_non_consensus))) / 3
-    #
-    # import divergence
-    # rates = divergence.load_avg_rate_dict("data/WH/avg_rate_dict.json")
-    # rates = rates["pol"]["founder"]["global"]
-    # consensus_seq = get_reference_sequence(consensus_path)
-    # consensus_seq[consensus_seq == "N"] = "A"
-    #
-    # mask_first = site_mask(consensus_seq, 1)
-    # mask_second = site_mask(consensus_seq, 2)
-    # mask_third = site_mask(consensus_seq, 3)
-    # mask_consensus = consensus_mask(consensus_seq)
-    #
-    # p = np.zeros((4, len(consensus_seq)))
-    # p[:, mask_first] = p_non_consensus(rates["consensus"]["first"]["rate"],
-    #                                    rates["non_consensus"]["first"]["rate"])
-    # p[:, mask_second] = p_non_consensus(rates["consensus"]["second"]["rate"],
-    #                                     rates["non_consensus"]["second"]["rate"])
-    # p[:, mask_third] = p_non_consensus(rates["consensus"]["third"]["rate"],
-    #                                    rates["non_consensus"]["third"]["rate"])
-    # p[np.logical_and(mask_first, mask_consensus)] = p_consensus(rates["consensus"]["first"]["rate"],
-    #                                                             rates["non_consensus"]["first"]["rate"])
-    # p[np.logical_and(mask_second, mask_consensus)] = p_consensus(rates["consensus"]["second"]["rate"],
-    #                                                              rates["non_consensus"]["second"]["rate"])
-    # p[np.logical_and(mask_third, mask_consensus)] = p_consensus(rates["consensus"]["third"]["rate"],
-    #                                                             rates["non_consensus"]["third"]["rate"])
-
-
-def generate_tree(MSA_path, output_path, builder_args="-m GTR+F+R10 -czb"):
-    """
-    Generates a tree from the given MSA using augur tree command.
-    """
-    cmd_str = f"""augur tree --method iqtree --tree-builder-args='{builder_args}' --alignment {MSA_path} --output {output_path} --nthreads 4"""
-    print("Executing command: " + cmd_str)
-    os.system(cmd_str)
 
 
 if __name__ == "__main__":
@@ -268,18 +338,23 @@ if __name__ == "__main__":
     original_metadata_path = "data/BH/raw/pol_1000_subsampled_metadata.tsv"
     generated_MSA_folder = "data/modeling/generated_MSA/"
     generated_tree_folder = "data/modeling/generated_trees/"
+    rate_dict_path = "data/WH/avg_rate_dict.json"
+    rates = divergence.load_avg_rate_dict(rate_dict_path)
+    rates = rates["pol"]["founder"]["global"]
 
-    p_type = "homogeneous"
+    # p_type = "homogeneous"
     # p_type = "binary"
+    # p_type = "3class_homogeneous"
+    p_type = "3class_binary"
     regenerate = False
     analysis = True
 
     generated_MSA_path = os.path.join(generated_MSA_folder, p_type + ".fasta")
-    generated_tree_path = os.path.join(generated_tree_folder, p_type + ".fasta")
+    generated_tree_path = os.path.join(generated_tree_folder, p_type + ".nwk")
 
     if regenerate:
         generate_MSA(original_tree_path, root_path, consensus_path,
-                     original_MSA_path, original_metadata_path, generated_MSA_path, p_type)
+                     original_MSA_path, original_metadata_path, generated_MSA_path, rates, p_type)
         generate_tree(generated_MSA_path, generated_tree_path)
 
     # --- Data analysis ---
