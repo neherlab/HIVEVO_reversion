@@ -164,7 +164,7 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
     rates.
     """
     assert p_type in ["homogeneous", "binary", "3class_homogeneous",
-                      "3class_binary"], f"p_type must be 'homogeneous' 'binary' '3class_homogeneous' or '3class_binary', got {p_type}"
+                      "3class_binary", "control"], f"p_type must be 'homogeneous' 'binary' '3class_homogeneous' 'control' or '3class_binary', got {p_type}"
 
     root_seq = get_reference_sequence(root_path)
     root_seq = Seq("".join(root_seq))
@@ -179,8 +179,8 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
     # Replaces N by A, it's not correct but I have a 4 letter aphabet for now
     consensus_seq[consensus_seq == "N"] = "A"
 
-    non_reversion_rate = 0.0011872256804794856
-    reversion_rate = 0.009270115831081912
+    non_reversion_rate = rates["consensus"]["all"]["rate"]
+    reversion_rate = rates["non_consensus"]["all"]["rate"]
 
     L = len(root_seq)  # sequence length
     mu = np.ones(L)
@@ -197,13 +197,14 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
         p = p_3class_homogeneous(consensus_seq, rates)
     elif p_type == "3class_binary":
         p = p_3class_binary(consensus_seq, rates)
+    elif p_type == "control":
+        p = np.ones((4, len(consensus_seq))) * 0.25
 
     myGTR = GTR_site_specific.custom(mu, p, W, alphabet="nuc_nogap")
     myGTR.mu /= myGTR.average_rate().mean()
     myGTR.mu *= scaling
-    MySeq = SeqGen(3012, gtr=myGTR, tree=tree)
+    MySeq = SeqGen(len(consensus_seq), gtr=myGTR, tree=tree)
     MySeq.evolve(root_seq=root_seq)
-    # MySeq.evolve()
     with open(save_path, "wt") as f:
         AlignIO.write(MySeq.get_aln(), f, "fasta")
 
@@ -320,10 +321,10 @@ def compare_RTT(tree_or, MSA_or, tree_gen, MSA_gen, metadata):
     plt.figure()
     plt.plot(dates_or, rtt_or, '.', label="original", color="C0")
     plt.plot(dates_or, np.polyval(fit_or, dates_or), "-", color="C0",
-             label=f"$\\propto {round(fit_or[0]*1e4,1)}\\cdot 10^{{-4}} t$")
+             label=f"Clock: ${round(fit_or[0]*1e4,1)}\\cdot 10^{{-4}}$  Root: {round(-fit_or[1]/fit_or[0])}")
     plt.plot(dates_gen, rtt_gen, '.', label="generated", color="C1")
     plt.plot(dates_gen, np.polyval(fit_gen, dates_gen), "-", color="C1",
-             label=f"$\\propto {round(fit_gen[0]*1e4,1)}\\cdot 10^{{-4}} t$")
+             label=f"Clock: ${round(fit_gen[0]*1e4,1)}\\cdot 10^{{-4}}$  Root: {round(-fit_gen[1]/fit_gen[0])}")
     plt.legend()
     plt.grid()
     plt.xlabel("Years")
@@ -331,30 +332,37 @@ def compare_RTT(tree_or, MSA_or, tree_gen, MSA_gen, metadata):
 
 
 if __name__ == "__main__":
-    original_MSA_path = "data/BH/alignments/to_HXB2/pol_1000.fasta"
-    original_tree_path = "data/BH/intermediate_files/tree_pol_1000.nwk"
-    root_path = "data/BH/intermediate_files/pol_1000_nt_muts.json"
-    consensus_path = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta"
-    original_metadata_path = "data/BH/raw/pol_1000_subsampled_metadata.tsv"
-    generated_MSA_folder = "data/modeling/generated_MSA/"
-    generated_tree_folder = "data/modeling/generated_trees/"
+    region = "gag"
+    original_MSA_path = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
+    original_tree_path = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
+    root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
+    consensus_path = f"data/BH/alignments/to_HXB2/{region}_1000_consensus.fasta"
+    original_metadata_path = f"data/BH/raw/{region}_1000_subsampled_metadata.tsv"
+    generated_MSA_folder = f"data/modeling/generated_MSA/{region}_"
+    generated_tree_folder = f"data/modeling/generated_trees/{region}_"
     rate_dict_path = "data/WH/avg_rate_dict.json"
     rates = divergence.load_avg_rate_dict(rate_dict_path)
-    rates = rates["pol"]["founder"]["global"]
+    rates = rates[region]["founder"]["global"]
 
     # p_type = "homogeneous"
     # p_type = "binary"
     # p_type = "3class_homogeneous"
-    p_type = "3class_binary"
-    regenerate = False
+    # p_type = "3class_binary"
+    p_type = "control"
+    regenerate = True
     analysis = True
 
-    generated_MSA_path = os.path.join(generated_MSA_folder, p_type + ".fasta")
-    generated_tree_path = os.path.join(generated_tree_folder, p_type + ".nwk")
+    generated_MSA_path = generated_MSA_folder + p_type + ".fasta"
+    generated_tree_path = generated_tree_folder + p_type + ".nwk"
 
     if regenerate:
-        generate_MSA(original_tree_path, root_path, consensus_path,
-                     original_MSA_path, original_metadata_path, generated_MSA_path, rates, p_type)
+        if p_type == "control":
+            generate_MSA(original_tree_path, root_path, consensus_path,
+                         original_MSA_path, original_metadata_path, generated_MSA_path, rates, p_type, scaling=1)
+        else:
+            generate_MSA(original_tree_path, root_path, consensus_path,
+                         original_MSA_path, original_metadata_path, generated_MSA_path, rates, p_type, scaling=1.3)
+
         generate_tree(generated_MSA_path, generated_tree_path)
 
     # --- Data analysis ---
