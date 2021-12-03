@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from treetime import TreeTime
+from treetime import TreeTime, TreeAnc
 from treetime.gtr_site_specific import GTR_site_specific
 from treetime.seqgen import SeqGen
 from treetime.utils import parse_dates
@@ -216,13 +216,22 @@ def define_GTR(consensus_seq, p_type, scaling, rates):
     return myGTR
 
 
-def generate_tree(MSA_path, output_path, builder_args="-m GTR+F+R10 -czb"):
+def generate_tree(MSA_path, output_path, metadata, builder_args="-m GTR+F+R10 -czb"):
     """
     Generates a tree from the given MSA using augur tree command.
     """
     cmd_str = f"""augur tree --method iqtree --tree-builder-args='{builder_args}' --alignment {MSA_path} --output {output_path} --nthreads 4"""
     print("Executing command: " + cmd_str)
     os.system(cmd_str)
+
+
+def reroot_tree(tree_path, metadata, MSA_path):
+    print(f"Rerooting tree {tree_path}")
+    tree = Phylo.read(tree_path, "newick")
+    dates = parse_dates(metadata)
+    ttree = TreeTime(gtr='Jukes-Cantor', tree=tree, precision=1, aln=MSA_path, verbose=2, dates=dates)
+    ttree.reroot()
+    Phylo.write(ttree._tree, tree_path, "newick")
 
 
 def get_ATGC_content(alignment):
@@ -315,10 +324,7 @@ def compare_RTT(tree_or, MSA_or, tree_gen, MSA_gen, metadata):
                      precision=1, aln=MSA_or, verbose=2, dates=dates)
     ttree.reroot()
     tree_or = ttree._tree
-    ttree = TreeTime(gtr='Jukes-Cantor', tree=tree_gen,
-                     precision=1, aln=MSA_gen, verbose=2, dates=dates)
-    ttree.reroot()
-    tree_gen = ttree._tree
+    tree_gen = Phylo.read(tree_gen, "newick")
 
     rtt_or, dates_or = get_RTT(tree_or)
     rtt_gen, dates_gen = get_RTT(tree_gen)
@@ -338,10 +344,17 @@ def compare_RTT(tree_or, MSA_or, tree_gen, MSA_gen, metadata):
     plt.ylabel("RTT")
 
 
-def optimize_tree():
+def optimize_tree(tree_path, aln_path, consensus_path, p_type, rates, scaling=1):
     """
     Optimizes the branch length of a tree using treetime and the specified GTR model.
     """
+    tree = Phylo.read(tree_path, "newick")
+    consensus_seq = get_reference_sequence(consensus_path)
+    model = define_GTR(consensus_seq, p_type, scaling, rates)
+
+    ttree = TreeAnc(tree=tree, aln=aln_path, gtr=model, compress=False, alphabet="nuc_nogap", verbose=3)
+    ttree.optimize_tree()
+    return ttree._tree
 
 
 if __name__ == "__main__":
@@ -362,8 +375,8 @@ if __name__ == "__main__":
     # p_type = "3class_homogeneous"
     # p_type = "3class_binary"
     p_type = "control"
-    regenerate = True
-    analysis = True
+    regenerate = False
+    analysis = False
 
     generated_MSA_path = generated_MSA_folder + p_type + ".fasta"
     generated_tree_path = generated_tree_folder + p_type + ".nwk"
@@ -377,6 +390,7 @@ if __name__ == "__main__":
                          original_MSA_path, original_metadata_path, generated_MSA_path, rates, p_type, scaling=1.3)
 
         generate_tree(generated_MSA_path, generated_tree_path)
+        reroot_tree(generated_tree_path, original_metadata_path, generated_MSA_path)
 
     # --- Data analysis ---
     if analysis:
@@ -396,3 +410,17 @@ if __name__ == "__main__":
                     generated_tree_path, generated_MSA_path, original_metadata_path)
 
         plt.show()
+
+    tree = Phylo.read(generated_tree_path, "newick")
+    dates = parse_dates(original_metadata_path)
+    ttree = TreeTime(gtr='Jukes-Cantor', tree=tree, precision=1,
+                     aln=generated_MSA_path, verbose=2, dates=dates)
+    ttree.reroot()
+    tree = ttree._tree
+    consensus_seq = get_reference_sequence(consensus_path)
+    model = define_GTR(consensus_seq, p_type, 1, rates)
+    ttree = TreeAnc(tree=tree, aln=generated_MSA_path, gtr=model,
+                    compress=False, alphabet="nuc_nogap", verbose=3)
+    ttree.optimize_tree(branch_length_mode='marginal', infer_gtr=False, site_specific_gtr=True)
+    tree = ttree._tree
+    Phylo.write(tree, "test.nwk", "newick")
