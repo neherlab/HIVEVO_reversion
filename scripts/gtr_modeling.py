@@ -163,8 +163,6 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
     Generates an MSA based on a homogeneous (same for all site) model for the reversion and non-reversion
     rates.
     """
-    assert p_type in ["homogeneous", "binary", "3class_homogeneous",
-                      "3class_binary", "control"], f"p_type must be 'homogeneous' 'binary' '3class_homogeneous' 'control' or '3class_binary', got {p_type}"
 
     root_seq = get_reference_sequence(root_path)
     root_seq = Seq("".join(root_seq))
@@ -176,13 +174,25 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
     tree = ttree._tree
 
     consensus_seq = get_reference_sequence(consensus_path)
-    # Replaces N by A, it's not correct but I have a 4 letter aphabet for now
+    # Replaces N by A, it's not exact but I have a 4 letter alphabet for now
     consensus_seq[consensus_seq == "N"] = "A"
+
+    myGTR = define_GTR(consensus_seq, p_type, scaling, rates)
+    MySeq = SeqGen(len(consensus_seq), gtr=myGTR, tree=tree)
+    MySeq.evolve(root_seq=root_seq)
+    with open(save_path, "wt") as f:
+        AlignIO.write(MySeq.get_aln(), f, "fasta")
+
+
+def define_GTR(consensus_seq, p_type, scaling, rates):
+    "Creates and return a GTR model with the given parameters"
+    assert p_type in ["homogeneous", "binary", "3class_homogeneous",
+                      "3class_binary", "control"], f"p_type must be 'homogeneous' 'binary' '3class_homogeneous' 'control' or '3class_binary', got {p_type}"
 
     non_reversion_rate = rates["consensus"]["all"]["rate"]
     reversion_rate = rates["non_consensus"]["all"]["rate"]
 
-    L = len(root_seq)  # sequence length
+    L = len(consensus_seq)  # sequence length
     mu = np.ones(L)
     W = np.array([[0., 0.763, 2.902, 0.391],
                   [0.763, 0., 0.294, 3.551],
@@ -203,10 +213,7 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
     myGTR = GTR_site_specific.custom(mu, p, W, alphabet="nuc_nogap")
     myGTR.mu /= myGTR.average_rate().mean()
     myGTR.mu *= scaling
-    MySeq = SeqGen(len(consensus_seq), gtr=myGTR, tree=tree)
-    MySeq.evolve(root_seq=root_seq)
-    with open(save_path, "wt") as f:
-        AlignIO.write(MySeq.get_aln(), f, "fasta")
+    return myGTR
 
 
 def generate_tree(MSA_path, output_path, builder_args="-m GTR+F+R10 -czb"):
@@ -331,8 +338,14 @@ def compare_RTT(tree_or, MSA_or, tree_gen, MSA_gen, metadata):
     plt.ylabel("RTT")
 
 
+def optimize_tree():
+    """
+    Optimizes the branch length of a tree using treetime and the specified GTR model.
+    """
+
+
 if __name__ == "__main__":
-    region = "gag"
+    region = "pol"
     original_MSA_path = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
     original_tree_path = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
     root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
