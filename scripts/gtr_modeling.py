@@ -344,17 +344,16 @@ def compare_RTT(tree_or, MSA_or, tree_gen, MSA_gen, metadata):
     plt.ylabel("RTT")
 
 
-def optimize_tree(tree_path, aln_path, consensus_path, p_type, rates, scaling=1):
-    """
-    Optimizes the branch length of a tree using treetime and the specified GTR model.
-    """
-    tree = Phylo.read(tree_path, "newick")
+def optimize_tree(tree_path, MSA_path, output_path, consensus_path, p_type, rates, scaling=1):
+    "Reoptimize branch length according to the model using treetime."
     consensus_seq = get_reference_sequence(consensus_path)
+    consensus_seq[consensus_seq == "N"] = "A"
     model = define_GTR(consensus_seq, p_type, scaling, rates)
-
-    ttree = TreeAnc(tree=tree, aln=aln_path, gtr=model, compress=False, alphabet="nuc_nogap", verbose=3)
-    ttree.optimize_tree()
-    return ttree._tree
+    ttree = TreeAnc(tree=tree_path, aln=MSA_path, gtr=model,
+                    compress=False, alphabet="nuc_nogap", verbose=3)
+    ttree.optimize_tree(branch_length_mode='marginal', infer_gtr=False, site_specific_gtr=True)
+    tree = ttree._tree
+    Phylo.write(tree, output_path, "newick")
 
 
 if __name__ == "__main__":
@@ -366,6 +365,7 @@ if __name__ == "__main__":
     original_metadata_path = f"data/BH/raw/{region}_1000_subsampled_metadata.tsv"
     generated_MSA_folder = f"data/modeling/generated_MSA/{region}_"
     generated_tree_folder = f"data/modeling/generated_trees/{region}_"
+    optimized_tree_folder = f"data/modeling/optimized_trees/{region}_"
     rate_dict_path = "data/WH/avg_rate_dict.json"
     rates = divergence.load_avg_rate_dict(rate_dict_path)
     rates = rates[region]["founder"]["global"]
@@ -376,21 +376,28 @@ if __name__ == "__main__":
     # p_type = "3class_binary"
     p_type = "control"
     regenerate = False
+    optimize = True
     analysis = False
 
     generated_MSA_path = generated_MSA_folder + p_type + ".fasta"
     generated_tree_path = generated_tree_folder + p_type + ".nwk"
 
-    if regenerate:
-        if p_type == "control":
-            generate_MSA(original_tree_path, root_path, consensus_path,
-                         original_MSA_path, original_metadata_path, generated_MSA_path, rates, p_type, scaling=1)
-        else:
-            generate_MSA(original_tree_path, root_path, consensus_path,
-                         original_MSA_path, original_metadata_path, generated_MSA_path, rates, p_type, scaling=1.3)
+    if p_type == "control":
+        scaling = 1
+    else:
+        scaling = 1.3
 
+    if regenerate:
+        generate_MSA(original_tree_path, root_path, consensus_path,
+                     original_MSA_path, original_metadata_path, generated_MSA_path, rates,
+                     p_type, scaling)
         generate_tree(generated_MSA_path, generated_tree_path)
         reroot_tree(generated_tree_path, original_metadata_path, generated_MSA_path)
+
+    if optimize:
+        output_path = optimized_tree_folder + p_type + ".nwk"
+        optimize_tree(generated_tree_path, generated_MSA_path, output_path,
+                      consensus_path, p_type, rates, scaling)
 
     # --- Data analysis ---
     if analysis:
@@ -410,17 +417,3 @@ if __name__ == "__main__":
                     generated_tree_path, generated_MSA_path, original_metadata_path)
 
         plt.show()
-
-    tree = Phylo.read(generated_tree_path, "newick")
-    dates = parse_dates(original_metadata_path)
-    ttree = TreeTime(gtr='Jukes-Cantor', tree=tree, precision=1,
-                     aln=generated_MSA_path, verbose=2, dates=dates)
-    ttree.reroot()
-    tree = ttree._tree
-    consensus_seq = get_reference_sequence(consensus_path)
-    model = define_GTR(consensus_seq, p_type, 1, rates)
-    ttree = TreeAnc(tree=tree, aln=generated_MSA_path, gtr=model,
-                    compress=False, alphabet="nuc_nogap", verbose=3)
-    ttree.optimize_tree(branch_length_mode='marginal', infer_gtr=False, site_specific_gtr=True)
-    tree = ttree._tree
-    Phylo.write(tree, "test.nwk", "newick")
