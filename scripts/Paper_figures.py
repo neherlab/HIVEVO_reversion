@@ -319,6 +319,9 @@ def make_figure_4(region, savefig=False):
 
 
 def make_figure_5(savefig=False):
+    """
+    Plot for equivalant of the reversion in time figure but using synonymous / non-synonymous in this case.
+    """
     reference = "any"  # "any" or "subtypes"
     fill_alpha = 0.15
     figsize = (6.7315, 3)
@@ -416,11 +419,12 @@ def make_figure_6(region, savefig):
 
 if __name__ == '__main__':
     fig1 = False
-    fig2 = True
+    fig2 = False
     fig3 = False
     fig4 = False
     fig5 = False
     fig6 = False
+    fig7 = True
     savefig = False
 
     if fig1:
@@ -467,6 +471,50 @@ if __name__ == '__main__':
     if fig6:
         make_figure_6("pol", savefig)
 
+    if fig7:
+        from gtr_modeling import get_RTT
+        from treetime.utils import parse_dates
+        from treetime import TreeTime
+        from Bio import Phylo
+        text = {"pol": [(2000, 0.15), (2000, 0.08), (2000, 0.06)]}
+        text = text["pol"]
+        msize = 3
+        malpha = 0.5
 
-    # WH_file = "data/WH/avg_rate_dict.json"
-    # rate_dict = divergence.load_avg_rate_dict(WH_file)
+        region = "pol"
+        tree_or = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
+        tree_gen = f"data/modeling/generated_trees/{region}_binary.nwk"
+        tree_unscaled = f"data/modeling/generated_trees/{region}_binary_1.nwk"
+        metadata = f"data/BH/raw/{region}_1000_subsampled_metadata.tsv"
+        MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
+
+        dates = parse_dates(metadata)
+        ttree = TreeTime(gtr='Jukes-Cantor', tree=tree_or, precision=1, aln=MSA_or, verbose=2, dates=dates)
+        ttree.reroot()
+        tree_or = ttree._tree
+        tree_gen = Phylo.read(tree_gen, "newick")
+        tree_uns = Phylo.read(tree_unscaled, "newick")
+
+        rtt_or, dates_or = get_RTT(tree_or)
+        rtt_gen, dates_gen = get_RTT(tree_gen)
+        rtt_uns, dates_uns = get_RTT(tree_uns)
+        fit_or = np.polyfit(dates_or, rtt_or, deg=1)
+        fit_gen = np.polyfit(dates_gen, rtt_gen, deg=1)
+        fit_uns = np.polyfit(dates_uns, rtt_uns, deg=1)
+
+        plt.figure()
+        plt.plot(dates_or, rtt_or, '.', label="Original", color="C0", markersize=msize, alpha=malpha)
+        plt.plot(dates_or, np.polyval(fit_or, dates_or), "-", color="C0")
+        plt.text(text[0][0], text[0][1], f"$\\propto {round(fit_or[0]*1e4,1)}\\cdot 10^{{-4}}$", color="C0")
+        plt.plot(dates_gen, rtt_gen, '.', label="30% higher mutation rate",
+                 color="C1", markersize=msize, alpha=malpha)
+        plt.plot(dates_gen, np.polyval(fit_gen, dates_gen), "-", color="C1")
+        plt.text(text[1][0], text[1][1], f"$\\propto {round(fit_gen[0]*1e4,1)}\\cdot 10^{{-4}}$", color="C1")
+        plt.plot(dates_uns, rtt_uns, '.', label="Unscaled", color="C2", markersize=msize, alpha=malpha)
+        plt.plot(dates_uns, np.polyval(fit_uns, dates_uns), "-", color="C2")
+        plt.text(text[2][0], text[2][1], f"$\\propto {round(fit_uns[0]*1e4,1)}\\cdot 10^{{-4}}$", color="C2")
+        plt.legend()
+        plt.grid()
+        plt.xlabel("Years")
+        plt.ylabel("RTT")
+        plt.show()
