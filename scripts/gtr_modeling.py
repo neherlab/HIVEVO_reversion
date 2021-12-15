@@ -34,17 +34,17 @@ def transition_idx(idx):
     return transi_list[idx]
 
 
-def binary_p(consensus_seq, r_minus, r_plus):
+def binary_p(consensus_seq, r_minus, r_plus, ratio=0.85):
     """
     Returns a p matrix of shape (4*len(consensus_seq)) where the equilibrium frequencies are set
     according to the global reversion and non-reversion mutation rate.
     """
     cons_fraction = r_minus / (r_plus + r_minus)
-    p = np.ones((4, len(consensus_seq))) * (1 - cons_fraction) * 0.1
+    p = np.ones((4, len(consensus_seq))) * (1 - cons_fraction) * ((1 - ratio) / 2)
     consensus_idxs = tools.sequence_to_indices(consensus_seq)
     for ii in range(len(consensus_seq)):
         p[consensus_idxs[ii], ii] = cons_fraction
-        p[transition_idx(consensus_idxs[ii]), ii] = (1 - cons_fraction) * 0.8
+        p[transition_idx(consensus_idxs[ii]), ii] = (1 - cons_fraction) * ratio
     return p
 
 
@@ -116,7 +116,7 @@ def p_3class_homogeneous(consensus_seq, rates):
     return p
 
 
-def p_3class_binary(consensus_seq, rates):
+def p_3class_binary(consensus_seq, rates, ratio=0.85):
     """
     Returns the p matrix for a 3 class homogeneous model.
     """
@@ -135,18 +135,18 @@ def p_3class_binary(consensus_seq, rates):
     # Non consensus transversion
     p = np.zeros((4, len(consensus_seq)))
     p[:, mask_first] = p_non_consensus(rates["consensus"]["first"]["rate"],
-                                       rates["non_consensus"]["first"]["rate"]) * 0.1
+                                       rates["non_consensus"]["first"]["rate"]) * ((1 - ratio) / 2)
     p[:, mask_second] = p_non_consensus(rates["consensus"]["second"]["rate"],
-                                        rates["non_consensus"]["second"]["rate"]) * 0.1
+                                        rates["non_consensus"]["second"]["rate"]) * ((1 - ratio) / 2)
     p[:, mask_third] = p_non_consensus(rates["consensus"]["third"]["rate"],
-                                       rates["non_consensus"]["third"]["rate"]) * 0.1
+                                       rates["non_consensus"]["third"]["rate"]) * ((1 - ratio) / 2)
     # Non consensus transitions
     p[np.logical_and(mask_first, mask_transition)] = p_non_consensus(rates["consensus"]["first"]["rate"],
-                                                                     rates["non_consensus"]["first"]["rate"]) * 0.8
+                                                                     rates["non_consensus"]["first"]["rate"]) * ratio
     p[np.logical_and(mask_second, mask_transition)] = p_non_consensus(rates["consensus"]["second"]["rate"],
-                                                                      rates["non_consensus"]["second"]["rate"]) * 0.8
+                                                                      rates["non_consensus"]["second"]["rate"]) * ratio
     p[np.logical_and(mask_third, mask_transition)] = p_non_consensus(rates["consensus"]["third"]["rate"],
-                                                                     rates["non_consensus"]["third"]["rate"]) * 0.8
+                                                                     rates["non_consensus"]["third"]["rate"]) * ratio
     # Consensus
     p[np.logical_and(mask_first, mask_consensus)] = p_consensus(rates["consensus"]["first"]["rate"],
                                                                 rates["non_consensus"]["first"]["rate"])
@@ -216,7 +216,7 @@ def define_GTR(consensus_seq, p_type, scaling, rates):
     return myGTR
 
 
-def generate_tree(MSA_path, output_path, metadata, builder_args="-m GTR+F+R10 -czb"):
+def generate_tree(MSA_path, output_path, builder_args="-m GTR+F+R10 -czb"):
     """
     Generates a tree from the given MSA using augur tree command.
     """
@@ -314,16 +314,12 @@ def get_RTT(tree):
     return np.array(rtt), np.array(dates)
 
 
-def compare_RTT(tree_or, MSA_or, tree_gen, MSA_gen, metadata):
+def compare_RTT(tree_or, tree_gen):
     """
     Returns a p matrix of shape (4*len(consensus_seq)) where the equilibrium frequencies are set
     according to the global reversion and non-reversion mutation rate.
     """
-    dates = parse_dates(metadata)
-    ttree = TreeTime(gtr='Jukes-Cantor', tree=tree_or,
-                     precision=1, aln=MSA_or, verbose=2, dates=dates)
-    ttree.reroot()
-    tree_or = ttree._tree
+    tree_or = Phylo.read(tree_or, "newick")
     tree_gen = Phylo.read(tree_gen, "newick")
 
     rtt_or, dates_or = get_RTT(tree_or)
@@ -351,7 +347,8 @@ def optimize_tree(tree_path, MSA_path, output_path, consensus_path, p_type, rate
     model = define_GTR(consensus_seq, p_type, scaling, rates)
     ttree = TreeAnc(tree=tree_path, aln=MSA_path, gtr=model,
                     compress=False, alphabet="nuc_nogap", verbose=3)
-    ttree.optimize_tree(branch_length_mode='marginal', infer_gtr=False, site_specific_gtr=True)
+    ttree.optimize_tree(prune_short=False, branch_length_mode='marginal',
+                        infer_gtr=False, site_specific_gtr=True, damping=0.75)
     tree = ttree._tree
     Phylo.write(tree, output_path, "newick")
 
@@ -373,19 +370,17 @@ if __name__ == "__main__":
     # p_type = "homogeneous"
     # p_type = "binary"
     # p_type = "3class_homogeneous"
-    # p_type = "3class_binary"
-    p_type = "control"
+    p_type = "3class_binary"
+    # p_type = "control"
     regenerate = False
-    optimize = True
-    analysis = False
+    optimize = False
+    analysis = True
 
-    generated_MSA_path = generated_MSA_folder + p_type + ".fasta"
-    generated_tree_path = generated_tree_folder + p_type + ".nwk"
+    scaling = 1.58
 
-    if p_type == "control":
-        scaling = 1
-    else:
-        scaling = 1.3
+    generated_MSA_path = generated_MSA_folder + p_type + "_" + str(scaling) + ".fasta"
+    generated_tree_path = generated_tree_folder + p_type + "_" + str(scaling) + ".nwk"
+    optimized_tree_path = optimized_tree_folder + p_type + "_" + str(scaling) + ".nwk"
 
     if regenerate:
         generate_MSA(original_tree_path, root_path, consensus_path,
@@ -395,8 +390,7 @@ if __name__ == "__main__":
         reroot_tree(generated_tree_path, original_metadata_path, generated_MSA_path)
 
     if optimize:
-        output_path = optimized_tree_folder + p_type + ".nwk"
-        optimize_tree(generated_tree_path, generated_MSA_path, output_path,
+        optimize_tree(original_tree_path, generated_MSA_path, optimized_tree_path,
                       consensus_path, p_type, rates, scaling)
 
     # --- Data analysis ---
@@ -413,7 +407,26 @@ if __name__ == "__main__":
         ref_seq = get_reference_sequence(consensus_path)
         compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to consensus")
 
-        compare_RTT(original_tree_path, original_MSA_path,
-                    generated_tree_path, generated_MSA_path, original_metadata_path)
+        # compare_RTT(original_tree_path, optimized_tree_path)
+        compare_RTT(original_tree_path, generated_tree_path)
 
         plt.show()
+
+    # tree_or = Phylo.read(original_tree_path, "newick")
+    # tree_opt = Phylo.read(optimized_tree_path, "newick")
+    #
+    # clades_or = [c for c in tree_or.find_clades()]
+    # clades_opt = [c for c in tree_opt.find_clades()]
+    # lengths_or = [c.branch_length for c in clades_or]
+    # lengths_opt = [c.branch_length for c in clades_opt]
+    #
+    # plt.figure()
+    # plt.plot(lengths_or, lengths_opt, ".", alpha=0.3)
+    # plt.plot([0, 0.08], [0, 0.08], "k--")
+    # plt.xlabel("Lengths original tree")
+    # plt.ylabel("Lengths optimized tree")
+    # plt.axis("equal")
+    # # plt.xscale("log")
+    # # plt.yscale("log")
+    # plt.grid()
+    # plt.show()
