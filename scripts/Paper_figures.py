@@ -418,127 +418,6 @@ def make_figure_6(region, savefig):
     plt.show()
 
 
-def make_figure_7_old(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linestyle=["-", "--", ":"]):
-    "GTR modeling figure"
-    from gtr_modeling import get_RTT, get_ATGC_content, get_hamming_distance
-    from Bio import Phylo, AlignIO
-
-    def average_rtt(rtt, dates, cutoff=1977):
-        "Average rtt per years"
-        years = np.unique(dates)
-        lengths = []
-        for year in years:
-            lengths += [np.mean(rtt[dates == year])]
-        lengths = np.array(lengths)[years >= cutoff]
-        years = years[years >= cutoff]
-        return lengths, years
-
-    # figsize = (6.7315, 3)
-    figsize = (6.7315, 4)
-    MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
-    MSA_naive = f"data/modeling/generated_MSA/{region}_control_1.58.fasta"
-    MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_1.58.fasta"
-    tree_or = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
-    tree_naive = f"data/modeling/generated_trees/{region}_control_1.58.nwk"
-    tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_1.58.nwk"
-    root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
-    consensus_path = f"data/BH/alignments/to_HXB2/{region}_1000_consensus.fasta"
-
-    MSA = {}
-    for key, path in zip(["original", "naive", "biased"], [MSA_or, MSA_naive, MSA_biased]):
-        MSA[key] = AlignIO.read(path, "fasta")
-        MSA[key] = np.array(MSA[key])
-    tree_or = Phylo.read(tree_or, "newick")
-    tree_naive = Phylo.read(tree_naive, "newick")
-    tree_biased = Phylo.read(tree_biased, "newick")
-    nucleotides = ["A", "T", "G", "C"]
-    root_seq = get_reference_sequence(root_path)
-    consensus_seq = get_reference_sequence(consensus_path)
-
-    plt.figure(figsize=figsize)
-
-    # Top-Left plot
-    nb_bins = 500
-    # ax1 = plt.subplot(221)
-    ax1 = plt.subplot(211)
-
-    ATGC = {}
-    for key in MSA.keys():
-        ATGC[key] = get_ATGC_content(MSA[key])
-
-    for ii, key in enumerate(ATGC.keys()):
-        for jj in range(4):
-            hist, bins = np.histogram(ATGC[key][:, jj], bins=nb_bins, range=[0, 0.5])
-            bins = 0.5 * (bins[:-1] + bins[1:])
-            ax1.plot(bins, hist, linestyle[ii], color=colors[jj])
-
-    for ii in range(3):
-        plt.plot([0], [0], linestyle[ii], color="k", label=["original", "naive", "biased"][ii])
-    for ii in range(4):
-        plt.plot([0], [0], "-", color=colors[ii], label=nucleotides[ii])
-
-    ax1.legend()
-    ax1.set_xlim([0.15, 0.41])
-    ax1.set_xlabel("Frequency")
-    ax1.set_ylabel("Counts")
-
-    # Bottom-Left plot
-    nb_bins = 200
-    ax2 = plt.subplot(223)
-
-    distances = {}
-    for key in MSA.keys():
-        distances[key] = {}
-        distances[key]["consensus"] = get_hamming_distance(MSA[key], consensus_seq)
-        distances[key]["root"] = get_hamming_distance(MSA[key], root_seq)
-
-    for ii, key in enumerate(distances.keys()):
-        for jj, key2 in enumerate(distances[key].keys()):
-            hist, bins = np.histogram(distances[key][key2], bins=nb_bins, range=[0, 0.5])
-            bins = 0.5 * (bins[:-1] + bins[1:])
-            ax2.plot(bins, hist, linestyle[ii], color=colors[jj])
-
-    for ii in range(3):
-        plt.plot([0], [0], linestyle[ii], color="k", label=["original", "naive", "biased"][ii])
-    for ii in range(2):
-        plt.plot([0], [0], "-", color=colors[ii], label=["to consensus", "to_root"][ii])
-
-    ax2.set_xlabel("Distance")
-    ax2.set_ylabel("Counts")
-    ax2.set_xlim([0.02, 0.22])
-    ax2.legend()
-
-    # Right plot
-    trees = {"original": tree_or, "naive": tree_naive, "biased": tree_biased}
-    rtts, dates, fits = {}, {}, {}
-    labels = ["BH data", "WH naive", "WH reversion"]
-
-    # ax3 = plt.subplot(122)
-    ax3 = plt.subplot(224)
-    for key in trees.keys():
-        rtts[key], dates[key] = get_RTT(trees[key])
-        rtts[key], dates[key] = average_rtt(rtts[key], dates[key])
-        fits[key] = np.polyfit(dates[key], rtts[key], deg=1)
-
-    for ii, key in enumerate(rtts.keys()):
-        ax3.plot(dates[key], rtts[key], '.', label=f"{labels[ii]}", color=colors[ii])
-        ax3.plot(dates[key], np.polyval(fits[key], dates[key]), "-", color=colors[ii])
-        ax3.text(text[ii][0], text[ii][1],
-                 f"$\\propto {round(fits[key][0]*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
-
-    legend = ax3.legend()
-    for legend_handle in legend.legendHandles:
-        legend_handle._legmarker.set_markersize(6)
-        legend_handle._legmarker.set_alpha(1)
-    ax3.set_xlabel("Years")
-    ax3.ticklabel_format(axis="x", style="plain")
-    ax3.set_ylabel("RTT")
-
-    if savefig:
-        plt.savefig(f"figures/RTT_modeling_{region}.pdf")
-    plt.show()
-
-
 def make_figure_7(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linestyle=["-", "--", ":"]):
     "GTR modeling figure"
     from gtr_modeling import get_RTT, get_ATGC_content, get_hamming_distance
@@ -604,6 +483,7 @@ def make_figure_7(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linest
     ax1.set_xticklabels(nucleotides)
     ax1.set_ylabel("ATGC content")
     ax1.legend(*zip(*labels))
+    ax1.annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
     # Bottom-Left plot
     nb_bins = 200
@@ -611,25 +491,19 @@ def make_figure_7(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linest
 
     distances = {}
     for key in MSA.keys():
-        distances[key] = {}
-        distances[key]["consensus"] = get_hamming_distance(MSA[key], consensus_seq)
-        distances[key]["root"] = get_hamming_distance(MSA[key], root_seq)
+        distances[key] = get_hamming_distance(MSA[key], root_seq)
 
     for ii, key in enumerate(distances.keys()):
-        for jj, key2 in enumerate(distances[key].keys()):
-            hist, bins = np.histogram(distances[key][key2], bins=nb_bins, range=[0, 0.5])
-            bins = 0.5 * (bins[:-1] + bins[1:])
-            ax2.plot(bins, hist, linestyle[jj], color=colors[ii])
-
-    # for ii in range(3):
-    #     plt.plot([0], [0], "-", color=colors[ii], label=["BH data", "WH naive", "WH reversion"][ii])
-    for ii in range(2):
-        plt.plot([0], [0], linestyle=linestyle[ii], color="k", label=["to consensus", "to_root"][ii])
+        hist, bins = np.histogram(distances[key], bins=nb_bins, range=[0, 0.5])
+        hist = hist / 1000
+        bins = 0.5 * (bins[:-1] + bins[1:])
+        ax2.plot(bins, hist, "-", color=colors[ii], label=["BH data", "WH naive", "WH reversion"][ii])
 
     ax2.set_xlabel("Distance")
-    ax2.set_ylabel("Counts")
-    ax2.set_xlim([0.03, 0.22])
+    ax2.set_ylabel("Frequency")
+    ax2.set_xlim([0.02, 0.25])
     ax2.legend()
+    ax2.annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
     # Right plot
     trees = {"original": tree_or, "naive": tree_naive, "biased": tree_biased}
@@ -649,16 +523,145 @@ def make_figure_7(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linest
         ax3.text(text[ii][0], text[ii][1],
                  f"$\\propto {round(fits[key][0]*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
 
-    legend = ax3.legend()
-    for legend_handle in legend.legendHandles:
-        legend_handle._legmarker.set_markersize(6)
-        legend_handle._legmarker.set_alpha(1)
+    ax3.annotate("C", xy=(0, 1.02), xycoords="axes fraction")
     ax3.set_xlabel("Years")
     ax3.ticklabel_format(axis="x", style="plain")
     ax3.set_ylabel("RTT")
+    ax3.legend()
 
     if savefig:
         plt.savefig(f"figures/RTT_modeling_{region}.pdf")
+    plt.show()
+
+
+def make_figure_7_v2(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linestyle=["-", "--", ":"]):
+    "GTR modeling figure"
+    from gtr_modeling import get_RTT, get_ATGC_content, get_hamming_distance
+    from Bio import Phylo, AlignIO
+
+    def average_rtt(rtt, dates, cutoff=1977):
+        "Average rtt per years"
+        years = np.unique(dates)
+        lengths = []
+        for year in years:
+            lengths += [np.mean(rtt[dates == year])]
+        lengths = np.array(lengths)[years >= cutoff]
+        years = years[years >= cutoff]
+        return lengths, years
+
+    # figsize = (6.7315, 3)
+    figsize = (6.7315, 4)
+    MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
+    MSA_naive = f"data/modeling/generated_MSA/{region}_control_1.58.fasta"
+    MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_1.58.fasta"
+    tree_or = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
+    tree_naive = f"data/modeling/generated_trees/{region}_control_1.58.nwk"
+    tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_1.58.nwk"
+    root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
+    consensus_path = f"data/BH/alignments/to_HXB2/{region}_1000_consensus.fasta"
+
+    MSA = {}
+    for key, path in zip(["original", "naive", "biased"], [MSA_or, MSA_naive, MSA_biased]):
+        MSA[key] = AlignIO.read(path, "fasta")
+        MSA[key] = np.array(MSA[key])
+    tree_or = Phylo.read(tree_or, "newick")
+    tree_naive = Phylo.read(tree_naive, "newick")
+    tree_biased = Phylo.read(tree_biased, "newick")
+    nucleotides = ["A", "T", "G", "C"]
+    root_seq = get_reference_sequence(root_path)
+    consensus_seq = get_reference_sequence(consensus_path)
+
+    plt.figure(figsize=figsize)
+
+    # Top-Left plot
+    nb_bins = 500
+    # ax1 = plt.subplot(221)
+    ax1 = plt.subplot(221)
+
+    ATGC = {}
+    for key in MSA.keys():
+        ATGC[key] = get_ATGC_content(MSA[key])
+
+    tmp = [0, -0.3, 0.3]
+    for ii, key in enumerate(ATGC.keys()):
+        data = []
+        pos = []
+        for jj in range(4):
+            data += [ATGC[key][:, jj]]
+            pos += [jj + tmp[ii]]
+        ax1.violinplot(data, pos, showmeans=True, showextrema=True, showmedians=False, widths=0.3)
+
+    labels = []
+    for ii, key in enumerate(ATGC.keys()):
+        labels.append((mpl.patches.Patch(color=colors[ii]), ["BH data", "WH naive", "WH reversion"][ii]))
+
+    ax1.set_xticks([0, 1, 2, 3])
+    ax1.set_xticklabels(nucleotides)
+    ax1.set_ylabel("ATGC content")
+    ax1.legend(*zip(*labels))
+    ax1.annotate("A", xy=(0.02, 0.91), xycoords="axes fraction")
+
+    # Top-Right plot
+    nb_bins = 200
+    ax2 = plt.subplot(222)
+
+    distances = {}
+    for key in MSA.keys():
+        distances[key] = {}
+        distances[key]["consensus"] = get_hamming_distance(MSA[key], consensus_seq)
+        distances[key]["root"] = get_hamming_distance(MSA[key], root_seq)
+
+    for ii, key in enumerate(distances.keys()):
+        hist, bins = np.histogram(distances[key]["consensus"], bins=nb_bins, range=[0, 0.5])
+        hist = hist / 1000
+        bins = 0.5 * (bins[:-1] + bins[1:])
+        ax2.plot(bins, hist, "-", color=colors[ii])
+
+    ax2.annotate("Distance to consensus", xy=(0.42, 0.9), xycoords="axes fraction")
+    ax2.set_ylabel("Frequency")
+    ax2.set_xlim([0.03, 0.22])
+    ax2.annotate("B", xy=(0.02, 0.91), xycoords="axes fraction")
+
+    # Bottom-Right plot
+    nb_bins = 200
+    ax4 = plt.subplot(224)
+
+    for ii, key in enumerate(distances.keys()):
+        hist, bins = np.histogram(distances[key]["root"], bins=nb_bins, range=[0, 0.5])
+        hist = hist / 1000
+        bins = 0.5 * (bins[:-1] + bins[1:])
+        ax4.plot(bins, hist, "-", color=colors[ii])
+
+    ax4.annotate("Distance to root", xy=(0.57, 0.9), xycoords="axes fraction")
+    ax4.set_xlabel("Distance")
+    ax4.set_ylabel("Frequency")
+    ax4.set_xlim([0.03, 0.22])
+    ax4.annotate("D", xy=(0.02, 0.91), xycoords="axes fraction")
+
+    # Bottom-Left plot
+    trees = {"original": tree_or, "naive": tree_naive, "biased": tree_biased}
+    rtts, dates, fits = {}, {}, {}
+    labels = ["BH data", "WH naive", "WH reversion"]
+
+    ax3 = plt.subplot(223)
+    for key in trees.keys():
+        rtts[key], dates[key] = get_RTT(trees[key])
+        rtts[key], dates[key] = average_rtt(rtts[key], dates[key])
+        fits[key] = np.polyfit(dates[key], rtts[key], deg=1)
+
+    for ii, key in enumerate(rtts.keys()):
+        ax3.plot(dates[key], rtts[key], '.', label=f"{labels[ii]}", color=colors[ii])
+        ax3.plot(dates[key], np.polyval(fits[key], dates[key]), "-", color=colors[ii])
+        ax3.text(text[ii][0], text[ii][1],
+                 f"$\\propto {round(fits[key][0]*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
+
+    ax3.set_xlabel("Years")
+    ax3.ticklabel_format(axis="x", style="plain")
+    ax3.set_ylabel("RTT")
+    ax3.annotate("C", xy=(0.02, 0.91), xycoords="axes fraction")
+
+    if savefig:
+        plt.savefig(f"figures/RTT_modeling_{region}_v2.pdf")
     plt.show()
 
 
@@ -718,4 +721,5 @@ if __name__ == '__main__':
 
     if fig7:
         text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)]}
+        # text = {"pol": [(2003, 0.091), (2003, 0.162), (2003, 0.139)]}
         make_figure_7("pol", text["pol"], savefig)
