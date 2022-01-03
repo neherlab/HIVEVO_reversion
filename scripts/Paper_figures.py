@@ -418,7 +418,7 @@ def make_figure_6(region, savefig):
     plt.show()
 
 
-def make_figure_7(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linestyle=["-", "--", ":"]):
+def make_figure_7(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"], linestyle=["-", "--", ":"]):
     "GTR modeling figure"
     from gtr_modeling import get_RTT, get_ATGC_content, get_hamming_distance
     from Bio import Phylo, AlignIO
@@ -433,8 +433,7 @@ def make_figure_7(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linest
         years = years[years >= cutoff]
         return lengths, years
 
-    # figsize = (6.7315, 3)
-    figsize = (6.7315, 4)
+    figsize = (6.7315, 3.3)
     MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
     MSA_naive = f"data/modeling/generated_MSA/{region}_control_1.58.fasta"
     MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_1.58.fasta"
@@ -482,6 +481,7 @@ def make_figure_7(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linest
     ax1.set_xticks([0, 1, 2, 3])
     ax1.set_xticklabels(nucleotides)
     ax1.set_ylabel("ATGC content")
+    ax1.set_ylim(limits[0])
     ax1.legend(*zip(*labels))
     ax1.annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
@@ -499,9 +499,9 @@ def make_figure_7(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linest
         bins = 0.5 * (bins[:-1] + bins[1:])
         ax2.plot(bins, hist, "-", color=colors[ii], label=["BH data", "WH naive", "WH reversion"][ii])
 
-    ax2.set_xlabel("Distance")
+    ax2.set_xlabel("Distance to root sequence")
     ax2.set_ylabel("Frequency")
-    ax2.set_xlim([0.02, 0.25])
+    ax2.set_xlim(limits[1])
     ax2.legend()
     ax2.annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
@@ -510,7 +510,7 @@ def make_figure_7(region, text, savefig, colors=["C0", "C1", "C2", "C3"], linest
     rtts, dates, fits = {}, {}, {}
     labels = ["BH data", "WH naive", "WH reversion"]
 
-    # ax3 = plt.subplot(122)
+    # ax3 = plt.subplot(122)[0.02, 0.25]
     ax3 = plt.subplot(122)
     for key in trees.keys():
         rtts[key], dates[key] = get_RTT(trees[key])
@@ -666,19 +666,19 @@ def make_figure_7_v2(region, text, savefig, colors=["C0", "C1", "C2", "C3"], lin
 
 
 if __name__ == '__main__':
-    fig1 = False
+    fig1 = True
     fig2 = False
     fig3 = False
     fig4 = False
     fig5 = False
     fig6 = False
-    fig7 = True
+    fig7 = False
     savefig = True
 
     if fig1:
-        text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.079), (1.2, 0.06), (1.2, 0.028)],
+        text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.072), (1.2, 0.058), (1.2, 0.028)],
                 "pol": [(2000, 0.085), (2000, 0.0578), (2000, 0.024), (1.2, 0.072), (1.2, 0.042), (1.2, 0.01)],
-                "gag": [(2000, 0.125), (2000, 0.072), (2000, 0.03), (1.2, 0.077), (1.2, 0.047), (1.2, 0.0165)]}
+                "gag": [(2000, 0.125), (2000, 0.072), (2000, 0.03), (1.2, 0.085), (1.2, 0.047), (1.2, 0.0165)]}
 
         ylim = {"env": [0, 0.28], "pol": [0, 0.13], "gag": [0, 0.18]}
         sharey = {"env": False, "pol": True, "gag": True}
@@ -720,6 +720,12 @@ if __name__ == '__main__':
         make_figure_6("pol", savefig)
 
     if fig7:
-        text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)]}
-        # text = {"pol": [(2003, 0.091), (2003, 0.162), (2003, 0.139)]}
-        make_figure_7("pol", text["pol"], savefig)
+        region = "pol"
+        text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)],
+                "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.203)],
+                "env": [(2003, 0.28), (2003, 0.34), (2003, 0.17)]}
+        limits = {"pol": [(0.15, 0.43), (0.02, 0.25)],
+                  "gag": [(0.15, 0.44), (0.06, 0.26)],
+                  "env": [(0.15, 0.4), (0.08, 0.37)]}
+
+        make_figure_7(region, text[region], limits[region], savefig)
