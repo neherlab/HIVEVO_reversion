@@ -1,6 +1,9 @@
 # HIVEVO_reversion
 Repository for the analysis and figures of Valentin Druelle's paper on HIV-1 reversion. This is a cleaned up version of the analysis done in HIVEVO_recombination. It uses some of the code present in Fabio's repository HIVEVO_access.
 
+## Data folder
+`data_mini` contains the minimal data necessary to run the figures in zip format. Use `gzip -d data_mini` and rename the folder to `data` instead of `data_mini` once it's done. With this you should be able to redo the figures.
+
 \TODO
 
 <!-- ## Intermediate data
