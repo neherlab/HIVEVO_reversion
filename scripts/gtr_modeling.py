@@ -354,7 +354,7 @@ def optimize_tree(tree_path, MSA_path, output_path, consensus_path, p_type, rate
 
 
 if __name__ == "__main__":
-    region = "pol"
+    region = "env"
     original_MSA_path = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
     original_tree_path = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
     root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
@@ -372,7 +372,7 @@ if __name__ == "__main__":
     # p_type = "3class_homogeneous"
     p_type = "3class_binary"
     # p_type = "control"
-    regenerate = False
+    regenerate = True
     optimize = False
     analysis = True
 
@@ -411,22 +411,3 @@ if __name__ == "__main__":
         compare_RTT(original_tree_path, generated_tree_path)
 
         plt.show()
-
-    # tree_or = Phylo.read(original_tree_path, "newick")
-    # tree_opt = Phylo.read(optimized_tree_path, "newick")
-    #
-    # clades_or = [c for c in tree_or.find_clades()]
-    # clades_opt = [c for c in tree_opt.find_clades()]
-    # lengths_or = [c.branch_length for c in clades_or]
-    # lengths_opt = [c.branch_length for c in clades_opt]
-    #
-    # plt.figure()
-    # plt.plot(lengths_or, lengths_opt, ".", alpha=0.3)
-    # plt.plot([0, 0.08], [0, 0.08], "k--")
-    # plt.xlabel("Lengths original tree")
-    # plt.ylabel("Lengths optimized tree")
-    # plt.axis("equal")
-    # # plt.xscale("log")
-    # # plt.yscale("log")
-    # plt.grid()
-    # plt.show()
