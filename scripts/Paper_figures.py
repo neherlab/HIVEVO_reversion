@@ -9,6 +9,8 @@ plt.style.use("tex")
 
 
 def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
+    from gtr_modeling import get_RTT
+    from Bio import Phylo
     colors = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"]
     fill_alpha = 0.15
     figsize = (6.7315, 3)
@@ -23,15 +25,14 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
                  "B": f"data/BH/alignments/to_HXB2/{region}_1000_B_consensus.fasta",
                  "C": f"data/BH/alignments/to_HXB2/{region}_1000_C_consensus.fasta"}
 
-    tree_file = f"data/BH/intermediate_files/timetree_{region}_1000.nwk"
-    branch_length_file = f"data/BH/intermediate_files/branch_lengths_{region}_1000.json"
+    tree_file = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
     alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
 
     ii = 0
-    dates, lengths, errors = get_root_to_tip_distance(tree_file, branch_length_file, subtype="")
+    lengths, dates = get_RTT(Phylo.read(tree_file, "newick"))
     lengths = np.array(lengths)[dates >= cutoff]
-    errors = np.array(errors)[dates >= cutoff]
     dates = dates[dates >= cutoff]
+    lengths, dates = average_rtt(lengths, dates)
     fit = np.polyfit(dates, lengths, deg=1)
     axs[ii].plot(dates, lengths, '.', label="RTT", color=colors[ii])
     axs[ii].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
@@ -281,20 +282,21 @@ def compute_rates(region):
     return rates
 
 
+def average_rtt(rtt, dates, cutoff=1977):
+    "Average rtt per years"
+    years = np.unique(dates)
+    lengths = []
+    for year in years:
+        lengths += [np.mean(rtt[dates == year])]
+    lengths = np.array(lengths)[years >= cutoff]
+    years = years[years >= cutoff]
+    return lengths, years
+
+
 def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"], linestyle=["-", "--", ":"]):
     "GTR modeling figure"
     from gtr_modeling import get_RTT, get_ATGC_content, get_hamming_distance
     from Bio import Phylo, AlignIO
-
-    def average_rtt(rtt, dates, cutoff=1977):
-        "Average rtt per years"
-        years = np.unique(dates)
-        lengths = []
-        for year in years:
-            lengths += [np.mean(rtt[dates == year])]
-        lengths = np.array(lengths)[years >= cutoff]
-        years = years[years >= cutoff]
-        return lengths, years
 
     figsize = (6.7315, 3.3)
     MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
@@ -533,14 +535,14 @@ def make_figure_7(region, savefig=False):
 
 
 if __name__ == '__main__':
-    fig1 = False
+    fig1 = True
     fig2 = False
     fig3 = False
-    fig4 = True
+    fig4 = False
     fig5 = False
     fig6 = False
     fig7 = False
-    savefig = False
+    savefig = True
 
     if fig1:
         text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.072), (1.2, 0.058), (1.2, 0.028)],
