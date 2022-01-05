@@ -242,8 +242,9 @@ def make_intermediate_data(folder_path):
     import bootstrap
     import os
     traj_list_names = ["Trajectory_list_any", "Trajectory_list_subtypes"]
-    ref_subtypes = ["any", "subtypes"]
+    ref_subtypes = ["subtypes", "any"]
 
+    # From all the trajectories combined
     for name, ref_subtype in zip(traj_list_names, ref_subtypes):
         if os.path.exists(folder_path + name + ".json"):
             print(folder_path + name + ".json already exists, skipping computation.")
@@ -272,6 +273,26 @@ def make_intermediate_data(folder_path):
 
             print(f"Saving mean in time for {ref_subtype}")
             with open(folder_path + "bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
+                json.dump(bootstrap_dict, f, indent=4)
+
+    # For each region individuall
+    regions = ["env", "pol", "gag"]
+    for region in regions:
+        region_trajectories = [traj for traj in trajectories if traj.region == region]
+
+        if os.path.exists(folder_path + f"bootstrap_mean_dict_{region}.json"):
+            print(folder_path + f"bootstrap_mean_dict_{region}.json already exists, skipping computation.")
+        else:
+            print(f"Computing bootstrapped mean in time for region {region}")
+            bootstrap_dict, _ = bootstrap.make_bootstrap_mean_dict(region_trajectories, nb_bootstrap=100)
+            # json formating of numpy arrays
+            for key1 in bootstrap_dict.keys():
+                for key2 in bootstrap_dict[key1].keys():
+                    bootstrap_dict[key1][key2]["mean"] = bootstrap_dict[key1][key2]["mean"].tolist()
+                    bootstrap_dict[key1][key2]["std"] = bootstrap_dict[key1][key2]["std"].tolist()
+
+            print(f"Saving mean in time for {region}")
+            with open(folder_path + f"bootstrap_mean_dict_{region}.json", "w") as f:
                 json.dump(bootstrap_dict, f, indent=4)
 
 
