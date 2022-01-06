@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import trajectory
 import json
-plt.style.use("tex")
+#plt.style.use("tex")
 
 
 def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
@@ -32,38 +32,43 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     lengths, dates = get_RTT(Phylo.read(tree_file, "newick"))
     lengths = np.array(lengths)[dates >= cutoff]
     dates = dates[dates >= cutoff]
-    lengths, dates = average_rtt(lengths, dates)
+    lengths, dates, ranges = average_rtt(lengths, dates)
     fit = np.polyfit(dates, lengths, deg=1)
-    axs[ii].plot(dates, lengths, '.', label="RTT", color=colors[ii])
-    axs[ii].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
+    axs[0].plot(dates, lengths, '.', label="RTT", color=colors[ii])
+    axs[0].fill_between(dates, ranges[:,0], ranges[:,1], color=colors[ii], alpha=0.1)
+    axs[0].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
     # axs[ii].fill_between(dates, lengths + errors, lengths - errors, alpha=fill_alpha, color=colors[ii])
-    axs[ii].text(text_pos[0][0], text_pos[0][1],
+    axs[0].text(text_pos[0][0], text_pos[0][1],
                  f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
-    axs[ii].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
+    axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
     ii += 1
 
     for key in ["root", "subtypes"]:
         if key == "subtypes":
             ref_sequence = get_reference_sequence(ref_files["B"])
-            years, dist, std, nb = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="B")
+            years, dist, std, nb, ranges = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="B")
             ref_sequence = get_reference_sequence(ref_files["C"])
-            years2, dist2, std2, nb2 = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="C")
+            years2, dist2, std2, nb2, ranges2 = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="C")
 
             # Averaging the subtypes distance
             for key2 in dist.keys():
                 idxs = np.isin(years, years2)
                 dist[key2][idxs] = (nb[idxs] * dist[key2][idxs] + nb2 *
                                     dist2[key2]) / (nb[idxs] + nb2)
+                ranges[key2][idxs] = ((nb[idxs] * ranges[key2][idxs].T + nb2 *
+                                    ranges2[key2].T) / (nb[idxs] + nb2)).T
 
         else:
             reference_sequence = get_reference_sequence(ref_files[key])
-            years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence, subtype="")
+            years, dist, std, _, ranges = get_mean_distance_in_time(alignment_file, reference_sequence, subtype="")
             # years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
 
-        dist["all"] = dist["all"][years >= cutoff]
-        years = years[years >= cutoff]
+        ind = years >= cutoff
+        dist["all"] = dist["all"][ind]
+        years = years[ind]
         fit = np.polyfit(years, dist["all"], deg=1)
         axs[0].plot(years, dist["all"], '.', color=colors[ii], label=key)
+        axs[0].fill_between(years, ranges["all"][ind,0], ranges["all"][ind,1], color=colors[ii], alpha=0.1)
         axs[0].plot(years, np.polyval(fit, years), "-", color=colors[ii])
         axs[0].text(text_pos[ii][0], text_pos[ii][1],
                     f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
@@ -284,13 +289,17 @@ def compute_rates(region):
 
 def average_rtt(rtt, dates, cutoff=1977):
     "Average rtt per years"
+    from scipy.stats import scoreatpercentile
     years = np.unique(dates)
     lengths = []
-    for year in years:
-        lengths += [np.mean(rtt[dates == year])]
-    lengths = np.array(lengths)[years >= cutoff]
+    length_ranges = []
     years = years[years >= cutoff]
-    return lengths, years
+    for year in years:
+        values_in_year = rtt[dates == year]
+        lengths += [np.mean(values_in_year)]
+        length_ranges += [[scoreatpercentile(values_in_year,10), scoreatpercentile(values_in_year, 90)]]
+    lengths = np.array(lengths)
+    return lengths, years, np.array(length_ranges)
 
 
 def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"], linestyle=["-", "--", ":"]):
@@ -370,18 +379,19 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
 
     # Right plot
     trees = {"original": tree_or, "naive": tree_naive, "biased": tree_biased}
-    rtts, dates, fits = {}, {}, {}
+    rtts, dates, ranges, fits = {}, {}, {}, {}
     labels = ["BH data", "WH naive", "WH reversion"]
 
     # ax3 = plt.subplot(122)[0.02, 0.25]
     ax3 = plt.subplot(122)
     for key in trees.keys():
         rtts[key], dates[key] = get_RTT(trees[key])
-        rtts[key], dates[key] = average_rtt(rtts[key], dates[key])
+        rtts[key], dates[key], ranges[key] = average_rtt(rtts[key], dates[key])
         fits[key] = np.polyfit(dates[key], rtts[key], deg=1)
 
     for ii, key in enumerate(rtts.keys()):
         ax3.plot(dates[key], rtts[key], '.', label=f"{labels[ii]}", color=colors[ii])
+        ax3.fill_between(dates[key], ranges[key][:,0], ranges[key][:,1], color=colors[ii], alpha=0.1)
         ax3.plot(dates[key], np.polyval(fits[key], dates[key]), "-", color=colors[ii])
         ax3.text(text[ii][0], text[ii][1],
                  f"$\\propto {round(fits[key][0]*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
@@ -535,10 +545,10 @@ def make_figure_7(region, savefig=False):
 
 
 if __name__ == '__main__':
-    fig1 = True
+    fig1 = False
     fig2 = False
     fig3 = False
-    fig4 = False
+    fig4 = True
     fig5 = False
     fig6 = False
     fig7 = False
