@@ -158,7 +158,7 @@ def p_3class_binary(consensus_seq, rates, ratio=0.85):
 
 
 def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path, rates,
-                 p_type="homogeneous", scaling=1.3):
+                 p_type="homogeneous", scaling=1.3, rate_variation=0):
     """
     Generates an MSA based on a homogeneous (same for all site) model for the reversion and non-reversion
     rates.
@@ -177,14 +177,15 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
     # Replaces N by A, it's not exact but I have a 4 letter alphabet for now
     consensus_seq[consensus_seq == "N"] = "A"
 
-    myGTR = define_GTR(consensus_seq, p_type, scaling, rates)
+    myGTR = define_GTR(consensus_seq, p_type, scaling, rates, rate_variation)
     MySeq = SeqGen(len(consensus_seq), gtr=myGTR, tree=tree)
     MySeq.evolve(root_seq=root_seq)
     with open(save_path, "wt") as f:
         AlignIO.write(MySeq.get_aln(), f, "fasta")
 
 
-def define_GTR(consensus_seq, p_type, scaling, rates):
+def define_GTR(consensus_seq, p_type, scaling, rates, rate_variation=0):
+    from scipy.stats import gamma
     "Creates and return a GTR model with the given parameters"
     assert p_type in ["homogeneous", "binary", "3class_homogeneous",
                       "3class_binary", "control"], f"p_type must be 'homogeneous' 'binary' '3class_homogeneous' 'control' or '3class_binary', got {p_type}"
@@ -193,7 +194,10 @@ def define_GTR(consensus_seq, p_type, scaling, rates):
     reversion_rate = rates["non_consensus"]["all"]["rate"]
 
     L = len(consensus_seq)  # sequence length
-    mu = np.ones(L)
+    if rate_variation:
+        mu = gamma.rvs(rate_variation,size=L, random_state = 123)/rate_variation
+    else:
+        mu = np.ones(L)
     W = np.array([[0., 0.763, 2.902, 0.391],
                   [0.763, 0., 0.294, 3.551],
                   [2.902, 0.294, 0., 0.317],
@@ -340,11 +344,11 @@ def compare_RTT(tree_or, tree_gen):
     plt.ylabel("RTT")
 
 
-def optimize_tree(tree_path, MSA_path, output_path, consensus_path, p_type, rates, scaling=1):
+def optimize_tree(tree_path, MSA_path, output_path, consensus_path, p_type, rates, scaling=1, rate_variation=0):
     "Reoptimize branch length according to the model using treetime."
     consensus_seq = get_reference_sequence(consensus_path)
     consensus_seq[consensus_seq == "N"] = "A"
-    model = define_GTR(consensus_seq, p_type, scaling, rates)
+    model = define_GTR(consensus_seq, p_type, scaling, rates, rate_variation)
     ttree = TreeAnc(tree=tree_path, aln=MSA_path, gtr=model,
                     compress=False, alphabet="nuc_nogap", verbose=3)
     ttree.optimize_tree(prune_short=False, branch_length_mode='marginal',
@@ -354,7 +358,7 @@ def optimize_tree(tree_path, MSA_path, output_path, consensus_path, p_type, rate
 
 
 if __name__ == "__main__":
-    region = "env"
+    region = "pol"
     original_MSA_path = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
     original_tree_path = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
     root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
@@ -371,43 +375,48 @@ if __name__ == "__main__":
     # p_type = "binary"
     # p_type = "3class_homogeneous"
     p_type = "3class_binary"
-    # p_type = "control"
-    regenerate = True
+    #p_type = "control"
+
+    regenerate = False
     optimize = False
     analysis = True
 
     scaling = 1.58
+    rate_variation = 0 # (shape parameter of gamma distribution, set to 0 for no rate variation)
 
-    generated_MSA_path = generated_MSA_folder + p_type + "_" + str(scaling) + ".fasta"
-    generated_tree_path = generated_tree_folder + p_type + "_" + str(scaling) + ".nwk"
-    optimized_tree_path = optimized_tree_folder + p_type + "_" + str(scaling) + ".nwk"
+    for p_type in ["3class_binary"]:
+        for rate_variation in [0]:
 
-    if regenerate:
-        generate_MSA(original_tree_path, root_path, consensus_path,
-                     original_MSA_path, original_metadata_path, generated_MSA_path, rates,
-                     p_type, scaling)
-        generate_tree(generated_MSA_path, generated_tree_path)
-        reroot_tree(generated_tree_path, original_metadata_path, generated_MSA_path)
+            generated_MSA_path = generated_MSA_folder + p_type + "_"   + str(scaling) + '_rv_' + str(rate_variation)+ ".fasta"
+            generated_tree_path = generated_tree_folder + p_type + "_" + str(scaling) + '_rv_' + str(rate_variation)+ ".nwk"
+            optimized_tree_path = optimized_tree_folder + p_type + "_" + str(scaling) + '_rv_' + str(rate_variation)+ ".nwk"
 
-    if optimize:
-        optimize_tree(original_tree_path, generated_MSA_path, optimized_tree_path,
-                      consensus_path, p_type, rates, scaling)
+            if regenerate:
+                generate_MSA(original_tree_path, root_path, consensus_path,
+                            original_MSA_path, original_metadata_path, generated_MSA_path, rates,
+                            p_type, scaling, rate_variation)
+                generate_tree(generated_MSA_path, generated_tree_path)
+                reroot_tree(generated_tree_path, original_metadata_path, generated_MSA_path)
 
-    # --- Data analysis ---
-    if analysis:
-        original_MSA = AlignIO.read(original_MSA_path, "fasta")
-        original_MSA = np.array(original_MSA)
-        generated_MSA = AlignIO.read(generated_MSA_path, "fasta")
-        generated_MSA = np.array(generated_MSA)
+            if optimize:
+                optimize_tree(original_tree_path, generated_MSA_path, optimized_tree_path,
+                            consensus_path, p_type, rates, 1.0, rate_variation)
 
-        compare_ATGC_distributions(original_MSA, generated_MSA)
+            # --- Data analysis ---
+            if analysis:
+                original_MSA = AlignIO.read(original_MSA_path, "fasta")
+                original_MSA = np.array(original_MSA)
+                generated_MSA = AlignIO.read(generated_MSA_path, "fasta")
+                generated_MSA = np.array(generated_MSA)
 
-        ref_seq = get_reference_sequence(root_path)
-        compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to root")
-        ref_seq = get_reference_sequence(consensus_path)
-        compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to consensus")
+                compare_ATGC_distributions(original_MSA, generated_MSA)
 
-        # compare_RTT(original_tree_path, optimized_tree_path)
-        compare_RTT(original_tree_path, generated_tree_path)
+                ref_seq = get_reference_sequence(root_path)
+                compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to root")
+                ref_seq = get_reference_sequence(consensus_path)
+                compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to consensus")
 
-        plt.show()
+                compare_RTT(original_tree_path, generated_tree_path)
+
+                compare_RTT(original_tree_path, optimized_tree_path)
+                plt.show()

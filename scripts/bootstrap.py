@@ -38,6 +38,7 @@ def bootstrap_mean_in_time(trajectories, freq_range, nb_bootstrap=10):
     means = np.array(means)
     average = np.nanmean(means, axis=0)[0, :]
     std = np.nanstd(means, axis=0)[0, :]
+    print(average, std)
 
     return time, average, std
 
@@ -84,7 +85,7 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
     if reference == "subtypes" or consensus == "subtype":
         patient_names.remove("p1")  # p1 is subtype AE
         if patient_names == ["p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]:
-            subtypes = ["B", "B", "B", "B", "C", "B", "B", "B"]
+            subtypes =       ["B", "B",   "B", "B",  "C", "B", "B", "B"]
         else:
             raise ValueError("Must be the regular patients to compute divergence to subtype")
 
