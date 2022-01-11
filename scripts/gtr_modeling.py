@@ -377,15 +377,15 @@ if __name__ == "__main__":
     p_type = "3class_binary"
     #p_type = "control"
 
-    regenerate = False
-    optimize = False
+    regenerate = True
+    optimize = True
     analysis = True
 
     scaling = 1.58
     rate_variation = 0 # (shape parameter of gamma distribution, set to 0 for no rate variation)
 
-    for p_type in ["3class_binary"]:
-        for rate_variation in [0]:
+    for p_type in ["3class_binary", "control"]:
+        for rate_variation in [0,1,2]:
 
             generated_MSA_path = generated_MSA_folder + p_type + "_"   + str(scaling) + '_rv_' + str(rate_variation)+ ".fasta"
             generated_tree_path = generated_tree_folder + p_type + "_" + str(scaling) + '_rv_' + str(rate_variation)+ ".nwk"
