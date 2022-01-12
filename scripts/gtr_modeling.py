@@ -357,6 +357,25 @@ def optimize_tree(tree_path, MSA_path, output_path, consensus_path, p_type, rate
     Phylo.write(tree, output_path, "newick")
 
 
+def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
+    consensus_seq = get_reference_sequence(consensus_path)
+    # Replaces N by A, it's not exact but I have a 4 letter alphabet for now
+    consensus_seq[consensus_seq == "N"] = "A"
+    t = np.linspace(0,1,101)
+    from treetime.seq_utils import prof2seq, seq2prof
+    data = {'time':t}
+    for r in rate_variations:
+        for p_type in p_types:
+            myGTR = define_GTR(consensus_seq, p_type, scaling, rates, r)
+            starting_seq = prof2seq(myGTR.Pi.T, myGTR, sample_from_prof=True)
+            starting_prof = seq2prof(starting_seq[0], myGTR.profile_map)
+            distances = []
+            for tp in t:
+                evolved_prof = myGTR.evolve(starting_prof, tp)
+                distances.append(1-np.mean(np.sum(starting_prof*evolved_prof, axis=1)))
+            data[(p_type,r)] = distances
+    return data
+
 if __name__ == "__main__":
     region = "pol"
     original_MSA_path = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
@@ -377,12 +396,21 @@ if __name__ == "__main__":
     p_type = "3class_binary"
     #p_type = "control"
 
-    regenerate = True
-    optimize = True
+    regenerate = False
+    optimize = False
     analysis = True
 
     scaling = 1.58
     rate_variation = 0 # (shape parameter of gamma distribution, set to 0 for no rate variation)
+
+    distances = get_branch_length(consensus_path, ["3class_binary", "control"],1.58,rates, [0,1,2])
+    plt.figure()
+    line_styles = ['-', '--', '-.']
+    for pi,p in enumerate(["3class_binary", "control"]):
+        for r in [0,1,2]:
+            plt.plot(distances['time'], distances[(p, r)], c=f'C{pi}', ls=line_styles[r])
+    plt.ylabel('distance')
+    plt.xlabel('time')
 
     for p_type in ["3class_binary", "control"]:
         for rate_variation in [0,1,2]:

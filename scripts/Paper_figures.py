@@ -307,13 +307,14 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     from gtr_modeling import get_RTT, get_ATGC_content, get_hamming_distance
     from Bio import Phylo, AlignIO
 
+    rate_variation = 0  # 0 for no rate variation. Or 1, 2 for parameter of rate gamma distribution
     figsize = (6.7315, 3.3)
     MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
-    MSA_naive = f"data/modeling/generated_MSA/{region}_control_1.58.fasta"
-    MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_1.58.fasta"
+    MSA_naive = f"data/modeling/generated_MSA/{region}_control_1.58_rv_{rate_variation}.fasta"
+    MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_1.58_rv_{rate_variation}.fasta"
     tree_or = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
-    tree_naive = f"data/modeling/generated_trees/{region}_control_1.58.nwk"
-    tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_1.58.nwk"
+    tree_naive = f"data/modeling/generated_trees/{region}_control_1.58_rv_{rate_variation}.nwk"
+    tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_1.58_rv_{rate_variation}.nwk"
     root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
 
     MSA = {}
@@ -354,7 +355,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax1.set_xticklabels(nucleotides)
     ax1.set_ylabel("ATGC content")
     ax1.set_ylim(limits[0])
-    ax1.legend(*zip(*labels))
+    #ax1.legend(*zip(*labels))
     ax1.annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
     # Bottom-Left plot
@@ -374,7 +375,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax2.set_xlabel("Distance to root sequence")
     ax2.set_ylabel("Frequency")
     ax2.set_xlim(limits[1])
-    ax2.legend()
+    #ax2.legend()
     ax2.annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
     # Right plot
@@ -399,8 +400,9 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax3.annotate("C", xy=(0, 1.02), xycoords="axes fraction")
     ax3.set_xlabel("Years")
     ax3.ticklabel_format(axis="x", style="plain")
+    ax3.set_ylim(0,0.25)
     ax3.set_ylabel("RTT")
-    ax3.legend()
+    ax3.legend(loc=4)
 
     if savefig:
         plt.savefig(f"figures/RTT_modeling_{region}.pdf")
