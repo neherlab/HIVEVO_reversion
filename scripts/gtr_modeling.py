@@ -354,7 +354,7 @@ def optimize_tree(tree_path, MSA_path, output_path, consensus_path, p_type, rate
 
 
 if __name__ == "__main__":
-    region = "env"
+    region = "pol"
     original_MSA_path = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
     original_tree_path = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
     root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"

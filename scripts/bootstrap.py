@@ -103,7 +103,7 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
             map = patient.map_to_external_reference(region)[:, 0]
             root_sequence = distance_in_time.get_reference_sequence(
                 f"data/BH/intermediate_files/{region}_1000_nt_muts.json")
-            hivreference.consensus[map] = root_sequence.astype("S1")[map-map[0]]
+            hivreference.consensus[map] = root_sequence.astype("S1")[map - map[0]]
             tmp = np.zeros_like(root_sequence)
             tmp[root_sequence == "A"] = 0
             tmp[root_sequence == "C"] = 1
@@ -111,7 +111,7 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
             tmp[root_sequence == "T"] = 3
             tmp[root_sequence == "-"] = 4
             tmp[root_sequence == "N"] = 5
-            hivreference.consensus_indices[map] = tmp[map-map[0]]
+            hivreference.consensus_indices[map] = tmp[map - map[0]]
         else:
             hivreference = HIVreference(subtype=subtypes[ii])
 
@@ -176,14 +176,24 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
+    # region = "pol"
     # trajectories = trajectory.load_trajectory_list("data/WH/Trajectory_list_any.json")
-    # bootstrap_dict, times = make_bootstrap_mean_dict(trajectories)
+    # trajectories = [traj for traj in trajectories if traj.region == region]
+    # bootstrap_dict, times = make_bootstrap_mean_dict(trajectories, nb_bootstrap=10)
+    #
+    # colors = ["C0", "C1", "C2"]
+    # plt.figure()
+    # for ii, key in enumerate(bootstrap_dict["rev"].keys()):
+    #     plt.plot(times, bootstrap_dict["rev"][key]["mean"], '-', color=colors[ii], label=key)
+    #     plt.plot(times, bootstrap_dict["non_rev"][key]["mean"], '--', color=colors[ii], label=key)
+    #
+    # plt.show()
 
-    div_dict = make_bootstrap_div_dict(5)
+    # div_dict = make_bootstrap_div_dict(5)
 
     # time, bootstrapped_dict = bootstrap_divergence_in_time("pol", "founder", "global")
-    #
+
     # plt.figure()
     # plt.title("all")
     # for key in bootstrapped_dict["all"].keys():
@@ -205,3 +215,5 @@ if __name__ == '__main__':
     # plt.legend()
     # plt.grid()
     # plt.show()
+
+    bootstrap_divergence_in_time("pol", "founder", "global")
