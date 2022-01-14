@@ -5,12 +5,13 @@ import click
 import json
 import pandas as pd
 import numpy as np
-from Bio import SeqIO, AlignIO
+from Bio import SeqIO, AlignIO, Phylo
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import SingleLetterAlphabet
 from Bio.Align import MultipleSeqAlignment
-from treetime import TreeAnc
+from treetime import TreeAnc, TreeTime
+from treetime.utils import parse_dates
 
 
 @click.group()
@@ -254,6 +255,21 @@ def split_subtypes(alignment):
         seq_list = [seq for seq in alignment if seq.id[0] == subtype]
         sub_alignment = MultipleSeqAlignment(seq_list)
         AlignIO.write([sub_alignment], basename + "_" + subtype + ".fasta", "fasta")
+
+
+@cli.command()
+@click.argument("tree", type=click.Path(exists=True))
+@click.argument("alignment", type=click.Path(exists=True))
+@click.argument("metadata", type=click.Path(exists=True))
+def reroot_tree(tree, alignment, metadata):
+    """
+    Reroot the TREE to best root. TREE must be in newick format.
+    """
+    tt = Phylo.read(tree, "newick")
+    dates = parse_dates(metadata)
+    ttree = TreeTime(gtr='Jukes-Cantor', tree=tt, precision=1, aln=alignment, verbose=2, dates=dates)
+    ttree.reroot()
+    Phylo.write(ttree._tree, tree, "newick")
 
 
 def get_mutation_rate(gtr_file, refine_file):
