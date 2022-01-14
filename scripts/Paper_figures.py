@@ -21,12 +21,12 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     fig, axs = plt.subplots(ncols=2, nrows=1, figsize=figsize, sharey=sharey)
 
     # BH plot
-    ref_files = {"root": f"data/BH/intermediate_files/{region}_1000_nt_muts.json",
-                 "B": f"data/BH/alignments/to_HXB2/{region}_1000_B_consensus.fasta",
-                 "C": f"data/BH/alignments/to_HXB2/{region}_1000_C_consensus.fasta"}
+    ref_files = {"root": f"data/BH/intermediate_files/{region}_nt_muts.json",
+                 "B": f"data/BH/alignments/to_HXB2/{region}_B_consensus.fasta",
+                 "C": f"data/BH/alignments/to_HXB2/{region}_C_consensus.fasta"}
 
-    tree_file = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
-    alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
+    tree_file = f"data/BH/intermediate_files/tree_{region}.nwk"
+    alignment_file = f"data/BH/alignments/to_HXB2/{region}.fasta"
 
     ii = 0
     lengths, dates = get_RTT(Phylo.read(tree_file, "newick"))
@@ -232,15 +232,15 @@ def compute_rates(region):
     """
     # BH rate files
     reference_file = {}
-    reference_file["root"] = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
-    reference_file["B"] = f"data/BH/alignments/to_HXB2/{region}_1000_B_consensus.fasta"
-    reference_file["C"] = f"data/BH/alignments/to_HXB2/{region}_1000_C_consensus.fasta"
-    alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
-    tree_file = f"data/BH/intermediate_files/timetree_{region}_1000.nwk"
-    branch_length_file = f"data/BH/intermediate_files/branch_lengths_{region}_1000.json"
+    reference_file["root"] = f"data/BH/intermediate_files/{region}_nt_muts.json"
+    reference_file["B"] = f"data/BH/alignments/to_HXB2/{region}_B_consensus.fasta"
+    reference_file["C"] = f"data/BH/alignments/to_HXB2/{region}_C_consensus.fasta"
+    alignment_file = f"data/BH/alignments/to_HXB2/{region}.fasta"
+    tree_file = f"data/BH/intermediate_files/timetree_{region}.nwk"
+    branch_length_file = f"data/BH/intermediate_files/branch_lengths_{region}.json"
 
     # BH GTR files
-    gtr_file = f"data/BH/mutation_rates/{region}_1000.json"
+    gtr_file = f"data/BH/mutation_rates/{region}.json"
 
     # Rates from hamming distance
     rates = {"root": {}, "subtypes": {}}
@@ -299,13 +299,13 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     from Bio import Phylo, AlignIO
 
     figsize = (6.7315, 3.3)
-    MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
+    MSA_or = f"data/BH/alignments/to_HXB2/{region}.fasta"
     MSA_naive = f"data/modeling/generated_MSA/{region}_control_1.58.fasta"
     MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_1.58.fasta"
-    tree_or = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
+    tree_or = f"data/BH/intermediate_files/tree_{region}.nwk"
     tree_naive = f"data/modeling/generated_trees/{region}_control_1.58.nwk"
     tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_1.58.nwk"
-    root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
+    root_path = f"data/BH/intermediate_files/{region}_nt_muts.json"
 
     MSA = {}
     for key, path in zip(["original", "naive", "biased"], [MSA_or, MSA_naive, MSA_biased]):
@@ -493,44 +493,6 @@ def make_figure_6(region, savefig):
     if savefig:
         plt.savefig(f"figures/Divergence_by_diversity_{region}.pdf")
 
-    plt.show()
-
-
-def make_figure_7(region, savefig=False):
-    """
-    Plot for the mutation rates.
-    """
-    markersize = 5
-    colors = {"all": "k", "first": "C0", "second": "C1", "third": "C2"}
-    labels = ["H-root", "H-subtype", "RTT", "GTR", "WH_root", "WH_subtypes", "WH_founder"]
-
-    rates = compute_rates(region)
-
-    plt.figure()
-    # BH stuff
-    for ii, key in enumerate(["root", "subtypes"]):
-        for key2 in ["all", "first", "second", "third"]:
-            plt.plot(ii, rates[key][key2], 'o', color=colors[key2])
-
-    plt.plot(2, rates["rtt"], 'o', color=colors["all"], markersize=markersize)
-
-    for key in rates["GTR"].keys():
-        plt.plot(3, rates["GTR"][key], "o", color=colors[key], markersize=markersize, label=key)
-
-    # WH stuff
-    for key in ["all", "first", "second", "third"]:
-        plt.plot(4, rates["WH"]["root"]["global"]["all"][key]["rate"],
-                 'o', color=colors[key], markersize=markersize)
-        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key]["rate"],
-                 'o', color=colors[key], markersize=markersize)
-        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key]["rate"],
-                 'o', color=colors[key], markersize=markersize)
-
-    plt.xticks(range(len(labels)), labels, rotation=14)
-    plt.ylabel("Mutation rates")
-    plt.legend()
-    if savefig:
-        plt.savefig(f"figures/Rates_{region}.pdf")
     plt.show()
 
 
