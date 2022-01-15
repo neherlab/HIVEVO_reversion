@@ -102,7 +102,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     axs[1].legend()
     axs[1].set_xlim([-0.3, 5.5])
     axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
-
+    plt.tight_layout()
     if savefig:
         fig.savefig(f"figures/Distance_{region}.pdf")
 
@@ -159,6 +159,7 @@ def make_figure_2(region, text, savefig=False, reference="global"):
         axs[1].plot([0], [0], lines[0], color=colors[jj + 3], label=label)
 
     axs[1].legend()
+    plt.tight_layout()
 
     if savefig:
         plt.savefig(f"figures/Divergence_details_{region}.pdf")
@@ -225,6 +226,7 @@ def make_figure_3(savegif=False):
                   ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "reversion", "non-reversion"],
                   ncol=2, loc="lower right")
     axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
+    plt.tight_layout()
 
     if savefig:
         plt.savefig(f"figures/mean_in_time_{reference}.pdf")
@@ -404,6 +406,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax3.set_ylabel("RTT")
     ax3.legend(loc=4)
 
+    plt.tight_layout()
     if savefig:
         plt.savefig(f"figures/RTT_modeling_{region}.pdf")
     plt.show()
@@ -473,6 +476,7 @@ def make_figure_5(savefig=False):
                   ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "synonymous", "non-synonymous"],
                   ncol=2, loc="upper left")
     axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
+    plt.tight_layout()
 
     if savefig:
         plt.savefig(f"figures/mean_in_time_syn_{reference}.pdf")
@@ -504,6 +508,7 @@ def make_figure_6(region, savefig):
 
     if savefig:
         plt.savefig(f"figures/Divergence_by_diversity_{region}.pdf")
+    plt.tight_layout()
 
     plt.show()
 
@@ -541,15 +546,16 @@ def make_figure_7(region, savefig=False):
     plt.xticks(range(len(labels)), labels, rotation=14)
     plt.ylabel("Mutation rates")
     plt.legend()
+    plt.tight_layout()
     if savefig:
         plt.savefig(f"figures/Rates_{region}.pdf")
     plt.show()
 
 
 if __name__ == '__main__':
-    fig1 = False
-    fig2 = False
-    fig3 = False
+    fig1 = True
+    fig2 = True
+    fig3 = True
     fig4 = True
     fig5 = False
     fig6 = False
