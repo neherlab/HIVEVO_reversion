@@ -6,14 +6,14 @@ import matplotlib as mpl
 import trajectory
 import json
 #plt.style.use("tex")
-
+figsize_wide = (9, 4)
 
 def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     from gtr_modeling import get_RTT
     from Bio import Phylo
     colors = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"]
     fill_alpha = 0.15
-    figsize = (6.7315, 3)
+    figsize = figsize_wide
 
     div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
     time = div_dict["time"]
@@ -111,7 +111,7 @@ def make_figure_2(region, text, savefig=False, reference="global"):
     fill_alpha = 0.15
     colors = ["C3", "C0", "C1", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
     lines = ["-", "-", "--"]
-    figsize = (6.7315, 3)
+    figsize = figsize_wide
 
     div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
     time = div_dict["time"]
@@ -168,7 +168,7 @@ def make_figure_2(region, text, savefig=False, reference="global"):
 def make_figure_3(savegif=False):
     reference = "any"  # "any" or "subtypes"
     fill_alpha = 0.15
-    figsize = (6.7315, 3)
+    figsize = figsize_wide
     colors = ["C0", "C1", "C2", "C4"]
 
     trajectory_file = f"data/WH/Trajectory_list_{reference}.json"
@@ -310,13 +310,15 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     from Bio import Phylo, AlignIO
 
     rate_variation = 0  # 0 for no rate variation. Or 1, 2 for parameter of rate gamma distribution
-    figsize = (6.7315, 3.3)
+    figsize = figsize_wide
+    scaling_dict = {"pol": 17.1/10.4, "gag": 28.2/14.2, "env": 63.6/24.2}
+    scaling = round(scaling_dict[region],2)
     MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
-    MSA_naive = f"data/modeling/generated_MSA/{region}_control_1.58_rv_{rate_variation}.fasta"
-    MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_1.58_rv_{rate_variation}.fasta"
+    MSA_naive = f"data/modeling/generated_MSA/{region}_control_{scaling}_rv_{rate_variation}.fasta"
+    MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_{scaling}_rv_{rate_variation}.fasta"
     tree_or = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
-    tree_naive = f"data/modeling/generated_trees/{region}_control_1.58_rv_{rate_variation}.nwk"
-    tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_1.58_rv_{rate_variation}.nwk"
+    tree_naive = f"data/modeling/generated_trees/{region}_control_{scaling}_rv_{rate_variation}.nwk"
+    tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_{scaling}_rv_{rate_variation}.nwk"
     root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
 
     MSA = {}
@@ -402,7 +404,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax3.annotate("C", xy=(0, 1.02), xycoords="axes fraction")
     ax3.set_xlabel("Years")
     ax3.ticklabel_format(axis="x", style="plain")
-    ax3.set_ylim(0,0.25)
+    ax3.set_ylim(0)
     ax3.set_ylabel("RTT")
     ax3.legend(loc=4)
 
@@ -418,7 +420,7 @@ def make_figure_5(savefig=False):
     """
     reference = "any"  # "any" or "subtypes"
     fill_alpha = 0.15
-    figsize = (6.7315, 3)
+    figsize = figsize_wide
     colors = ["C0", "C1", "C2", "C4"]
 
     trajectory_file = f"data/WH/Trajectory_list_{reference}.json"
@@ -599,23 +601,25 @@ if __name__ == '__main__':
         make_figure_3(savefig)
 
     if fig4:
-        region = "pol"
-        text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)],
-                "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.203)],
-                "env": [(2003, 0.28), (2003, 0.34), (2003, 0.17)]}
-        limits = {"pol": [(0.15, 0.43), (0.02, 0.25)],
-                  "gag": [(0.15, 0.44), (0.06, 0.26)],
-                  "env": [(0.15, 0.4), (0.08, 0.37)]}
+        for region in ["pol", "gag", "env"]:
+            text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)],
+                    "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.203)],
+                    "env": [(2003, 0.28), (2003, 0.34), (2003, 0.17)]}
+            limits = {"pol": [(0.15, 0.43), (0.02, 0.25)],
+                    "gag": [(0.15, 0.44), (0.06, 0.26)],
+                    "env": [(0.15, 0.4), (0.08, 0.37)]}
 
-        make_figure_4(region, text[region], limits[region], savefig)
+            make_figure_4(region, text[region], limits[region], savefig)
 
     if fig5:
         make_figure_5(savefig)
 
     if fig6:
-        make_figure_6("pol", savefig)
+        for region in ["pol", "gag", "env"]:
+            make_figure_6(region, savefig)
 
     if fig7:
-        make_figure_7("pol", savefig)
+        for region in ["pol", "gag", "env"]:
+            make_figure_7(region, savefig)
 
     plt.show()
