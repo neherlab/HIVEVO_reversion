@@ -400,7 +400,9 @@ if __name__ == "__main__":
     optimize = False
     analysis = True
 
-    scaling = 1.58
+    scaling_dict = {"pol": 17.1/10.4, "gag": 28.2/14.2, "env": 63.6/24.2}
+    scaling = round(scaling_dict[region],2)
+
     rate_variation = 0 # (shape parameter of gamma distribution, set to 0 for no rate variation)
 
     distances = get_branch_length(consensus_path, ["3class_binary", "control"],1.58,rates, [0,1,2])
