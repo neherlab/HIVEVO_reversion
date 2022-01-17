@@ -8,7 +8,11 @@ wildcard_constraints:
 
 rule all:
     input:
-        auspice_jsons = expand("visualisation/{region}.json", region=REGIONS)
+        auspice_jsons = expand("visualisation/{region}.json", region=REGIONS),
+        branch_length_files = expand(
+            "data/BH/intermediate_files/branch_lengths_{region}.json", region=REGIONS),
+        gtr_files = expand("data/BH/mutation_rates/{region}.json", region=REGIONS)
+
 
 rule figure_data:
     message:
@@ -16,14 +20,13 @@ rule figure_data:
         Creating the files for the BH distance in time figure left panel (figure 1 5 and 6).
         """
     input:
-        consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_{subtype}_consensus.fasta",
-                                     region=REGIONS, subtype=SUBTYPES),
+        consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_consensus.fasta", region=REGIONS),
+        subtype_consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_{subtype}_consensus.fasta",
+                                             region=REGIONS, subtype=SUBTYPES),
         root_files = expand("data/BH/intermediate_files/{region}_nt_muts.json", region=REGIONS),
-        tree_files = expand("data/BH/intermediate_files/timetree_{region}.nwk", region=REGIONS),
-        branch_length_files = expand(
-            "data/BH/intermediate_files/branch_lengths_{region}.json", region=REGIONS),
+        tree_files = expand("data/BH/intermediate_files/tree_{region}.nwk", region=REGIONS),
         alignment_files = expand("data/BH/alignments/to_HXB2/{region}.fasta", region=REGIONS),
-        gtr_files = expand("data/BH/mutation_rates/{region}.json", region=REGIONS)
+
 
 rule lanl_metadata:
     message:
@@ -53,7 +56,7 @@ rule sub_sample:
         sequences = "data/BH/raw/{region}_subsampled.fasta",
         metadata = "data/BH/raw/{region}_subsampled_metadata.tsv"
     params:
-        nb_sequences = 50
+        nb_sequences = 1000
     shell:
         """
         python scripts/snakecommands.py subsample {input.lanl_data} {input.lanl_metadata} \

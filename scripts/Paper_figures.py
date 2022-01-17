@@ -225,63 +225,6 @@ def make_figure_3(savegif=False):
         plt.savefig(f"figures/mean_in_time_{reference}.pdf")
 
 
-def compute_rates(region):
-    """
-    Returns the mutation rates from the distance to root, distance to subtype consensus and root to tip
-    distance.
-    """
-    # BH rate files
-    reference_file = {}
-    reference_file["root"] = f"data/BH/intermediate_files/{region}_nt_muts.json"
-    reference_file["B"] = f"data/BH/alignments/to_HXB2/{region}_B_consensus.fasta"
-    reference_file["C"] = f"data/BH/alignments/to_HXB2/{region}_C_consensus.fasta"
-    alignment_file = f"data/BH/alignments/to_HXB2/{region}.fasta"
-    tree_file = f"data/BH/intermediate_files/timetree_{region}.nwk"
-    branch_length_file = f"data/BH/intermediate_files/branch_lengths_{region}.json"
-
-    # BH GTR files
-    gtr_file = f"data/BH/mutation_rates/{region}.json"
-
-    # Rates from hamming distance
-    rates = {"root": {}, "subtypes": {}}
-
-    # BH to root
-    reference_sequence = get_reference_sequence(reference_file["root"])
-    years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
-    for key in dist.keys():
-        fit = np.polyfit(years, dist[key], deg=1)
-        rates["root"][key] = fit[0]
-
-    ref_sequence = get_reference_sequence(reference_file["B"])
-    years, dist, std, nb = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="B")
-    ref_sequence = get_reference_sequence(reference_file["C"])
-    years2, dist2, std2, nb2 = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="C")
-
-    # Averaging the subtypes distance
-    for key in dist.keys():
-        idxs = np.isin(years, years2)
-        dist[key][idxs] = (nb[idxs] * dist[key][idxs] + nb2 *
-                           dist2[key]) / (nb[idxs] + nb2)
-        fit = np.polyfit(years, dist[key], deg=1)
-        rates["subtypes"][key] = fit[0]
-
-    # Rates from root to tip distance
-    dates, lengths, err = get_root_to_tip_distance(tree_file, branch_length_file)
-    fit = np.polyfit(dates, lengths, deg=1)
-    rates["rtt"] = fit[0]
-
-    # BH rates from GTR estimates
-    with open(gtr_file) as f:
-        rates["GTR"] = json.load(f)
-
-    # WH rates
-    WH_file = "data/WH/avg_rate_dict.json"
-    WH_rate_dict = divergence.load_avg_rate_dict(WH_file)
-    rates["WH"] = WH_rate_dict[region]
-
-    return rates
-
-
 def average_rtt(rtt, dates, cutoff=1977):
     "Average rtt per years"
     years = np.unique(dates)
@@ -466,37 +409,7 @@ def make_figure_5(savefig=False):
         plt.savefig(f"figures/mean_in_time_syn_{reference}.pdf")
 
 
-def make_figure_6(region, savefig):
-    div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
-
-    plt.figure()
-    lines = ["-", "--", ":"]
-    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
-    time = div_dict["time"]
-    idxs = time < 5.3  # Time around which some patients stop being followed
-    time = time[idxs]
-    for ii, key in enumerate(["consensus", "non_consensus"]):
-        for jj, key2 in enumerate(["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]):
-            data = div_dict[region]["founder"]["global"][key][key2]["mean"][idxs]
-            std = div_dict[region]["founder"]["global"][key][key2]["std"][idxs]
-            plt.plot(time, data, lines[ii], color=colors[jj])
-            plt.fill_between(time, data + std, data - std, color=colors[jj], alpha=0.15)
-
-    for ii, label in enumerate(["consensus", "non-consensus"]):
-        plt.plot([0], [0], lines[ii], color="k", label=label)
-    for jj, label in enumerate(["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]):
-        plt.plot([0], [0], lines[0], color=colors[jj], label=label)
-    plt.legend()
-    plt.xlabel("Time [years]")
-    plt.ylabel("Divergence")
-
-    if savefig:
-        plt.savefig(f"figures/Divergence_by_diversity_{region}.pdf")
-
-    plt.show()
-
-
-def make_figure_8(savefig):
+def make_figure_6(savefig):
     """
     Plot for the details about mean in time
     """
@@ -546,15 +459,13 @@ def make_figure_8(savefig):
 
 
 if __name__ == '__main__':
-    fig1 = False
+    fig1 = True
     fig2 = False
     fig3 = False
     fig4 = False
     fig5 = False
     fig6 = False
-    fig7 = False
-    fig8 = True
-    savefig = True
+    savefig = False
 
     if fig1:
         text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.072), (1.2, 0.058), (1.2, 0.028)],
@@ -568,18 +479,6 @@ if __name__ == '__main__':
             make_figure_1(region, text[region], ylim[region], sharey[region], savefig=savefig)
 
     if fig2:
-        # from the fraction_consensus.py file
-        #
-        # for root
-        # text = {"env": [("90%", [4.1, 0.003]), ("10%", [4.1, 0.062]), ("9%", [4.1, 0.045]),
-        #                 ("7%", [4.1, 0.082]), ("14%", [4.1, 0.026])],
-        #         "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.05]), ("5%", [4.1, 0.048]),
-        #                 ("2%", [4.1, 0.09]), ("12%", [4.1, 0.023])],
-        #         "gag": [("93%", [4.1, 0.001]), ("7%", [4.1, 0.065]), ("5%", [4.1, 0.051]),
-        #                 ("4%", [4.1, 0.082]), ("13%", [4.1, 0.028])]}
-        # for region in ["env", "pol", "gag"]:
-        #     make_figure_2(region, text[region], savefig, reference="root")
-
         text = {"env": [("92%", [4.1, 0.001]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.145]),
                         ("6%", [4.1, 0.085]), ("12%", [4.1, 0.042])],
                 "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.054]), ("4%", [4.1, 0.048]),
@@ -593,9 +492,9 @@ if __name__ == '__main__':
         make_figure_3(savefig)
 
     if fig4:
-        region = "pol"
+        region = "gag"
         text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)],
-                "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.203)],
+                "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.175)],
                 "env": [(2003, 0.28), (2003, 0.34), (2003, 0.17)]}
         limits = {"pol": [(0.15, 0.43), (0.02, 0.25)],
                   "gag": [(0.15, 0.44), (0.06, 0.26)],
@@ -607,12 +506,6 @@ if __name__ == '__main__':
         make_figure_5(savefig)
 
     if fig6:
-        make_figure_6("pol", savefig)
-
-    if fig7:
-        make_figure_7("pol", savefig)
-
-    if fig8:
-        make_figure_8(savefig)
+        make_figure_6(savefig)
 
     plt.show()
