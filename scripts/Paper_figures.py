@@ -1,10 +1,9 @@
-from distance_in_time import get_reference_sequence, get_mean_distance_in_time, get_root_to_tip_distance
+from distance_in_time import get_reference_sequence, get_mean_distance_in_time
 import divergence
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import trajectory
-import json
 import glob
 plt.style.use("tex.mplstyle")
 figsize_wide = (6.7315, 3)
@@ -259,10 +258,12 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     figsize = figsize_wide
     MSA_or = f"data/BH/alignments/to_HXB2/{region}.fasta"
     MSA_naive = glob.glob(f"data/modeling/generated_MSA/{region}_control_rv_{rate_variation}_*.fasta")[0]
-    MSA_biased = glob.glob(f"data/modeling/generated_MSA/{region}_3class_binary_rv_{rate_variation}_*.fasta")[0]
+    MSA_biased = glob.glob(
+        f"data/modeling/generated_MSA/{region}_3class_binary_rv_{rate_variation}_*.fasta")[0]
     tree_or = f"data/BH/intermediate_files/tree_{region}.nwk"
     tree_naive = glob.glob(f"data/modeling/generated_trees/{region}_control_rv_{rate_variation}_*.nwk")[0]
-    tree_biased = glob.glob(f"data/modeling/generated_trees/{region}_3class_binary_rv_{rate_variation}_*.nwk")[0]
+    tree_biased = glob.glob(
+        f"data/modeling/generated_trees/{region}_3class_binary_rv_{rate_variation}_*.nwk")[0]
     root_path = f"data/BH/intermediate_files/{region}_nt_muts.json"
 
     MSA = {}
@@ -423,77 +424,7 @@ def make_figure_5(savefig=False):
         plt.savefig(f"figures/mean_in_time_syn_{reference}.pdf")
 
 
-def make_figure_6(region, savefig):
-    div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
-
-    plt.figure()
-    lines = ["-", "--", ":"]
-    colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
-    time = div_dict["time"]
-    idxs = time < 5.3  # Time around which some patients stop being followed
-    time = time[idxs]
-    for ii, key in enumerate(["consensus", "non_consensus"]):
-        for jj, key2 in enumerate(["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]):
-            data = div_dict[region]["founder"]["global"][key][key2]["mean"][idxs]
-            std = div_dict[region]["founder"]["global"][key][key2]["std"][idxs]
-            plt.plot(time, data, lines[ii], color=colors[jj])
-            plt.fill_between(time, data + std, data - std, color=colors[jj], alpha=0.15)
-
-    for ii, label in enumerate(["consensus", "non-consensus"]):
-        plt.plot([0], [0], lines[ii], color="k", label=label)
-    for jj, label in enumerate(["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]):
-        plt.plot([0], [0], lines[0], color=colors[jj], label=label)
-    plt.legend()
-    plt.xlabel("Time [years]")
-    plt.ylabel("Divergence")
-
-    if savefig:
-        plt.savefig(f"figures/Divergence_by_diversity_{region}.pdf")
-    plt.tight_layout()
-
-    plt.show()
-
-
-def make_figure_7(region, savefig=False):
-    """
-    Plot for the mutation rates.
-    """
-    markersize = 5
-    colors = {"all": "k", "first": "C0", "second": "C1", "third": "C2"}
-    labels = ["H-root", "H-subtype", "RTT", "GTR", "WH_root", "WH_subtypes", "WH_founder"]
-
-    rates = compute_rates(region)
-
-    plt.figure()
-    # BH stuff
-    for ii, key in enumerate(["root", "subtypes"]):
-        for key2 in ["all", "first", "second", "third"]:
-            plt.plot(ii, rates[key][key2], 'o', color=colors[key2])
-
-    plt.plot(2, rates["rtt"], 'o', color=colors["all"], markersize=markersize)
-
-    for key in rates["GTR"].keys():
-        plt.plot(3, rates["GTR"][key], "o", color=colors[key], markersize=markersize, label=key)
-
-    # WH stuff
-    for key in ["all", "first", "second", "third"]:
-        plt.plot(4, rates["WH"]["root"]["global"]["all"][key]["rate"],
-                 'o', color=colors[key], markersize=markersize)
-        plt.plot(5, rates["WH"]["subtypes"]["global"]["all"][key]["rate"],
-                 'o', color=colors[key], markersize=markersize)
-        plt.plot(6, rates["WH"]["founder"]["global"]["all"][key]["rate"],
-                 'o', color=colors[key], markersize=markersize)
-
-    plt.xticks(range(len(labels)), labels, rotation=14)
-    plt.ylabel("Mutation rates")
-    plt.legend()
-    plt.tight_layout()
-    if savefig:
-        plt.savefig(f"figures/Rates_{region}.pdf")
-    plt.show()
-
-
-def make_figure_8(savefig):
+def make_figure_6(savefig):
     """
     Plot for the details about mean in time
     """
@@ -544,10 +475,10 @@ def make_figure_8(savefig):
 if __name__ == '__main__':
     fig1 = False
     fig2 = False
-    fig3 = True
+    fig3 = False
     fig4 = False
     fig5 = False
-    fig6 = False
+    fig6 = True
     savefig = True
 
     if fig1:
@@ -589,7 +520,6 @@ if __name__ == '__main__':
         make_figure_5(savefig)
 
     if fig6:
-        for region in ["pol", "gag", "env"]:
-            make_figure_6(region, savefig)
+        make_figure_6(savefig)
 
     plt.show()
