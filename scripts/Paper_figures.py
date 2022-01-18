@@ -5,15 +5,15 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import trajectory
 import json
-plt.style.use("tex")
-
+#plt.style.use("tex")
+figsize_wide = (9, 4)
 
 def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     from gtr_modeling import get_RTT
     from Bio import Phylo
     colors = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"]
     fill_alpha = 0.15
-    figsize = (6.7315, 3)
+    figsize = figsize_wide
 
     div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
     time = div_dict["time"]
@@ -32,38 +32,43 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     lengths, dates = get_RTT(Phylo.read(tree_file, "newick"))
     lengths = np.array(lengths)[dates >= cutoff]
     dates = dates[dates >= cutoff]
-    lengths, dates = average_rtt(lengths, dates)
+    lengths, dates, ranges = average_rtt(lengths, dates)
     fit = np.polyfit(dates, lengths, deg=1)
-    axs[ii].plot(dates, lengths, '.', label="RTT", color=colors[ii])
-    axs[ii].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
+    axs[0].plot(dates, lengths, '.', label="RTT", color=colors[ii])
+    axs[0].fill_between(dates, ranges[:,0], ranges[:,1], color=colors[ii], alpha=0.1)
+    axs[0].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
     # axs[ii].fill_between(dates, lengths + errors, lengths - errors, alpha=fill_alpha, color=colors[ii])
-    axs[ii].text(text_pos[0][0], text_pos[0][1],
+    axs[0].text(text_pos[0][0], text_pos[0][1],
                  f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
-    axs[ii].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
+    axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
     ii += 1
 
     for key in ["root", "subtypes"]:
         if key == "subtypes":
             ref_sequence = get_reference_sequence(ref_files["B"])
-            years, dist, std, nb = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="B")
+            years, dist, std, nb, ranges = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="B")
             ref_sequence = get_reference_sequence(ref_files["C"])
-            years2, dist2, std2, nb2 = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="C")
+            years2, dist2, std2, nb2, ranges2 = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="C")
 
             # Averaging the subtypes distance
             for key2 in dist.keys():
                 idxs = np.isin(years, years2)
                 dist[key2][idxs] = (nb[idxs] * dist[key2][idxs] + nb2 *
                                     dist2[key2]) / (nb[idxs] + nb2)
+                ranges[key2][idxs] = ((nb[idxs] * ranges[key2][idxs].T + nb2 *
+                                    ranges2[key2].T) / (nb[idxs] + nb2)).T
 
         else:
             reference_sequence = get_reference_sequence(ref_files[key])
-            years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence, subtype="")
+            years, dist, std, _, ranges = get_mean_distance_in_time(alignment_file, reference_sequence, subtype="")
             # years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
 
-        dist["all"] = dist["all"][years >= cutoff]
-        years = years[years >= cutoff]
+        ind = years >= cutoff
+        dist["all"] = dist["all"][ind]
+        years = years[ind]
         fit = np.polyfit(years, dist["all"], deg=1)
         axs[0].plot(years, dist["all"], '.', color=colors[ii], label=key)
+        axs[0].fill_between(years, ranges["all"][ind,0], ranges["all"][ind,1], color=colors[ii], alpha=0.1)
         axs[0].plot(years, np.polyval(fit, years), "-", color=colors[ii])
         axs[0].text(text_pos[ii][0], text_pos[ii][1],
                     f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
@@ -97,7 +102,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     axs[1].legend()
     axs[1].set_xlim([-0.3, 5.5])
     axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
-
+    plt.tight_layout()
     if savefig:
         fig.savefig(f"figures/Distance_{region}.pdf")
 
@@ -106,7 +111,7 @@ def make_figure_2(region, text, savefig=False, reference="global"):
     fill_alpha = 0.15
     colors = ["C3", "C0", "C1", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
     lines = ["-", "-", "--"]
-    figsize = (6.7315, 3)
+    figsize = figsize_wide
 
     div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
     time = div_dict["time"]
@@ -154,6 +159,7 @@ def make_figure_2(region, text, savefig=False, reference="global"):
         axs[1].plot([0], [0], lines[0], color=colors[jj + 3], label=label)
 
     axs[1].legend()
+    plt.tight_layout()
 
     if savefig:
         plt.savefig(f"figures/Divergence_details_{region}.pdf")
@@ -162,7 +168,7 @@ def make_figure_2(region, text, savefig=False, reference="global"):
 def make_figure_3(savegif=False):
     reference = "any"  # "any" or "subtypes"
     fill_alpha = 0.15
-    figsize = (6.7315, 3)
+    figsize = figsize_wide
     colors = ["C0", "C1", "C2", "C4"]
 
     trajectory_file = f"data/WH/Trajectory_list_{reference}.json"
@@ -220,6 +226,7 @@ def make_figure_3(savegif=False):
                   ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "reversion", "non-reversion"],
                   ncol=2, loc="lower right")
     axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
+    plt.tight_layout()
 
     if savefig:
         plt.savefig(f"figures/mean_in_time_{reference}.pdf")
@@ -284,13 +291,17 @@ def compute_rates(region):
 
 def average_rtt(rtt, dates, cutoff=1977):
     "Average rtt per years"
+    from scipy.stats import scoreatpercentile
     years = np.unique(dates)
     lengths = []
-    for year in years:
-        lengths += [np.mean(rtt[dates == year])]
-    lengths = np.array(lengths)[years >= cutoff]
+    length_ranges = []
     years = years[years >= cutoff]
-    return lengths, years
+    for year in years:
+        values_in_year = rtt[dates == year]
+        lengths += [np.mean(values_in_year)]
+        length_ranges += [[scoreatpercentile(values_in_year,10), scoreatpercentile(values_in_year, 90)]]
+    lengths = np.array(lengths)
+    return lengths, years, np.array(length_ranges)
 
 
 def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"], linestyle=["-", "--", ":"]):
@@ -298,13 +309,16 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     from gtr_modeling import get_RTT, get_ATGC_content, get_hamming_distance
     from Bio import Phylo, AlignIO
 
-    figsize = (6.7315, 3.3)
+    rate_variation = 0  # 0 for no rate variation. Or 1, 2 for parameter of rate gamma distribution
+    figsize = figsize_wide
+    scaling_dict = {"pol": 17.1/10.4, "gag": 28.2/14.2, "env": 63.6/24.2}
+    scaling = round(scaling_dict[region],2)
     MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
-    MSA_naive = f"data/modeling/generated_MSA/{region}_control_1.58.fasta"
-    MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_1.58.fasta"
+    MSA_naive = f"data/modeling/generated_MSA/{region}_control_{scaling}_rv_{rate_variation}.fasta"
+    MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_{scaling}_rv_{rate_variation}.fasta"
     tree_or = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
-    tree_naive = f"data/modeling/generated_trees/{region}_control_1.58.nwk"
-    tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_1.58.nwk"
+    tree_naive = f"data/modeling/generated_trees/{region}_control_{scaling}_rv_{rate_variation}.nwk"
+    tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_{scaling}_rv_{rate_variation}.nwk"
     root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
 
     MSA = {}
@@ -345,7 +359,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax1.set_xticklabels(nucleotides)
     ax1.set_ylabel("ATGC content")
     ax1.set_ylim(limits[0])
-    ax1.legend(*zip(*labels))
+    #ax1.legend(*zip(*labels))
     ax1.annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
     # Bottom-Left plot
@@ -365,23 +379,24 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax2.set_xlabel("Distance to root sequence")
     ax2.set_ylabel("Frequency")
     ax2.set_xlim(limits[1])
-    ax2.legend()
+    #ax2.legend()
     ax2.annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
     # Right plot
     trees = {"original": tree_or, "naive": tree_naive, "biased": tree_biased}
-    rtts, dates, fits = {}, {}, {}
+    rtts, dates, ranges, fits = {}, {}, {}, {}
     labels = ["BH data", "WH naive", "WH reversion"]
 
     # ax3 = plt.subplot(122)[0.02, 0.25]
     ax3 = plt.subplot(122)
     for key in trees.keys():
         rtts[key], dates[key] = get_RTT(trees[key])
-        rtts[key], dates[key] = average_rtt(rtts[key], dates[key])
+        rtts[key], dates[key], ranges[key] = average_rtt(rtts[key], dates[key])
         fits[key] = np.polyfit(dates[key], rtts[key], deg=1)
 
     for ii, key in enumerate(rtts.keys()):
         ax3.plot(dates[key], rtts[key], '.', label=f"{labels[ii]}", color=colors[ii])
+        ax3.fill_between(dates[key], ranges[key][:,0], ranges[key][:,1], color=colors[ii], alpha=0.1)
         ax3.plot(dates[key], np.polyval(fits[key], dates[key]), "-", color=colors[ii])
         ax3.text(text[ii][0], text[ii][1],
                  f"$\\propto {round(fits[key][0]*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
@@ -389,9 +404,11 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax3.annotate("C", xy=(0, 1.02), xycoords="axes fraction")
     ax3.set_xlabel("Years")
     ax3.ticklabel_format(axis="x", style="plain")
+    ax3.set_ylim(0)
     ax3.set_ylabel("RTT")
-    ax3.legend()
+    ax3.legend(loc=4)
 
+    plt.tight_layout()
     if savefig:
         plt.savefig(f"figures/RTT_modeling_{region}.pdf")
     plt.show()
@@ -403,7 +420,7 @@ def make_figure_5(savefig=False):
     """
     reference = "any"  # "any" or "subtypes"
     fill_alpha = 0.15
-    figsize = (6.7315, 3)
+    figsize = figsize_wide
     colors = ["C0", "C1", "C2", "C4"]
 
     trajectory_file = f"data/WH/Trajectory_list_{reference}.json"
@@ -461,6 +478,7 @@ def make_figure_5(savefig=False):
                   ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "synonymous", "non-synonymous"],
                   ncol=2, loc="upper left")
     axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction")
+    plt.tight_layout()
 
     if savefig:
         plt.savefig(f"figures/mean_in_time_syn_{reference}.pdf")
@@ -492,6 +510,7 @@ def make_figure_6(region, savefig):
 
     if savefig:
         plt.savefig(f"figures/Divergence_by_diversity_{region}.pdf")
+    plt.tight_layout()
 
     plt.show()
 
@@ -529,6 +548,7 @@ def make_figure_7(region, savefig=False):
     plt.xticks(range(len(labels)), labels, rotation=14)
     plt.ylabel("Mutation rates")
     plt.legend()
+    plt.tight_layout()
     if savefig:
         plt.savefig(f"figures/Rates_{region}.pdf")
     plt.show()
@@ -631,24 +651,26 @@ if __name__ == '__main__':
         make_figure_3(savefig)
 
     if fig4:
-        region = "pol"
-        text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)],
-                "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.203)],
-                "env": [(2003, 0.28), (2003, 0.34), (2003, 0.17)]}
-        limits = {"pol": [(0.15, 0.43), (0.02, 0.25)],
-                  "gag": [(0.15, 0.44), (0.06, 0.26)],
-                  "env": [(0.15, 0.4), (0.08, 0.37)]}
+        for region in ["pol", "gag", "env"]:
+            text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)],
+                    "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.203)],
+                    "env": [(2003, 0.28), (2003, 0.34), (2003, 0.17)]}
+            limits = {"pol": [(0.15, 0.43), (0.02, 0.25)],
+                    "gag": [(0.15, 0.44), (0.06, 0.26)],
+                    "env": [(0.15, 0.4), (0.08, 0.37)]}
 
-        make_figure_4(region, text[region], limits[region], savefig)
+            make_figure_4(region, text[region], limits[region], savefig)
 
     if fig5:
         make_figure_5(savefig)
 
     if fig6:
-        make_figure_6("pol", savefig)
+        for region in ["pol", "gag", "env"]:
+            make_figure_6(region, savefig)
 
     if fig7:
-        make_figure_7("pol", savefig)
+        for region in ["pol", "gag", "env"]:
+            make_figure_7(region, savefig)
 
     if fig8:
         make_figure_8(savefig)

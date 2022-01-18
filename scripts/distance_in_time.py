@@ -40,6 +40,7 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype=""):
     Computes the hamming distance to the reference_sequence. Does this for all sites, for first second and
     third positions. Returns dictionaries with format average_distance_in_time[all/first/second/third].
     """
+    from scipy.stats import scoreatpercentile
     # Checks
     assert os.path.exists(alignment_file), f"{alignment_file} doesn't exist."
     assert type(reference_sequence) == np.ndarray, f"reference sequence must be a numpy array."
@@ -67,6 +68,7 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype=""):
     years = np.unique(dates)
     average_distance_in_time = {}
     std_distance_in_time = {}
+    distance_ranges_in_time = {}
     for ii, position in enumerate(["first", "second", "third"]):
         position_mask = tools.site_mask(alignment_array, ii + 1)
         position_mask = position_mask[gap_mask]
@@ -76,14 +78,18 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype=""):
         # Distance average per year
         average_distance[position] = []
         std_distance[position] = []
+        distance_ranges = []
         nb_seq = []
         for year in years:
-            nb_seq += [distance[position][dates == year].shape[0]]
-            average_distance[position] += [np.mean(distance[position][dates == year])]
-            std_distance[position] += [np.std(distance[position][dates == year])]
+            values_in_year = distance[position][dates == year]
+            nb_seq += [values_in_year.shape[0]]
+            average_distance[position] += [np.mean(values_in_year)]
+            std_distance[position] += [np.std(values_in_year)]
+            distance_ranges += [[scoreatpercentile(values_in_year, 10), scoreatpercentile(values_in_year, 90)]]
 
         average_distance_in_time[position] = np.array(average_distance[position])
         std_distance_in_time[position] = np.array(std_distance[position])
+        distance_ranges_in_time[position] = np.array(distance_ranges)
         nb_seq = np.array(nb_seq)
 
     # Average over all sites
@@ -94,7 +100,11 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype=""):
                                    std_distance_in_time["second"] +
                                    std_distance_in_time["third"]) / 3
 
-    return years, average_distance_in_time, std_distance_in_time, nb_seq
+    distance_ranges_in_time["all"] = (distance_ranges_in_time["first"] +
+                                   distance_ranges_in_time["second"] +
+                                   distance_ranges_in_time["third"]) / 3
+
+    return years, average_distance_in_time, std_distance_in_time, nb_seq, distance_ranges_in_time
 
 
 def get_root_to_tip_distance(tree_file, branch_length_file, subtype=""):
@@ -168,7 +178,7 @@ def plot_mean_distance_in_time(consensus="global", savefig=False):
         else:
             reference_sequence = get_reference_sequence(reference_file[subtype])
 
-        years, dist, std = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
+        years, dist, std, nb, ranges = get_mean_distance_in_time(alignment_file, reference_sequence, subtype)
         fit = np.polyfit(years, dist["all"], deg=1)
         # fit = np.polyfit(years[std != 0], dist[std != 0], deg=1, w=(1 / std[std != 0]))
         plt.errorbar(years, dist["all"], yerr=std["all"], fmt=".", label=subtype, color=colors[c])
