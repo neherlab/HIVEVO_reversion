@@ -5,15 +5,16 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import trajectory
 import json
+import glob
 plt.style.use("tex.mplstyle")
 figsize_wide = (6.7315, 3)
+fill_alpha = 0.15
 
 
 def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     from gtr_modeling import get_RTT
     from Bio import Phylo
     colors = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"]
-    fill_alpha = 0.15
     figsize = figsize_wide
 
     div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
@@ -36,7 +37,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     lengths, dates, ranges = average_rtt(lengths, dates)
     fit = np.polyfit(dates, lengths, deg=1)
     axs[0].plot(dates, lengths, '.', label="RTT", color=colors[ii])
-    axs[0].fill_between(dates, ranges[:, 0], ranges[:, 1], color=colors[ii], alpha=0.1)
+    axs[0].fill_between(dates, ranges[:, 0], ranges[:, 1], color=colors[ii], alpha=fill_alpha)
     axs[0].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
     # axs[ii].fill_between(dates, lengths + errors, lengths - errors, alpha=fill_alpha, color=colors[ii])
     axs[0].text(text_pos[0][0], text_pos[0][1],
@@ -112,7 +113,6 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
 
 
 def make_figure_2(region, text, savefig=False, reference="global"):
-    fill_alpha = 0.15
     colors = ["C3", "C0", "C1", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
     lines = ["-", "-", "--"]
     figsize = figsize_wide
@@ -171,7 +171,6 @@ def make_figure_2(region, text, savefig=False, reference="global"):
 
 def make_figure_3(savegif=False):
     reference = "any"  # "any" or "subtypes"
-    fill_alpha = 0.15
     figsize = figsize_wide
     colors = ["C0", "C1", "C2", "C4"]
 
@@ -258,15 +257,13 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
 
     rate_variation = 0  # 0 for no rate variation. Or 1, 2 for parameter of rate gamma distribution
     figsize = figsize_wide
-    scaling_dict = {"pol": 17.1 / 10.4, "gag": 28.2 / 14.2, "env": 63.6 / 24.2}
-    scaling = round(scaling_dict[region], 2)
-    MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
-    MSA_naive = f"data/modeling/generated_MSA/{region}_control_{scaling}_rv_{rate_variation}.fasta"
-    MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_{scaling}_rv_{rate_variation}.fasta"
-    tree_or = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
-    tree_naive = f"data/modeling/generated_trees/{region}_control_{scaling}_rv_{rate_variation}.nwk"
-    tree_biased = f"data/modeling/generated_trees/{region}_3class_binary_{scaling}_rv_{rate_variation}.nwk"
-    root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
+    MSA_or = f"data/BH/alignments/to_HXB2/{region}.fasta"
+    MSA_naive = glob.glob(f"data/modeling/generated_MSA/{region}_control_rv_{rate_variation}_*.fasta")[0]
+    MSA_biased = glob.glob(f"data/modeling/generated_MSA/{region}_3class_binary_rv_{rate_variation}_*.fasta")[0]
+    tree_or = f"data/BH/intermediate_files/tree_{region}.nwk"
+    tree_naive = glob.glob(f"data/modeling/generated_trees/{region}_control_rv_{rate_variation}_*.nwk")[0]
+    tree_biased = glob.glob(f"data/modeling/generated_trees/{region}_3class_binary_rv_{rate_variation}_*.nwk")[0]
+    root_path = f"data/BH/intermediate_files/{region}_nt_muts.json"
 
     MSA = {}
     for key, path in zip(["original", "naive", "biased"], [MSA_or, MSA_naive, MSA_biased]):
@@ -305,8 +302,6 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax1.set_xticks([0, 1, 2, 3])
     ax1.set_xticklabels(nucleotides)
     ax1.set_ylabel("ATGC content")
-    ax1.set_ylim(limits[0])
-    # ax1.legend(*zip(*labels))
     ax1.annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
     # Bottom-Left plot
@@ -325,8 +320,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
 
     ax2.set_xlabel("Distance to root sequence")
     ax2.set_ylabel("Frequency")
-    ax2.set_xlim(limits[1])
-    # ax2.legend()
+    ax2.set_xlim(limits)
     ax2.annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
     # Right plot
@@ -334,7 +328,6 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     rtts, dates, ranges, fits = {}, {}, {}, {}
     labels = ["BH data", "WH naive", "WH reversion"]
 
-    # ax3 = plt.subplot(122)[0.02, 0.25]
     ax3 = plt.subplot(122)
     for key in trees.keys():
         rtts[key], dates[key] = get_RTT(trees[key])
@@ -343,7 +336,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
 
     for ii, key in enumerate(rtts.keys()):
         ax3.plot(dates[key], rtts[key], '.', label=f"{labels[ii]}", color=colors[ii])
-        ax3.fill_between(dates[key], ranges[key][:, 0], ranges[key][:, 1], color=colors[ii], alpha=0.1)
+        ax3.fill_between(dates[key], ranges[key][:, 0], ranges[key][:, 1], color=colors[ii], alpha=fill_alpha)
         ax3.plot(dates[key], np.polyval(fits[key], dates[key]), "-", color=colors[ii])
         ax3.text(text[ii][0], text[ii][1],
                  f"$\\propto {round(fits[key][0]*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
@@ -353,7 +346,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax3.ticklabel_format(axis="x", style="plain")
     ax3.set_ylim(0)
     ax3.set_ylabel("RTT")
-    ax3.legend(loc=4)
+    ax3.legend(loc="upper left")
 
     plt.tight_layout()
     if savefig:
@@ -366,7 +359,6 @@ def make_figure_5(savefig=False):
     Plot for equivalant of the reversion in time figure but using synonymous / non-synonymous in this case.
     """
     reference = "any"  # "any" or "subtypes"
-    fill_alpha = 0.15
     figsize = figsize_wide
     colors = ["C0", "C1", "C2", "C4"]
 
@@ -508,7 +500,6 @@ def make_figure_8(savefig):
     regions = ["env", "pol", "gag"]
     colors = ["C0", "C1", "C2"]
     figsize = (6.7315, 3)
-    fill_alpha = 0.15
     lines = ["-", "--"]
 
     dict_names = {}
@@ -551,13 +542,13 @@ def make_figure_8(savefig):
 
 
 if __name__ == '__main__':
-    fig1 = True
+    fig1 = False
     fig2 = False
-    fig3 = False
+    fig3 = True
     fig4 = False
     fig5 = False
     fig6 = False
-    savefig = False
+    savefig = True
 
     if fig1:
         text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.072), (1.2, 0.058), (1.2, 0.028)],
@@ -584,13 +575,13 @@ if __name__ == '__main__':
         make_figure_3(savefig)
 
     if fig4:
-        region = "gag"
-        text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)],
-                "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.175)],
-                "env": [(2003, 0.28), (2003, 0.34), (2003, 0.17)]}
-        limits = {"pol": [(0.15, 0.43), (0.02, 0.25)],
-                  "gag": [(0.15, 0.44), (0.06, 0.26)],
-                  "env": [(0.15, 0.4), (0.08, 0.37)]}
+        region = "env"
+        text = {"pol": [(2003, 0.07), (2003, 0.24), (2003, 0.145)],
+                "gag": [(2003, 0.1), (2003, 0.37), (2003, 0.24)],
+                "env": [(2003, 0.3), (2003, 0.52), (2003, 0.1)]}
+        limits = {"pol": (0.03, 0.23),
+                  "gag": (0.06, 0.3),
+                  "env": (0.08, 0.45)}
 
         make_figure_4(region, text[region], limits[region], savefig)
 
