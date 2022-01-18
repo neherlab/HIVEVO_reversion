@@ -1,0 +1,13 @@
+name: hivevo
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - iqtree=2.1.2
+  - augur=13.1.0
+  - nextalign=1.9.0
+  - python=3.8*
+  - pip
+  - pip:
+    - git+https://github.com/neherlab/HIVEVO_access.git

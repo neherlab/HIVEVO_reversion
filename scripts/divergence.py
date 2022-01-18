@@ -303,7 +303,7 @@ if __name__ == '__main__':
     #
 
     import matplotlib.pyplot as plt
-    plt.style.use("tex")
+    # plt.style.use("tex")
     plt.figure()
     lines = ["-", "--", ":"]
     colors = ["C0", "C1", "C2", "C3", "C4", "C5"]
