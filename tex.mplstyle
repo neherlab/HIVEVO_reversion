@@ -1,0 +1,18 @@
+text.usetex: False
+axes.labelsize: 9
+font.size: 9
+lines.linewidth: 1
+legend.fontsize: 8
+xtick.labelsize: 8
+ytick.labelsize: 8
+axes.formatter.limits: -3, 3 # when to switch to scientific format
+axes.formatter.use_mathtext: True # scientific format with power of 10 instead of 1e
+savefig.format: pdf
+axes.grid: False
+figure.figsize: 6.7315, 4.1603
+grid.alpha: 0.5
+figure.autolayout: True # set tight layout
+figure.dpi: 150 # increase a bit size of show() without changing savefile
+savefig.bbox: tight
+savefig.pad_inches: 0.01 # Removes padding on figure sides
+legend.handlelength: 1 # reduce a bit length of lines in legend entries

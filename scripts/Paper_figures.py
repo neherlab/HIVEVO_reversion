@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import trajectory
 import json
-#plt.style.use("tex")
-figsize_wide = (9, 4)
+plt.style.use("tex.mplstyle")
+figsize_wide = (6.7315, 3)
+
 
 def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     from gtr_modeling import get_RTT
@@ -35,20 +36,22 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     lengths, dates, ranges = average_rtt(lengths, dates)
     fit = np.polyfit(dates, lengths, deg=1)
     axs[0].plot(dates, lengths, '.', label="RTT", color=colors[ii])
-    axs[0].fill_between(dates, ranges[:,0], ranges[:,1], color=colors[ii], alpha=0.1)
+    axs[0].fill_between(dates, ranges[:, 0], ranges[:, 1], color=colors[ii], alpha=0.1)
     axs[0].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
     # axs[ii].fill_between(dates, lengths + errors, lengths - errors, alpha=fill_alpha, color=colors[ii])
     axs[0].text(text_pos[0][0], text_pos[0][1],
-                 f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
+                f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
     axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
     ii += 1
 
     for key in ["root", "subtypes"]:
         if key == "subtypes":
             ref_sequence = get_reference_sequence(ref_files["B"])
-            years, dist, std, nb, ranges = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="B")
+            years, dist, std, nb, ranges = get_mean_distance_in_time(
+                alignment_file, ref_sequence, subtype="B")
             ref_sequence = get_reference_sequence(ref_files["C"])
-            years2, dist2, std2, nb2, ranges2 = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="C")
+            years2, dist2, std2, nb2, ranges2 = get_mean_distance_in_time(
+                alignment_file, ref_sequence, subtype="C")
 
             # Averaging the subtypes distance
             for key2 in dist.keys():
@@ -56,11 +59,12 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
                 dist[key2][idxs] = (nb[idxs] * dist[key2][idxs] + nb2 *
                                     dist2[key2]) / (nb[idxs] + nb2)
                 ranges[key2][idxs] = ((nb[idxs] * ranges[key2][idxs].T + nb2 *
-                                    ranges2[key2].T) / (nb[idxs] + nb2)).T
+                                       ranges2[key2].T) / (nb[idxs] + nb2)).T
 
         else:
             reference_sequence = get_reference_sequence(ref_files[key])
-            years, dist, std, _, ranges = get_mean_distance_in_time(alignment_file, reference_sequence, subtype="")
+            years, dist, std, _, ranges = get_mean_distance_in_time(
+                alignment_file, reference_sequence, subtype="")
             # years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
 
         ind = years >= cutoff
@@ -68,7 +72,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
         years = years[ind]
         fit = np.polyfit(years, dist["all"], deg=1)
         axs[0].plot(years, dist["all"], '.', color=colors[ii], label=key)
-        axs[0].fill_between(years, ranges["all"][ind,0], ranges["all"][ind,1], color=colors[ii], alpha=0.1)
+        axs[0].fill_between(years, ranges["all"][ind, 0], ranges["all"][ind, 1], color=colors[ii], alpha=0.1)
         axs[0].plot(years, np.polyval(fit, years), "-", color=colors[ii])
         axs[0].text(text_pos[ii][0], text_pos[ii][1],
                     f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
@@ -242,7 +246,7 @@ def average_rtt(rtt, dates, cutoff=1977):
     for year in years:
         values_in_year = rtt[dates == year]
         lengths += [np.mean(values_in_year)]
-        length_ranges += [[scoreatpercentile(values_in_year,10), scoreatpercentile(values_in_year, 90)]]
+        length_ranges += [[scoreatpercentile(values_in_year, 10), scoreatpercentile(values_in_year, 90)]]
     lengths = np.array(lengths)
     return lengths, years, np.array(length_ranges)
 
@@ -254,8 +258,8 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
 
     rate_variation = 0  # 0 for no rate variation. Or 1, 2 for parameter of rate gamma distribution
     figsize = figsize_wide
-    scaling_dict = {"pol": 17.1/10.4, "gag": 28.2/14.2, "env": 63.6/24.2}
-    scaling = round(scaling_dict[region],2)
+    scaling_dict = {"pol": 17.1 / 10.4, "gag": 28.2 / 14.2, "env": 63.6 / 24.2}
+    scaling = round(scaling_dict[region], 2)
     MSA_or = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
     MSA_naive = f"data/modeling/generated_MSA/{region}_control_{scaling}_rv_{rate_variation}.fasta"
     MSA_biased = f"data/modeling/generated_MSA/{region}_3class_binary_{scaling}_rv_{rate_variation}.fasta"
@@ -302,7 +306,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax1.set_xticklabels(nucleotides)
     ax1.set_ylabel("ATGC content")
     ax1.set_ylim(limits[0])
-    #ax1.legend(*zip(*labels))
+    # ax1.legend(*zip(*labels))
     ax1.annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
     # Bottom-Left plot
@@ -322,7 +326,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
     ax2.set_xlabel("Distance to root sequence")
     ax2.set_ylabel("Frequency")
     ax2.set_xlim(limits[1])
-    #ax2.legend()
+    # ax2.legend()
     ax2.annotate("B", xy=(0, 1.05), xycoords="axes fraction")
 
     # Right plot
@@ -339,7 +343,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
 
     for ii, key in enumerate(rtts.keys()):
         ax3.plot(dates[key], rtts[key], '.', label=f"{labels[ii]}", color=colors[ii])
-        ax3.fill_between(dates[key], ranges[key][:,0], ranges[key][:,1], color=colors[ii], alpha=0.1)
+        ax3.fill_between(dates[key], ranges[key][:, 0], ranges[key][:, 1], color=colors[ii], alpha=0.1)
         ax3.plot(dates[key], np.polyval(fits[key], dates[key]), "-", color=colors[ii])
         ax3.text(text[ii][0], text[ii][1],
                  f"$\\propto {round(fits[key][0]*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
@@ -588,7 +592,7 @@ if __name__ == '__main__':
                   "gag": [(0.15, 0.44), (0.06, 0.26)],
                   "env": [(0.15, 0.4), (0.08, 0.37)]}
 
-            make_figure_4(region, text[region], limits[region], savefig)
+        make_figure_4(region, text[region], limits[region], savefig)
 
     if fig5:
         make_figure_5(savefig)
@@ -596,12 +600,5 @@ if __name__ == '__main__':
     if fig6:
         for region in ["pol", "gag", "env"]:
             make_figure_6(region, savefig)
-
-    if fig7:
-        for region in ["pol", "gag", "env"]:
-            make_figure_7(region, savefig)
-
-    if fig8:
-        make_figure_8(savefig)
 
     plt.show()
