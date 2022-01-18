@@ -195,7 +195,7 @@ def define_GTR(consensus_seq, p_type, scaling, rates, rate_variation=0):
 
     L = len(consensus_seq)  # sequence length
     if rate_variation:
-        mu = gamma.rvs(rate_variation,size=L, random_state = 123)/rate_variation
+        mu = gamma.rvs(rate_variation, size=L, random_state=123) / rate_variation
     else:
         mu = np.ones(L)
     W = np.array([[0., 0.763, 2.902, 0.391],
@@ -361,9 +361,9 @@ def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
     consensus_seq = get_reference_sequence(consensus_path)
     # Replaces N by A, it's not exact but I have a 4 letter alphabet for now
     consensus_seq[consensus_seq == "N"] = "A"
-    t = np.linspace(0,1,101)
+    t = np.linspace(0, 1, 101)
     from treetime.seq_utils import prof2seq, seq2prof
-    data = {'time':t}
+    data = {'time': t}
     for r in rate_variations:
         for p_type in p_types:
             myGTR = define_GTR(consensus_seq, p_type, scaling, rates, r)
@@ -372,9 +372,10 @@ def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
             distances = []
             for tp in t:
                 evolved_prof = myGTR.evolve(starting_prof, tp)
-                distances.append(1-np.mean(np.sum(starting_prof*evolved_prof, axis=1)))
-            data[(p_type,r)] = distances
+                distances.append(1 - np.mean(np.sum(starting_prof * evolved_prof, axis=1)))
+            data[(p_type, r)] = distances
     return data
+
 
 if __name__ == "__main__":
     region = "pol"
@@ -400,37 +401,40 @@ if __name__ == "__main__":
     optimize = False
     analysis = True
 
-    scaling_dict = {"pol": 17.1/10.4, "gag": 28.2/14.2, "env": 63.6/24.2}
-    scaling = round(scaling_dict[region],2)
+    scaling_dict = {"pol": 17.1 / 10.4, "gag": 28.2 / 14.2, "env": 63.6 / 24.2}
+    scaling = round(scaling_dict[region], 2)
 
-    rate_variation = 0 # (shape parameter of gamma distribution, set to 0 for no rate variation)
+    rate_variation = 0  # (shape parameter of gamma distribution, set to 0 for no rate variation)
 
-    distances = get_branch_length(consensus_path, ["3class_binary", "control"],1.58,rates, [0,1,2])
+    distances = get_branch_length(consensus_path, ["3class_binary", "control"], 1.58, rates, [0, 1, 2])
     plt.figure()
     line_styles = ['-', '--', '-.']
-    for pi,p in enumerate(["3class_binary", "control"]):
-        for r in [0,1,2]:
+    for pi, p in enumerate(["3class_binary", "control"]):
+        for r in [0, 1, 2]:
             plt.plot(distances['time'], distances[(p, r)], c=f'C{pi}', ls=line_styles[r])
     plt.ylabel('distance')
     plt.xlabel('time')
 
     for p_type in ["3class_binary", "control"]:
-        for rate_variation in [0,1,2]:
+        for rate_variation in [0, 1, 2]:
 
-            generated_MSA_path = generated_MSA_folder + p_type + "_"   + str(scaling) + '_rv_' + str(rate_variation)+ ".fasta"
-            generated_tree_path = generated_tree_folder + p_type + "_" + str(scaling) + '_rv_' + str(rate_variation)+ ".nwk"
-            optimized_tree_path = optimized_tree_folder + p_type + "_" + str(scaling) + '_rv_' + str(rate_variation)+ ".nwk"
+            generated_MSA_path = generated_MSA_folder + p_type + "_" + \
+                str(scaling) + '_rv_' + str(rate_variation) + ".fasta"
+            generated_tree_path = generated_tree_folder + p_type + "_" + \
+                str(scaling) + '_rv_' + str(rate_variation) + ".nwk"
+            optimized_tree_path = optimized_tree_folder + p_type + "_" + \
+                str(scaling) + '_rv_' + str(rate_variation) + ".nwk"
 
             if regenerate:
                 generate_MSA(original_tree_path, root_path, consensus_path,
-                            original_MSA_path, original_metadata_path, generated_MSA_path, rates,
-                            p_type, scaling, rate_variation)
+                             original_MSA_path, original_metadata_path, generated_MSA_path, rates,
+                             p_type, scaling, rate_variation)
                 generate_tree(generated_MSA_path, generated_tree_path)
                 reroot_tree(generated_tree_path, original_metadata_path, generated_MSA_path)
 
             if optimize:
                 optimize_tree(original_tree_path, generated_MSA_path, optimized_tree_path,
-                            consensus_path, p_type, rates, 1.0, rate_variation)
+                              consensus_path, p_type, rates, 1.0, rate_variation)
 
             # --- Data analysis ---
             if analysis:
