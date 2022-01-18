@@ -28,22 +28,6 @@ def mutation_positions_mask(patient, region, aft, eps=0.01):
     return mask
 
 
-# def get_fixation_positions(patient, region, aft, eps=0.01, timepoint="any"):
-#     """
-#     Return a 2D (letter*genome_position) boolean matrix where True are the mutations with more than 1-eps
-#     frequency at some timepoint / last time point.
-#     timepoint = ["any", "last"]
-#     """
-#     fixation_positions = get_mutation_positions(patient, region, aft, 1 - eps)
-#
-#     if timepoint == "any":
-#         return np.sum(fixation_positions, axis=0, dtype=bool)
-#     elif timepoint == "last":
-#         return fixation_positions[-1, :, :]
-#     else:
-#         raise ValueError("Condition of fixation is not understood.")
-
-
 def reference_filter_mask(patient, region, aft, ref, gap_threshold=0.1):
     """Returns a 1D boolean vector where False are the genome positions that are unmapped to reference or too
     often gapped.

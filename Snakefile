@@ -1,17 +1,18 @@
-NB_SEQUENCES = [1000, 500, 250, 125]
 REGIONS = ["env", "pol", "gag"]
 SUBTYPES = ["B", "C"]
 
 wildcard_constraints:
     region = "(env|pol|gag)",
-    nb_sequences = "(4000|2000|1000|500|250|125)",
     subtype = "(B|C)",
     position = "(1st|2nd|3rd)"
 
-
 rule all:
     input:
-        auspice_jsons = expand("visualisation/{region}_1000.json", region=REGIONS)
+        auspice_jsons = expand("visualisation/{region}.json", region=REGIONS),
+        branch_length_files = expand(
+            "data/BH/intermediate_files/branch_lengths_{region}.json", region=REGIONS),
+        gtr_files = expand("data/BH/mutation_rates/{region}.json", region=REGIONS)
+
 
 rule figure_data:
     message:
@@ -19,14 +20,13 @@ rule figure_data:
         Creating the files for the BH distance in time figure left panel (figure 1 5 and 6).
         """
     input:
-        consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_1000_{subtype}_consensus.fasta",
-                                     region=REGIONS, subtype=SUBTYPES),
-        root_files = expand("data/BH/intermediate_files/{region}_1000_nt_muts.json", region=REGIONS),
-        tree_files = expand("data/BH/intermediate_files/timetree_{region}_1000.nwk", region=REGIONS),
-        branch_length_files = expand(
-            "data/BH/intermediate_files/branch_lengths_{region}_1000.json", region=REGIONS),
-        alignment_files = expand("data/BH/alignments/to_HXB2/{region}_1000.fasta", region=REGIONS),
-        gtr_files = expand("data/BH/mutation_rates/{region}_1000.json", region=REGIONS)
+        consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_consensus.fasta", region=REGIONS),
+        subtype_consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_{subtype}_consensus.fasta",
+                                             region=REGIONS, subtype=SUBTYPES),
+        root_files = expand("data/BH/intermediate_files/{region}_nt_muts.json", region=REGIONS),
+        tree_files = expand("data/BH/intermediate_files/tree_{region}.nwk", region=REGIONS),
+        alignment_files = expand("data/BH/alignments/to_HXB2/{region}.fasta", region=REGIONS),
+
 
 rule lanl_metadata:
     message:
@@ -47,18 +47,20 @@ rule sub_sample:
     message:
         """
         Subsampling the original lanl data for region {wildcards.region} homogeneously in time and creating
-        subsampled {wildcards.nb_sequences} sequences + their metadata.
+        subsampled 1000 sequences + their metadata.
         """
     input:
         lanl_data = "data/BH/raw/{region}.fasta",
         lanl_metadata = "data/BH/raw/{region}_metadata.tsv"
     output:
-        sequences = "data/BH/raw/{region}_{nb_sequences}_subsampled.fasta",
-        metadata = "data/BH/raw/{region}_{nb_sequences}_subsampled_metadata.tsv"
+        sequences = "data/BH/raw/{region}_subsampled.fasta",
+        metadata = "data/BH/raw/{region}_subsampled_metadata.tsv"
+    params:
+        nb_sequences = 1000
     shell:
         """
         python scripts/snakecommands.py subsample {input.lanl_data} {input.lanl_metadata} \
-        {wildcards.nb_sequences} {output.sequences} {output.metadata} \
+        {params.nb_sequences} {output.sequences} {output.metadata} \
         --remove_subtype_o --remove_subtype_n
         """
 
@@ -73,7 +75,7 @@ rule align:
         sequences = rules.sub_sample.output.sequences,
         reference = "data/BH/reference/HXB2_{region}.fasta"
     output:
-        alignment = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}.fasta"
+        alignment = "data/BH/alignments/to_HXB2/{region}.fasta"
     threads: 4
     shell:
         """
@@ -93,7 +95,7 @@ rule consensus:
     input:
         alignment = rules.align.output.alignment
     output:
-        consensus_sequence = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_consensus.fasta"
+        consensus_sequence = "data/BH/alignments/to_HXB2/{region}_consensus.fasta"
     shell:
         """
         python scripts/snakecommands.py consensus {input.alignment} {output.consensus_sequence}
@@ -107,8 +109,8 @@ rule split_subtypes:
     input:
         alignment = rules.align.output.alignment
     output:
-        alignment_B = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_B.fasta",
-        alignment_C = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_C.fasta"
+        alignment_B = "data/BH/alignments/to_HXB2/{region}_B.fasta",
+        alignment_C = "data/BH/alignments/to_HXB2/{region}_C.fasta"
     shell:
         """
         python scripts/snakecommands.py split-subtypes {input.alignment}
@@ -120,9 +122,9 @@ rule split_positions:
     input:
         alignment = rules.align.output.alignment
     output:
-        alignment_first = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_1st.fasta",
-        alignment_second = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_2nd.fasta",
-        alignment_third = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_3rd.fasta"
+        alignment_first = "data/BH/alignments/to_HXB2/{region}_1st.fasta",
+        alignment_second = "data/BH/alignments/to_HXB2/{region}_2nd.fasta",
+        alignment_third = "data/BH/alignments/to_HXB2/{region}_3rd.fasta"
     shell:
         """
         python scripts/snakecommands.py split-positions {input.alignment}
@@ -134,9 +136,9 @@ rule subtype_consensus:
         Computing the consensus sequence of {input.alignment}.
         """
     input:
-        alignment = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_{subtype}.fasta"
+        alignment = "data/BH/alignments/to_HXB2/{region}_{subtype}.fasta"
     output:
-        consensus = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_{subtype}_consensus.fasta",
+        consensus = "data/BH/alignments/to_HXB2/{region}_{subtype}_consensus.fasta",
     shell:
         """
         python scripts/snakecommands.py consensus {input.alignment} {output.consensus}
@@ -147,9 +149,10 @@ rule tree:
     message:
         "Building tree for {input.alignment} using augur and IQtree GTR-F-R10 model."
     input:
-        alignment = rules.align.output.alignment
+        alignment = rules.align.output.alignment,
+        metadata = rules.sub_sample.output.metadata
     output:
-        tree = "data/BH/intermediate_files/tree_{region}_{nb_sequences}.nwk"
+        tree = "data/BH/intermediate_files/tree_{region}.nwk"
     threads: 4
     shell:
         """
@@ -159,6 +162,8 @@ rule tree:
             --alignment {input.alignment} \
             --output {output.tree} \
             --nthreads {threads}
+
+        python scripts/snakecommands.py reroot-tree {output.tree} {input.alignment} {input.metadata}
         """
 
 rule refine:
@@ -171,8 +176,8 @@ rule refine:
         alignment = rules.align.output.alignment,
         metadata = rules.sub_sample.output.metadata
     output:
-        tree = "data/BH/intermediate_files/timetree_{region}_{nb_sequences}.nwk",
-        node_data = "data/BH/intermediate_files/branch_lengths_{region}_{nb_sequences}.json"
+        tree = "data/BH/intermediate_files/timetree_{region}.nwk",
+        node_data = "data/BH/intermediate_files/branch_lengths_{region}.json"
     params:
         coalescent = "opt",
         date_inference = "marginal",
@@ -199,7 +204,7 @@ rule ancestral:
         tree = rules.refine.output.tree,
         alignment = rules.align.output.alignment
     output:
-        node_data = "data/BH/intermediate_files/{region}_{nb_sequences}_nt_muts.json"
+        node_data = "data/BH/intermediate_files/{region}_nt_muts.json"
     params:
         inference = "joint"
     shell:
@@ -214,8 +219,7 @@ rule ancestral:
 rule export:
     message:
         """
-        Exporting data for {wildcards.region}_{wildcards.nb_sequences} files for visualisation in
-        auspice.
+        Exporting data for {wildcards.region} files for visualisation in auspice.
         """
     input:
         tree = rules.refine.output.tree,
@@ -223,7 +227,7 @@ rule export:
         branch_lengths = rules.refine.output.node_data,
         nt_muts = rules.ancestral.output.node_data
     output:
-        auspice_json = "visualisation/{region}_{nb_sequences}.json"
+        auspice_json = "visualisation/{region}.json"
     shell:
         """
         augur export v2 \
@@ -241,7 +245,7 @@ rule gtr:
         tree = rules.refine.output.tree,
         align = rules.align.output.alignment
     output:
-        gtr_json = "data/BH/gtr/{region}_{nb_sequences}.json"
+        gtr_json = "data/BH/gtr/{region}.json"
     shell:
         """
         python scripts/snakecommands.py gtr {input.tree} {input.align} {output.gtr_json}
@@ -250,29 +254,29 @@ rule gtr:
 rule subalign_gtr:
     message:
         """
-        Inferring gtr model for subalignment {wildcards.region}_{wildcards.nb_sequences}_{wildcards.position}
+        Inferring gtr model for subalignment {wildcards.region}_{wildcards.position}
         using TreeTime.
         """
     input:
         tree = rules.refine.output.tree,
-        align = "data/BH/alignments/to_HXB2/{region}_{nb_sequences}_{position}.fasta"
+        align = "data/BH/alignments/to_HXB2/{region}_{position}.fasta"
     output:
-        gtr_json = "data/BH/gtr/{region}_{nb_sequences}_{position}.json"
+        gtr_json = "data/BH/gtr/{region}_{position}.json"
     shell:
         """
         python scripts/snakecommands.py gtr {input.tree} {input.align} {output.gtr_json}
         """
 
 rule mutation_rates:
-    message: "Computing the mutation_rates for {wildcards.region}_{wildcards.nb_sequences}."
+    message: "Computing the mutation_rates for {wildcards.region}."
     input:
         refine_file = rules.refine.output.node_data,
         gtr_all = rules.gtr.output.gtr_json,
-        gtr_first = "data/BH/gtr/{region}_{nb_sequences}_1st.json",
-        gtr_second = "data/BH/gtr/{region}_{nb_sequences}_2nd.json",
-        gtr_third = "data/BH/gtr/{region}_{nb_sequences}_3rd.json"
+        gtr_first = "data/BH/gtr/{region}_1st.json",
+        gtr_second = "data/BH/gtr/{region}_2nd.json",
+        gtr_third = "data/BH/gtr/{region}_3rd.json"
     output:
-        mutation_rates = "data/BH/mutation_rates/{region}_{nb_sequences}.json"
+        mutation_rates = "data/BH/mutation_rates/{region}.json"
     shell:
         """
         python scripts/snakecommands.py mutation-rate {input.refine_file} {input.gtr_all} {input.gtr_first} \
@@ -280,11 +284,11 @@ rule mutation_rates:
         """
 
 rule mean_branch_length:
-    message: "Computing mean branch length for {wildcards.region}_{wildcards.nb_sequences}."
+    message: "Computing mean branch length for {wildcards.region}."
     input:
         refine_file = rules.refine.output.node_data,
     output:
-        mean_branch_length = "data/BH/branch_lengths/{region}_{nb_sequences}.json"
+        mean_branch_length = "data/BH/branch_lengths/{region}.json"
     shell:
         """
         python scripts/snakecommands.py mean-branch-length {input.refine_file} {output.mean_branch_length}
@@ -315,4 +319,5 @@ rule clean:
         rm data/BH/mutation_rates/* -f
         rm data/BH/branch_lengths/* -f
         rm log/* -f
+        rm data/BH/raw/*metadata* -f
         """

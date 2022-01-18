@@ -357,6 +357,24 @@ def optimize_tree(tree_path, MSA_path, output_path, consensus_path, p_type, rate
     Phylo.write(tree, output_path, "newick")
 
 
+def compute_scaling(tree_path, rates, cutoff=1977):
+    """
+    Computes the scaling needed for the GTR modeling analysis.
+    """
+    from Paper_figures import average_rtt
+    # Computes rate from the BH tree
+    lengths, dates = get_RTT(Phylo.read(tree_path, "newick"))
+    lengths = np.array(lengths)[dates >= cutoff]
+    dates = dates[dates >= cutoff]
+    lengths, dates = average_rtt(lengths, dates)
+    fit = np.polyfit(dates, lengths, deg=1)
+    BH_rate = fit[0]
+
+    # Get WH rate
+    WH_rate = rates["all"]["all"]["rate"]
+
+    return WH_rate / BH_rate
+
 def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
     consensus_seq = get_reference_sequence(consensus_path)
     # Replaces N by A, it's not exact but I have a 4 letter alphabet for now
@@ -377,13 +395,14 @@ def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
     return data
 
 
+
 if __name__ == "__main__":
     region = "pol"
-    original_MSA_path = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
-    original_tree_path = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
-    root_path = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
-    consensus_path = f"data/BH/alignments/to_HXB2/{region}_1000_consensus.fasta"
-    original_metadata_path = f"data/BH/raw/{region}_1000_subsampled_metadata.tsv"
+    original_MSA_path = f"data/BH/alignments/to_HXB2/{region}.fasta"
+    original_tree_path = f"data/BH/intermediate_files/tree_{region}.nwk"
+    root_path = f"data/BH/intermediate_files/{region}_nt_muts.json"
+    consensus_path = f"data/BH/alignments/to_HXB2/{region}_consensus.fasta"
+    original_metadata_path = f"data/BH/raw/{region}_subsampled_metadata.tsv"
     generated_MSA_folder = f"data/modeling/generated_MSA/{region}_"
     generated_tree_folder = f"data/modeling/generated_trees/{region}_"
     optimized_tree_folder = f"data/modeling/optimized_trees/{region}_"
@@ -394,15 +413,18 @@ if __name__ == "__main__":
     # p_type = "homogeneous"
     # p_type = "binary"
     # p_type = "3class_homogeneous"
-    p_type = "3class_binary"
-    #p_type = "control"
+    # p_type = "3class_binary"
+    p_type = "control"
 
     regenerate = False
     optimize = False
     analysis = True
 
-    scaling_dict = {"pol": 17.1 / 10.4, "gag": 28.2 / 14.2, "env": 63.6 / 24.2}
-    scaling = round(scaling_dict[region], 2)
+    scaling = round(compute_scaling(original_tree_path, rates), 2)
+
+    generated_MSA_path = generated_MSA_folder + p_type + "_" + str(scaling) + ".fasta"
+    generated_tree_path = generated_tree_folder + p_type + "_" + str(scaling) + ".nwk"
+    optimized_tree_path = optimized_tree_folder + p_type + "_" + str(scaling) + ".nwk"
 
     rate_variation = 0  # (shape parameter of gamma distribution, set to 0 for no rate variation)
 

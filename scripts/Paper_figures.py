@@ -21,12 +21,12 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     fig, axs = plt.subplots(ncols=2, nrows=1, figsize=figsize, sharey=sharey)
 
     # BH plot
-    ref_files = {"root": f"data/BH/intermediate_files/{region}_1000_nt_muts.json",
-                 "B": f"data/BH/alignments/to_HXB2/{region}_1000_B_consensus.fasta",
-                 "C": f"data/BH/alignments/to_HXB2/{region}_1000_C_consensus.fasta"}
+    ref_files = {"root": f"data/BH/intermediate_files/{region}_nt_muts.json",
+                 "B": f"data/BH/alignments/to_HXB2/{region}_B_consensus.fasta",
+                 "C": f"data/BH/alignments/to_HXB2/{region}_C_consensus.fasta"}
 
-    tree_file = f"data/BH/intermediate_files/tree_{region}_1000.nwk"
-    alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
+    tree_file = f"data/BH/intermediate_files/tree_{region}.nwk"
+    alignment_file = f"data/BH/alignments/to_HXB2/{region}.fasta"
 
     ii = 0
     lengths, dates = get_RTT(Phylo.read(tree_file, "newick"))
@@ -230,63 +230,6 @@ def make_figure_3(savegif=False):
 
     if savefig:
         plt.savefig(f"figures/mean_in_time_{reference}.pdf")
-
-
-def compute_rates(region):
-    """
-    Returns the mutation rates from the distance to root, distance to subtype consensus and root to tip
-    distance.
-    """
-    # BH rate files
-    reference_file = {}
-    reference_file["root"] = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
-    reference_file["B"] = f"data/BH/alignments/to_HXB2/{region}_1000_B_consensus.fasta"
-    reference_file["C"] = f"data/BH/alignments/to_HXB2/{region}_1000_C_consensus.fasta"
-    alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
-    tree_file = f"data/BH/intermediate_files/timetree_{region}_1000.nwk"
-    branch_length_file = f"data/BH/intermediate_files/branch_lengths_{region}_1000.json"
-
-    # BH GTR files
-    gtr_file = f"data/BH/mutation_rates/{region}_1000.json"
-
-    # Rates from hamming distance
-    rates = {"root": {}, "subtypes": {}}
-
-    # BH to root
-    reference_sequence = get_reference_sequence(reference_file["root"])
-    years, dist, std, _ = get_mean_distance_in_time(alignment_file, reference_sequence)
-    for key in dist.keys():
-        fit = np.polyfit(years, dist[key], deg=1)
-        rates["root"][key] = fit[0]
-
-    ref_sequence = get_reference_sequence(reference_file["B"])
-    years, dist, std, nb = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="B")
-    ref_sequence = get_reference_sequence(reference_file["C"])
-    years2, dist2, std2, nb2 = get_mean_distance_in_time(alignment_file, ref_sequence, subtype="C")
-
-    # Averaging the subtypes distance
-    for key in dist.keys():
-        idxs = np.isin(years, years2)
-        dist[key][idxs] = (nb[idxs] * dist[key][idxs] + nb2 *
-                           dist2[key]) / (nb[idxs] + nb2)
-        fit = np.polyfit(years, dist[key], deg=1)
-        rates["subtypes"][key] = fit[0]
-
-    # Rates from root to tip distance
-    dates, lengths, err = get_root_to_tip_distance(tree_file, branch_length_file)
-    fit = np.polyfit(dates, lengths, deg=1)
-    rates["rtt"] = fit[0]
-
-    # BH rates from GTR estimates
-    with open(gtr_file) as f:
-        rates["GTR"] = json.load(f)
-
-    # WH rates
-    WH_file = "data/WH/avg_rate_dict.json"
-    WH_rate_dict = divergence.load_avg_rate_dict(WH_file)
-    rates["WH"] = WH_rate_dict[region]
-
-    return rates
 
 
 def average_rtt(rtt, dates, cutoff=1977):
@@ -604,15 +547,13 @@ def make_figure_8(savefig):
 
 
 if __name__ == '__main__':
-    fig1 = False
+    fig1 = True
     fig2 = False
     fig3 = False
     fig4 = False
     fig5 = False
     fig6 = False
-    fig7 = False
-    fig8 = True
-    savefig = True
+    savefig = False
 
     if fig1:
         text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.072), (1.2, 0.058), (1.2, 0.028)],
@@ -626,18 +567,6 @@ if __name__ == '__main__':
             make_figure_1(region, text[region], ylim[region], sharey[region], savefig=savefig)
 
     if fig2:
-        # from the fraction_consensus.py file
-        #
-        # for root
-        # text = {"env": [("90%", [4.1, 0.003]), ("10%", [4.1, 0.062]), ("9%", [4.1, 0.045]),
-        #                 ("7%", [4.1, 0.082]), ("14%", [4.1, 0.026])],
-        #         "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.05]), ("5%", [4.1, 0.048]),
-        #                 ("2%", [4.1, 0.09]), ("12%", [4.1, 0.023])],
-        #         "gag": [("93%", [4.1, 0.001]), ("7%", [4.1, 0.065]), ("5%", [4.1, 0.051]),
-        #                 ("4%", [4.1, 0.082]), ("13%", [4.1, 0.028])]}
-        # for region in ["env", "pol", "gag"]:
-        #     make_figure_2(region, text[region], savefig, reference="root")
-
         text = {"env": [("92%", [4.1, 0.001]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.145]),
                         ("6%", [4.1, 0.085]), ("12%", [4.1, 0.042])],
                 "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.054]), ("4%", [4.1, 0.048]),
@@ -651,13 +580,13 @@ if __name__ == '__main__':
         make_figure_3(savefig)
 
     if fig4:
-        for region in ["pol", "gag", "env"]:
-            text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)],
-                    "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.203)],
-                    "env": [(2003, 0.28), (2003, 0.34), (2003, 0.17)]}
-            limits = {"pol": [(0.15, 0.43), (0.02, 0.25)],
-                    "gag": [(0.15, 0.44), (0.06, 0.26)],
-                    "env": [(0.15, 0.4), (0.08, 0.37)]}
+        region = "gag"
+        text = {"pol": [(2003, 0.095), (2003, 0.165), (2003, 0.137)],
+                "gag": [(2003, 0.13), (2003, 0.225), (2003, 0.175)],
+                "env": [(2003, 0.28), (2003, 0.34), (2003, 0.17)]}
+        limits = {"pol": [(0.15, 0.43), (0.02, 0.25)],
+                  "gag": [(0.15, 0.44), (0.06, 0.26)],
+                  "env": [(0.15, 0.4), (0.08, 0.37)]}
 
             make_figure_4(region, text[region], limits[region], savefig)
 
