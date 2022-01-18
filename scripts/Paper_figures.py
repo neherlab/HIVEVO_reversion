@@ -554,14 +554,64 @@ def make_figure_7(region, savefig=False):
     plt.show()
 
 
+def make_figure_8(savefig):
+    """
+    Plot for the details about mean in time
+    """
+    regions = ["env", "pol", "gag"]
+    colors = ["C0", "C1", "C2"]
+    figsize = (6.7315, 3)
+    fill_alpha = 0.15
+    lines = ["-", "--"]
+
+    dict_names = {}
+    for region in regions:
+        dict_names[region] = f"data/WH/bootstrap_mean_dict_{region}.json"
+
+    bootstrap_dicts = {}
+    for region in regions:
+        bootstrap_dicts[region] = trajectory.load_mean_in_time_dict(dict_names[region])
+
+    times = trajectory.create_time_bins(400)
+    times = 0.5 * (times[:-1] + times[1:]) / 365  # In years
+
+    fig, axs = plt.subplots(ncols=3, nrows=1, figsize=figsize, sharey=True, sharex=True)
+    for yy, region in enumerate(regions):
+        for ii, key in enumerate(bootstrap_dicts["pol"]["rev"].keys()):
+            for jj, key2 in enumerate(["rev", "non_rev"]):
+                mean = bootstrap_dicts[region][key2][key]["mean"]
+                std = bootstrap_dicts[region][key2][key]["std"]
+                axs[yy].plot(times, mean, lines[jj], color=colors[ii])
+                axs[yy].fill_between(times, mean - std, mean + std, color=colors[ii], alpha=fill_alpha)
+
+        axs[yy].set_xlabel("Time [years]")
+        axs[yy].annotate(region, xy=(0.44, 1.03), xycoords="axes fraction")
+
+    line1, = axs[2].plot([0], [0], "k-")
+    line2, = axs[2].plot([0], [0], "k--")
+    line3, = axs[2].plot([0], [0], "-", color=colors[0])
+    line4, = axs[2].plot([0], [0], "-", color=colors[1])
+    line5, = axs[2].plot([0], [0], "-", color=colors[2])
+
+    axs[2].legend([line3, line4, line5, line1, line2],
+                  ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "rev", "non-rev"],
+                  ncol=2)
+    axs[0].set_ylim([-0.03, 1.03])
+    axs[0].set_ylabel("Frequency")
+
+    if savefig:
+        plt.savefig(f"figures/Mean_in_time_details.pdf")
+
+
 if __name__ == '__main__':
-    fig1 = True
-    fig2 = True
-    fig3 = True
-    fig4 = True
+    fig1 = False
+    fig2 = False
+    fig3 = False
+    fig4 = False
     fig5 = False
     fig6 = False
     fig7 = False
+    fig8 = True
     savefig = True
 
     if fig1:
@@ -621,5 +671,8 @@ if __name__ == '__main__':
     if fig7:
         for region in ["pol", "gag", "env"]:
             make_figure_7(region, savefig)
+
+    if fig8:
+        make_figure_8(savefig)
 
     plt.show()
