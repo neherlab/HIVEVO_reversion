@@ -205,7 +205,7 @@ def make_figure_3(savegif=False):
 
     line1, = axs[0].plot([0], [0], "k-")
     line2, = axs[0].plot([0], [0], "-", color=colors[1])
-    axs[0].legend([line1, line2], ["Individual trajectories", "Average"], loc="lower right")
+    axs[0].legend([line1, line2], ["iSNV trajectory", "Average"], loc="lower right")
     axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction")
 
     # Plot right
@@ -475,18 +475,18 @@ def make_figure_6(savefig):
 if __name__ == '__main__':
     fig1 = False
     fig2 = False
-    fig3 = False
+    fig3 = True
     fig4 = False
     fig5 = False
-    fig6 = True
-    savefig = True
+    fig6 = False
+    savefig = False
 
     if fig1:
         text = {"env": [(2000, 0.192), (2000, 0.135), (2000, 0.045), (1.2, 0.072), (1.2, 0.058), (1.2, 0.028)],
                 "pol": [(2000, 0.085), (2000, 0.0578), (2000, 0.024), (1.2, 0.072), (1.2, 0.042), (1.2, 0.01)],
                 "gag": [(2000, 0.125), (2000, 0.072), (2000, 0.03), (1.2, 0.085), (1.2, 0.047), (1.2, 0.0165)]}
 
-        ylim = {"env": [0, 0.28], "pol": [0, 0.13], "gag": [0, 0.18]}
+        ylim = {"env": [0, 0.28], "pol": [0, 0.14], "gag": [0, 0.18]}
         sharey = {"env": False, "pol": True, "gag": True}
 
         for region in ["env", "pol", "gag"]:
