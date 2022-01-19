@@ -97,7 +97,8 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
         fit2 = rate_dict[region][key]["global"]["all"]["all"]["rate"]
         fit2_std = rate_dict[region][key]["global"]["all"]["all"]["std"]
         axs[1].text(text_pos[ii][0], text_pos[ii][1],
-                    f"$\\propto{round(fit2*1e4,1)} \pm {round(fit2_std*1e4,1)} \\cdot 10^{{-4}} t$", color=colors[ii - 2])
+                    f"$\\propto{round(fit2*1e4,1)} \pm {round(fit2_std*1e4,1)} \\cdot 10^{{-4}} t$",
+                    color=colors[ii - 2])
         ii += 1
 
     axs[1].set_xlabel("Time [years]")

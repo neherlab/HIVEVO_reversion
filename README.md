@@ -4,6 +4,8 @@ Repository for the analysis and figures of Valentin Druelle's paper on HIV-1 rev
 ## Data folder
 `data_mini` contains the minimal data necessary to run the figures in zip format. Use `gzip -d -r data_mini` and rename the folder to `data` instead of `data_mini` once it's done (`mv data_mini data`). With this you should be able to redo the figures.
 
+The full dataset folder can be found here: https://drive.switch.ch/index.php/s/9GRtcq2UrPHytzI.
+
 \TODO
 
 <!-- ## Intermediate data
