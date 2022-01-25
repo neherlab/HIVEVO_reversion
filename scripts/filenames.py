@@ -1,3 +1,6 @@
+"""
+Defines the paths to relevant data from the HIVEevo_access analysis
+"""
 import os
 import sys
 

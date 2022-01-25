@@ -1,3 +1,6 @@
+"""
+Script to create the figures of the paper
+"""
 from distance_in_time import get_reference_sequence, get_mean_distance_in_time
 import divergence
 import numpy as np

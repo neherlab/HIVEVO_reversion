@@ -1,3 +1,6 @@
+"""
+Failed attempt at analyticaly predicting the impact of reversion mutations
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 from Bio import Phylo
@@ -131,9 +134,9 @@ def compute_RTT_errors(region, consensus_fit, non_consensus_fit):
     Computes the relative error for each of the leaves in the tree of a given region using the divergence
     diversity fits.
     """
-    tree = Phylo.read(f"data/BH/intermediate_files/timetree_{region}_1000.nwk", format="newick")
-    diversity = tools.get_diversity(f"data/BH/alignments/to_HXB2/{region}_1000.fasta")
-    with open(f"data/BH/intermediate_files/branch_lengths_{region}_1000.json") as f:
+    tree = Phylo.read(f"data/BH/intermediate_files/timetree_{region}.nwk", format="newick")
+    diversity = tools.get_diversity(f"data/BH/alignments/to_HXB2/{region}.fasta")
+    with open(f"data/BH/intermediate_files/branch_lengths_{region}.json") as f:
         data = json.load(f)
     rate = data["clock"]["rate"]
     tips = tree.get_terminals()
@@ -184,8 +187,8 @@ def compute_RTT_3class_errors(region, rate_dict):
     rates.
     rate_dict is a dictionnary containing the rates: rate_dict[first/second/third][consensus/non_consensus]
     """
-    tree = Phylo.read(f"data/BH/intermediate_files/timetree_{region}_1000.nwk", format="newick")
-    with open(f"data/BH/intermediate_files/branch_lengths_{region}_1000.json") as f:
+    tree = Phylo.read(f"data/BH/intermediate_files/timetree_{region}.nwk", format="newick")
+    with open(f"data/BH/intermediate_files/branch_lengths_{region}.json") as f:
         data = json.load(f)
     rate = data["clock"]["rate"]
     tips = tree.get_terminals()
@@ -244,7 +247,7 @@ if __name__ == "__main__":
     plt.grid()
 
     times = np.linspace(1, 50, 20)
-    diversity = tools.get_diversity(f"data/BH/alignments/to_HXB2/{region}_1000.fasta")
+    diversity = tools.get_diversity(f"data/BH/alignments/to_HXB2/{region}.fasta")
     errors = predict_average_error(times, diversity, consensus_fit, non_consensus_fit)
     plt.figure()
     plt.plot(times, errors, ".")

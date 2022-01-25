@@ -1,3 +1,6 @@
+"""
+Script that defines helper functions for the analysis
+"""
 import numpy as np
 import pandas as pd
 
@@ -331,7 +334,7 @@ def diversity_per_site(patient, region, aft):
     Returns the diversity at each site of the sequence, computed from the between host alignment. Sites that
     are unmapped to HXB2 have np.nan as diversity value.
     """
-    HXB2_diversity = get_diversity(f"data/BH/alignments/to_HXB2/{region}_1000.fasta")
+    HXB2_diversity = get_diversity(f"data/BH/alignments/to_HXB2/{region}.fasta")
     map_to_HXB2 = patient.map_to_external_reference(region)  # Map to HXB2 sequence
     diversity = np.zeros(aft.shape[-1])
     diversity[:] = np.nan
@@ -344,7 +347,7 @@ def diversity_mask(patient, region, aft, p_low, p_high):
     Uses BH multiple sequence alignment to compute BH diversity at each site. Returns a mask of sites in the
     quantile defined by [p_low, p_high].
     """
-    diversity = get_diversity(f"data/BH/alignments/to_HXB2/{region}_1000.fasta")
+    diversity = get_diversity(f"data/BH/alignments/to_HXB2/{region}.fasta")
     mask = mask_diversity_percentile(diversity, p_low, p_high)
     map_to_ref = patient.map_to_external_reference(region)  # Map to HXB2 sequence
     mask_mapped = mask[map_to_ref[:, 0] - map_to_ref[0, 0]]

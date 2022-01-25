@@ -1,6 +1,9 @@
+"""
+Script to handle the bootstrapping for WH data generation.
+"""
+
 import copy
 import numpy as np
-
 import trajectory
 import divergence
 import distance_in_time

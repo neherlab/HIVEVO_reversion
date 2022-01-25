@@ -1,8 +1,11 @@
+"""
+Main scripts that define trajectories and the creation of the related intermediate data.
+"""
 import json
 import copy
 import numpy as np
 
-import filenames  # Link to the hivevo folder
+import filenames
 import tools
 from hivevo.HIVreference import HIVreference
 from hivevo.patients import Patient
@@ -236,12 +239,12 @@ def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[])
 
 def make_intermediate_data(folder_path):
     """
-    Creates all the intermediate data files for the trajectory Within Host analysis and saves them in the
-    defined folder.
+    Creates all the trajectory and mean in time files necessary for the within host analysis and saves them
+    in the defined folder.
     """
     import bootstrap
     import os
-    traj_list_names = ["Trajectory_list_any", "Trajectory_list_subtypes"]
+    traj_list_names = ["Trajectory_list_subtypes", "Trajectory_list_any"]
     ref_subtypes = ["subtypes", "any"]
 
     # From all the trajectories combined
@@ -275,7 +278,7 @@ def make_intermediate_data(folder_path):
             with open(folder_path + "bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
                 json.dump(bootstrap_dict, f, indent=4)
 
-    # For each region individuall
+    # For each region individually, uses trajectories to the "any" reference
     regions = ["env", "pol", "gag"]
     for region in regions:
         region_trajectories = [traj for traj in trajectories if traj.region == region]

@@ -1,3 +1,6 @@
+"""
+Histogram of diversity for all sites and the 3 regions. Must be run from the script folder
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import filenames
@@ -17,7 +20,7 @@ def get_diversity_histo(diversity, nb_bins=50):
 if __name__ == "__main__":
     plt.figure()
     for region in ["env", "pol", "gag"]:
-        alignment_file = f"data/BH/alignments/to_HXB2/{region}_1000.fasta"
+        alignment_file = f"data/BH/alignments/to_HXB2/{region}.fasta"
         diversity = tools.get_diversity(alignment_file)
         bins, frequencies = get_diversity_histo(diversity)
         mask = tools.mask_diversity_percentile(diversity, 90, 100)
