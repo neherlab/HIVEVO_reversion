@@ -430,10 +430,6 @@ if __name__ == "__main__":
 
     scaling = round(compute_scaling(original_tree_path, rates), 2)
 
-    generated_MSA_path = generated_MSA_folder + p_type + "_" + str(scaling) + ".fasta"
-    generated_tree_path = generated_tree_folder + p_type + "_" + str(scaling) + ".nwk"
-    optimized_tree_path = optimized_tree_folder + p_type + "_" + str(scaling) + ".nwk"
-
     for p_type in ["3class_binary", "control"]:
         # for rate_variation in [0, 1, 2]:
         for rate_variation in [0]:
