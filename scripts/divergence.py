@@ -1,8 +1,9 @@
-# import filenames
+import numpy as np
+import filenames
 import tools
 import json
-import numpy as np
 
+from hivevo.patients import Patient
 from hivevo.HIVreference import HIVreference
 
 
@@ -273,7 +274,6 @@ def load_avg_rate_dict(filename):
 
 
 if __name__ == '__main__':
-    # from hivevo.patients import Patient
     # region = "pol"
     # patient = Patient.load("p1")
     # aft = patient.get_allele_frequency_trajectories(region)
