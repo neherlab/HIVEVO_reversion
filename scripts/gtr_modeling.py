@@ -4,9 +4,8 @@ from treetime import TreeTime, TreeAnc
 from treetime.gtr_site_specific import GTR_site_specific
 from treetime.seqgen import SeqGen
 from treetime.utils import parse_dates
-from Bio import AlignIO
+from Bio import AlignIO, Phylo
 from Bio.Seq import Seq
-from Bio import Phylo
 from distance_in_time import get_reference_sequence
 import filenames
 import tools
