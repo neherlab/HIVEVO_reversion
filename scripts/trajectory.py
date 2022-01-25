@@ -1,8 +1,11 @@
+"""
+Main scripts that define trajectories and the creation of the related intermediate data.
+"""
 import json
 import copy
 import numpy as np
 
-import filenames  # Link to the hivevo folder
+import filenames
 import tools
 from hivevo.HIVreference import HIVreference
 from hivevo.patients import Patient

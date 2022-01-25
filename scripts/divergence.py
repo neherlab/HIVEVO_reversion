@@ -1,3 +1,6 @@
+"""
+Main file related to the divergence over time intermediate data.
+"""
 import numpy as np
 import filenames
 import tools

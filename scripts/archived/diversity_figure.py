@@ -1,5 +1,6 @@
-# Histogram of diversity for all sites and the 3 regions. Must be run from the script folder
-
+"""
+Histogram of diversity for all sites and the 3 regions. Must be run from the script folder
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import filenames

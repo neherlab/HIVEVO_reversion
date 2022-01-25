@@ -1,4 +1,7 @@
-# Script to create the HXB2 sequences for each region (env pol and gag) from the HIVevo references
+"""
+Script to create the HXB2 sequences for each region (env pol and gag) from the HIVevo references. These
+reference sequences should already be in the github repository.
+"""
 import filenames  # link to the hivevo_access folder
 from hivevo.patients import Patient
 from Bio import SeqIO

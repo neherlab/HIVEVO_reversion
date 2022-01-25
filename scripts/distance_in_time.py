@@ -1,3 +1,6 @@
+"""
+Between host analysis of distance to a reference over time. Some functions are used for the data generation.
+"""
 import json
 import os
 import matplotlib.pyplot as plt

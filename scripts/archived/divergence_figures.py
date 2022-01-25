@@ -1,5 +1,6 @@
-# Detailed analysis of the divergence in time for WH data. Must be run from the script/ folder
-
+"""
+Detailed analysis of the divergence in time for WH data. Must be run from the script/ folder
+"""
 import matplotlib.pyplot as plt
 import divergence
 plt.style.use("tex.mplstyle")

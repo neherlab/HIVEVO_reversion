@@ -1,3 +1,6 @@
+"""
+Script for the modeling part. Used to run the models to generate the data + analysis.
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 from treetime import TreeTime, TreeAnc
