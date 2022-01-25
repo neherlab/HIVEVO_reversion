@@ -1,4 +1,6 @@
-# Adds link to the scripts folder
+# Script to compute the fraction consensus and non consensus sites in the WH data. Used for the 2nd figure of
+# the paper
+
 import filenames
 import numpy as np
 import sys
@@ -44,7 +46,7 @@ def fraction_per_region(reference="global"):
         mean_fraction_non_consensus = np.mean(fraction_non_consensus)
         std_fraction_non_consensus = np.std(fraction_non_consensus)
         print(f"Region {region}:")
-        print(f"""   Consensus {round(mean_consensus, 2)} += {round(std_consensus, 2)}   Non-consensus {round(mean_non_consensus, 2)} += {round(std_non_consensus, 2)}   Fraction non_consensus {round(mean_fraction_non_consensus,3)} += {round(std_fraction_non_consensus,3)}""")
+        print(f"""   Consensus {round(mean_consensus, 2)} += {round(std_consensus, 2)}   Non-consensus {round(mean_non_consensus, 2)} +- {round(std_non_consensus, 2)}   Fraction non_consensus {round(mean_fraction_non_consensus,3)} +- {round(std_fraction_non_consensus,3)}""")
 
 
 def fraction_per_site(region, reference="global"):
@@ -83,13 +85,13 @@ def fraction_per_site(region, reference="global"):
         mean_fraction_non_consensus = np.mean(fraction_non_consensus)
         std_fraction_non_consensus = np.std(fraction_non_consensus)
         print(f"Site {site}:")
-        print(f"""   Consensus {round(mean_consensus, 2)} += {round(std_consensus, 3)}   Non-consensus {round(mean_non_consensus, 2)} += {round(std_non_consensus, 3)}   Fraction non_consensus {round(mean_fraction_non_consensus,3)} += {round(std_fraction_non_consensus,3)}""")
+        print(f"""   Consensus {round(mean_consensus, 2)} += {round(std_consensus, 3)}   Non-consensus {round(mean_non_consensus, 2)} +- {round(std_non_consensus, 3)}   Fraction non_consensus {round(mean_fraction_non_consensus,3)} +- {round(std_fraction_non_consensus,3)}""")
 
 
 if __name__ == "__main__":
-    # fraction_per_region("global")
-    fraction_per_region("root")
+    fraction_per_region("global")
+    # fraction_per_region("root")
     for region in ["env", "pol", "gag"]:
         print(f"Region {region}")
-        # fraction_per_site(region, "global")
-        fraction_per_site(region, "root")
+        fraction_per_site(region, "global")
+        # fraction_per_site(region, "root")
