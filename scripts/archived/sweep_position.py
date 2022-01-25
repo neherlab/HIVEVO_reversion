@@ -1,3 +1,6 @@
+"""
+Script to plot the position of sweeps on the genome (from the BH data)
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import filenames
