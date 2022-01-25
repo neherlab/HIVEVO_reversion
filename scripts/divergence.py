@@ -4,7 +4,6 @@ import json
 import numpy as np
 
 from hivevo.HIVreference import HIVreference
-from hivevo.patients import Patient
 
 
 def divergence_matrix(aft, raw_mask, opposite_mask):
@@ -224,19 +223,6 @@ def average_rate_dict(div_dict, first_idx=0, last_idx=20):
     import copy
     from scipy.optimize import curve_fit
 
-    # avg_dict = copy.deepcopy(rate_dict)
-    # del avg_dict["time"]
-    # for key in ["env", "pol", "gag"]:  # Region
-    #     for key2 in avg_dict[key].keys():  # Reference to which compute the divergence
-    #         for key3 in avg_dict[key][key2].keys():  # Reference to define consensus and non-consensus
-    #             for key4 in avg_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
-    #                 for key5 in avg_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-    #                     for key6 in avg_dict[key][key2][key3][key4][key5].keys():  # mean, low, high
-    #                         tmp = avg_dict[key][key2][key3][key4][key5][key6]
-    #                         rate = np.mean(tmp[first_idx:last_idx])  # between 200 and 2000 days by default
-    #                         avg_dict[key][key2][key3][key4][key5][key6] = rate
-
-    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
     fit_dict = copy.deepcopy(div_dict)
     time = div_dict["time"][:last_idx]
     def f(x, a, b): return a * x + b  # function to fit
@@ -287,6 +273,7 @@ def load_avg_rate_dict(filename):
 
 
 if __name__ == '__main__':
+    # from hivevo.patients import Patient
     # region = "pol"
     # patient = Patient.load("p1")
     # aft = patient.get_allele_frequency_trajectories(region)
@@ -294,7 +281,6 @@ if __name__ == '__main__':
 
     # make_intermediate_data("data/WH/")
     # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
-
 
     # Mutation rate plot
     div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
