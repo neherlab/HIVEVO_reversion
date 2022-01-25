@@ -1,12 +1,15 @@
-# Script to compute the fraction consensus and non consensus sites in the WH data. Used for the 2nd figure of
-# the paper
-
+"""
+Script to compute the fraction consensus and non consensus sites in the WH data. Used for the 2nd figure of
+the paper. Also the one to check the distribution of non-consensus nucleotides, which is a parameter of the
+GTR model
+"""
 import filenames
 import numpy as np
-import sys
 from hivevo.patients import Patient
 from hivevo.HIVreference import HIVreference
 from tools import reference_mask, non_reference_mask, site_mask, root_mask, non_root_mask
+import tools
+from Bio import AlignIO
 
 
 def fraction_per_region(reference="global"):
@@ -88,10 +91,73 @@ def fraction_per_site(region, reference="global"):
         print(f"""   Consensus {round(mean_consensus, 2)} += {round(std_consensus, 3)}   Non-consensus {round(mean_non_consensus, 2)} +- {round(std_non_consensus, 3)}   Fraction non_consensus {round(mean_fraction_non_consensus,3)} +- {round(std_fraction_non_consensus,3)}""")
 
 
+def non_consensus_percentages():
+    """
+    Returns the percentage of all nucleotides for each consensus nucleotide individually form BH data.
+    Ex: returns the percentage of ATGCN for sites where the consensus is A, same for sites where consensus
+    is T etc... Used to define the proportion of non-consensus sites in the GTR model.
+    """
+    # Loading data
+    MSA_path = "data/BH/alignments/to_HXB2/pol.fasta"
+    consensus_path = "data/BH/alignments/to_HXB2/pol_consensus.fasta"
+    msa = AlignIO.read(MSA_path, "fasta")
+    msa = np.array(msa)
+    consensus = AlignIO.read(consensus_path, "fasta")
+    consensus = np.array(consensus).squeeze()
+
+    # Creating frequency array
+    af = np.zeros((5, consensus.shape[0]), dtype=int)
+    for ii, nuc in enumerate(["A", "T", "G", "C", "N"]):
+        af[ii, :] = np.sum(msa == nuc, axis=0)
+    af = af / msa.shape[0]
+
+    means = {}
+    for ii, nuc in enumerate(["A", "T", "G", "C", "N"]):
+        mask = consensus == nuc
+        tmp = af[:, mask]
+        means[nuc] = np.mean(tmp, axis=1)
+    print(means)
+
+
+def non_consensus_to_non_consensus():
+    "Quick and dirty analysis to get an idea of how much reversion VS non-consensus to non-consensus happen"
+    region = "pol"
+    ref = HIVreference(subtype="any")
+
+    patient_names = ["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]
+    full_change = []
+    non_reversion_change = []
+    for patient_name in patient_names:
+        patient = Patient.load(patient_name)
+        aft = patient.get_allele_frequency_trajectories(region)
+        non_consensus_mask = tools.non_reference_mask(patient, region, aft, ref)
+        reversion_map = tools.reversion_map(patient, region, aft, ref)
+        initial_idx = patient.get_initial_indices(region)
+
+        # Set initial nucleotide to 0 frequency
+        aft[np.arange(aft.shape[0])[:, np.newaxis, np.newaxis], initial_idx, np.arange(aft.shape[-1])] = 0
+        tmp = aft[:, :, non_consensus_mask]
+        tmp = np.sum(tmp, axis=1)
+        full_change += [np.sum(tmp[-1, :])]
+
+        aft[:, reversion_map] = 0
+        tmp = aft[:, :, non_consensus_mask]
+        tmp = np.sum(tmp, axis=1)
+        non_reversion_change += [np.sum(tmp[-1, :])]
+
+    print(full_change)
+    print(non_reversion_change)
+
+
 if __name__ == "__main__":
+    # --- Compute fraction consensus and non consensus from WH data ---
     fraction_per_region("global")
     # fraction_per_region("root")
     for region in ["env", "pol", "gag"]:
         print(f"Region {region}")
         fraction_per_site(region, "global")
         # fraction_per_site(region, "root")
+
+    # --- Compute fraction non consensus in between host data ---
+    non_consensus_percentages()
+    # non_consensus_to_non_consensus()
