@@ -85,7 +85,8 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype=""):
             nb_seq += [values_in_year.shape[0]]
             average_distance[position] += [np.mean(values_in_year)]
             std_distance[position] += [np.std(values_in_year)]
-            distance_ranges += [[scoreatpercentile(values_in_year, 10), scoreatpercentile(values_in_year, 90)]]
+            distance_ranges += [[scoreatpercentile(values_in_year, 10),
+                                 scoreatpercentile(values_in_year, 90)]]
 
         average_distance_in_time[position] = np.array(average_distance[position])
         std_distance_in_time[position] = np.array(std_distance[position])
@@ -101,50 +102,10 @@ def get_mean_distance_in_time(alignment_file, reference_sequence, subtype=""):
                                    std_distance_in_time["third"]) / 3
 
     distance_ranges_in_time["all"] = (distance_ranges_in_time["first"] +
-                                   distance_ranges_in_time["second"] +
-                                   distance_ranges_in_time["third"]) / 3
+                                      distance_ranges_in_time["second"] +
+                                      distance_ranges_in_time["third"]) / 3
 
     return years, average_distance_in_time, std_distance_in_time, nb_seq, distance_ranges_in_time
-
-
-def get_root_to_tip_distance(tree_file, branch_length_file, subtype=""):
-    """
-    Computes the mean root to tip distance for each year.
-    Returns a list of mean root_to_tip distance and a list of corresponding years.
-    """
-    # Checks
-    assert os.path.exists(tree_file), f"{tree_file} doesn't exist."
-    assert os.path.exists(branch_length_file), f"{branch_length_file} doesn't exist."
-
-    # Loading the tree and branch_length file
-    tree = Phylo.read(tree_file, "newick")
-    tips = tree.get_terminals()
-    if subtype != "":
-        tips = [tip for tip in tips if tip.name.split('.')[0] == subtype]
-
-    with open(branch_length_file) as f:
-        file = json.load(f)
-        nodes = file["nodes"]
-
-    # Replacing the branch length by the mutation_length entry of the branch_length_file
-    for clade in list(tree.find_clades()):
-        clade.branch_length = nodes[clade.name]["mutation_length"]
-
-    # Getting the years of the tips
-    dates = []
-    for tip in tips:
-        date = tip.name.split(".")[2]
-        dates += [int(date)]
-    dates = np.unique(dates)
-
-    mean_lengths = []
-    std_lengths = []
-    for date in dates:
-        lengths = [tree.distance(tip) for tip in tips if int(tip.name.split(".")[2]) == date]
-        mean_lengths += [np.mean(lengths)]
-        std_lengths += [np.std(lengths)]
-
-    return dates, mean_lengths, std_lengths
 
 
 def plot_mean_distance_in_time(consensus="global", savefig=False):
@@ -157,15 +118,15 @@ def plot_mean_distance_in_time(consensus="global", savefig=False):
     assert consensus in ["global", "root",
                          "subtypes"], "Reference sequence can only be 'global' 'root' or 'subtypes'"
 
-    alignment_file = "data/BH/alignments/to_HXB2/pol_1000.fasta"
+    alignment_file = "data/BH/alignments/to_HXB2/pol.fasta"
     if consensus == "global":
-        reference_file = "data/BH/alignments/to_HXB2/pol_1000_consensus.fasta"
+        reference_file = "data/BH/alignments/to_HXB2/pol_consensus.fasta"
     elif consensus == "root":
-        reference_file = "data/BH/intermediate_files/pol_1000_nt_muts.json"
+        reference_file = "data/BH/intermediate_files/pol_nt_muts.json"
     elif consensus == "subtypes":
         reference_file = {}
-        reference_file["B"] = "data/BH/alignments/to_HXB2/pol_1000_B_consensus.fasta"
-        reference_file["C"] = "data/BH/alignments/to_HXB2/pol_1000_C_consensus.fasta"
+        reference_file["B"] = "data/BH/alignments/to_HXB2/pol_B_consensus.fasta"
+        reference_file["C"] = "data/BH/alignments/to_HXB2/pol_C_consensus.fasta"
 
     plt.figure()
     subtypes = ["B", "C"]
@@ -204,35 +165,11 @@ def plot_mean_distance_in_time(consensus="global", savefig=False):
             plt.savefig("figures/Distance_to_subtype_consensus.png", format="png")
 
 
-def plot_root_to_tip(savefig):
-    """
-    Plots the figure for the root to tip distance in time.
-    """
-    tree_file = "data/BH/intermediate_files/timetree_pol_1000.nwk"
-    branch_length_file = "data/BH/intermediate_files/branch_lengths_pol_1000.json"
-    fontsize = 16
-
-    dates, lengths, errors = get_root_to_tip_distance(tree_file, branch_length_file)
-
-    plt.figure()
-    plt.plot(dates, lengths, '.', label="Data")
-    fit = np.polyfit(dates, lengths, deg=1)
-    plt.plot(dates, np.polyval(fit, dates), "--", label=f"{round(fit[0],5)}x + {round(fit[1],5)}")
-    plt.xlabel("Time [years]", fontsize=fontsize)
-    plt.ylabel("Mean root-tip length", fontsize=fontsize)
-    plt.legend(fontsize=fontsize)
-    plt.grid()
-    plt.title("Root to tip distance", fontsize=fontsize)
-    if savefig:
-        plt.savefig("figures/Distance_to_root.png", format="png")
-
-
 if __name__ == '__main__':
     savefig = False
-    # plot_mean_distance_in_time("global", savefig)
-    # plot_mean_distance_in_time("root", savefig)
-    # plot_mean_distance_in_time("subtypes", savefig)
-    plot_root_to_tip(savefig)
+    plot_mean_distance_in_time("global", savefig)
+    plot_mean_distance_in_time("root", savefig)
+    plot_mean_distance_in_time("subtypes", savefig)
     plt.show()
 
     # reference_sequence = get_reference_sequence("data/BH/intermediate_files/pol_1000_nt_muts.json")
