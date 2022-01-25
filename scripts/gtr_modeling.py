@@ -366,7 +366,7 @@ def compute_scaling(tree_path, rates, cutoff=1977):
     lengths, dates = get_RTT(Phylo.read(tree_path, "newick"))
     lengths = np.array(lengths)[dates >= cutoff]
     dates = dates[dates >= cutoff]
-    lengths, dates = average_rtt(lengths, dates)
+    lengths, dates, _ = average_rtt(lengths, dates)
     fit = np.polyfit(dates, lengths, deg=1)
     BH_rate = fit[0]
 
@@ -375,9 +375,14 @@ def compute_scaling(tree_path, rates, cutoff=1977):
 
     return WH_rate / BH_rate
 
+
 def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
+    """
+    Computes and returns distance over time for the different models and with different rate variation
+    parameters.
+    """
     consensus_seq = get_reference_sequence(consensus_path)
-    # Replaces N by A, it's not exact but I have a 4 letter alphabet for now
+    # Replaces N by A, it's not exact but gaps have a very small impact so it's ok
     consensus_seq[consensus_seq == "N"] = "A"
     t = np.linspace(0, 1, 101)
     from treetime.seq_utils import prof2seq, seq2prof
@@ -395,9 +400,11 @@ def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
     return data
 
 
-
 if __name__ == "__main__":
+    # --- Choose the region to model ---
     region = "pol"
+
+    # --- Defining relevant files for the analysis ---
     original_MSA_path = f"data/BH/alignments/to_HXB2/{region}.fasta"
     original_tree_path = f"data/BH/intermediate_files/tree_{region}.nwk"
     root_path = f"data/BH/intermediate_files/{region}_nt_muts.json"
@@ -410,6 +417,7 @@ if __name__ == "__main__":
     rates = divergence.load_avg_rate_dict(rate_dict_path)
     rates = rates[region]["founder"]["global"]
 
+    # --- Available models ---
     # p_type = "homogeneous"
     # p_type = "binary"
     # p_type = "3class_homogeneous"
@@ -426,27 +434,18 @@ if __name__ == "__main__":
     generated_tree_path = generated_tree_folder + p_type + "_" + str(scaling) + ".nwk"
     optimized_tree_path = optimized_tree_folder + p_type + "_" + str(scaling) + ".nwk"
 
-    rate_variation = 0  # (shape parameter of gamma distribution, set to 0 for no rate variation)
-
-    distances = get_branch_length(consensus_path, ["3class_binary", "control"], 1.58, rates, [0, 1, 2])
-    plt.figure()
-    line_styles = ['-', '--', '-.']
-    for pi, p in enumerate(["3class_binary", "control"]):
-        for r in [0, 1, 2]:
-            plt.plot(distances['time'], distances[(p, r)], c=f'C{pi}', ls=line_styles[r])
-    plt.ylabel('distance')
-    plt.xlabel('time')
-
     for p_type in ["3class_binary", "control"]:
-        for rate_variation in [0, 1, 2]:
+        # for rate_variation in [0, 1, 2]:
+        for rate_variation in [0]:
 
-            generated_MSA_path = generated_MSA_folder + p_type + "_" + \
-                str(scaling) + '_rv_' + str(rate_variation) + ".fasta"
-            generated_tree_path = generated_tree_folder + p_type + "_" + \
-                str(scaling) + '_rv_' + str(rate_variation) + ".nwk"
-            optimized_tree_path = optimized_tree_folder + p_type + "_" + \
-                str(scaling) + '_rv_' + str(rate_variation) + ".nwk"
+            generated_MSA_path = generated_MSA_folder + p_type + \
+                '_rv_' + str(rate_variation) + "_" + str(scaling) + ".fasta"
+            generated_tree_path = generated_tree_folder + p_type + \
+                '_rv_' + str(rate_variation) + "_" + str(scaling) + ".nwk"
+            optimized_tree_path = optimized_tree_folder + "_" + p_type + \
+                '_rv_' + str(rate_variation) + "_" + str(scaling) + ".nwk"
 
+            # --- Data generation ---
             if regenerate:
                 generate_MSA(original_tree_path, root_path, consensus_path,
                              original_MSA_path, original_metadata_path, generated_MSA_path, rates,
@@ -454,6 +453,7 @@ if __name__ == "__main__":
                 generate_tree(generated_MSA_path, generated_tree_path)
                 reroot_tree(generated_tree_path, original_metadata_path, generated_MSA_path)
 
+            # --- Tree optimization ---
             if optimize:
                 optimize_tree(original_tree_path, generated_MSA_path, optimized_tree_path,
                               consensus_path, p_type, rates, 1.0, rate_variation)
@@ -473,6 +473,16 @@ if __name__ == "__main__":
                 compare_hamming_distributions(original_MSA, generated_MSA, ref_seq, "to consensus")
 
                 compare_RTT(original_tree_path, generated_tree_path)
-
-                compare_RTT(original_tree_path, optimized_tree_path)
                 plt.show()
+
+    # # --- Rate variation analysis ---
+    # rate_variation = 0  # (shape parameter of gamma distribution, set to 0 for no rate variation)
+    # distances = get_branch_length(consensus_path, ["3class_binary", "control"], 1.58, rates, [0, 1, 2])
+    # plt.figure()
+    # line_styles = ['-', '--', '-.']
+    # for pi, p in enumerate(["3class_binary", "control"]):
+    #     for r in [0, 1, 2]:
+    #         plt.plot(distances['time'], distances[(p, r)], c=f'C{pi}', ls=line_styles[r])
+    # plt.ylabel('distance')
+    # plt.xlabel('time')
+    # plt.show()
