@@ -8,6 +8,7 @@ dependencies:
   - augur=13.1.0
   - nextalign=1.9.0
   - python=3.8*
+  - snakemake=6.13.1
   - pip
   - pip:
     - git+https://github.com/neherlab/HIVEVO_access.git
