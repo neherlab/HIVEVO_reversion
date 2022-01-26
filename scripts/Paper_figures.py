@@ -434,7 +434,7 @@ def make_figure_6(savefig):
     """
     regions = ["env", "pol", "gag"]
     colors = ["C0", "C1", "C2"]
-    figsize = (6.7315, 3)
+    figsize = figsize_wide
     lines = ["-", "--"]
 
     dict_names = {}
