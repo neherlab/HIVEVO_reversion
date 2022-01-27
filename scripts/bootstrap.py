@@ -41,7 +41,7 @@ def bootstrap_mean_in_time(trajectories, freq_range, nb_bootstrap=10):
     means = np.array(means)
     average = np.nanmean(means, axis=0)[0, :]
     std = np.nanstd(means, axis=0)[0, :]
-    print(average, std)
+    # print(average, std)
 
     return time, average, std
 
