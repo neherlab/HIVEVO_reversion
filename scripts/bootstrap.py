@@ -106,7 +106,7 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
             # Small hacks to load the root sequence in this object
             map = patient.map_to_external_reference(region)[:, 0]
             root_sequence = distance_in_time.get_reference_sequence(
-                f"data/BH/intermediate_files/{region}_1000_nt_muts.json")
+                f"data/BH/intermediate_files/{region}_nt_muts.json")
             hivreference.consensus[map] = root_sequence.astype("S1")[map - map[0]]
             tmp = np.zeros_like(root_sequence)
             tmp[root_sequence == "A"] = 0
