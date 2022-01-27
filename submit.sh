@@ -13,4 +13,5 @@ source $HOME/.bashrc
 # Activate conda env
 conda activate hivevo
 
-echo $@
+# echo $@
+python scripts/WH_intermediate_data.py

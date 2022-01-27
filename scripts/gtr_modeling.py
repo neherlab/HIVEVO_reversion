@@ -426,9 +426,9 @@ if __name__ == "__main__":
     # p_type = "3class_binary"
     p_type = "control"
 
-    regenerate = False
+    regenerate = True
     optimize = False
-    analysis = True
+    analysis = False
 
     scaling = round(compute_scaling(original_tree_path, rates), 2)
 
