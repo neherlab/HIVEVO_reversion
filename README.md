@@ -23,4 +23,4 @@ All the figures are plotted using the `Paper_figures.py` script.
 
 ## Use on the cluster
 Command to launch the jobs on the cluster:
-`snakemake --jobs=16 --cluster "sbatch --time={cluster.time} --mem={cluster.mem} --cpus-per-task={cluster.n} --qos={cluster.qos}" --jobscript submit.sh --cluster-config cluster.json --jobname "{rulename}_{jobid}" ` -->
+`snakemake figure_data --jobs=16 --cluster "sbatch --time={cluster.time} --mem={cluster.mem} --cpus-per-task={cluster.n} --qos={cluster.qos}" --jobscript submit.sh --cluster-config cluster.json --jobname "{rulename}_{jobid}" ` -->
