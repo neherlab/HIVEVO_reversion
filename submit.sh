@@ -14,4 +14,4 @@ source $HOME/.bashrc
 conda activate hivevo
 
 # echo $@
-python scripts/WH_intermediate_data.py
+python scripts/WH_intermediate_data.py make-data
