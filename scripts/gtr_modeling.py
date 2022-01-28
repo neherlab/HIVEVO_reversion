@@ -402,7 +402,7 @@ def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
     return data
 
 
-def make_data():
+def make_intermediate_data():
     """
     Creates the modeling results used for the figures.
     """
