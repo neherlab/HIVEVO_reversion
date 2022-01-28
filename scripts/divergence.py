@@ -41,7 +41,7 @@ def divergence_in_time(patient, region, aft, div_ref):
         div_3D = divergence_matrix(aft, raw_mask, opposite_mask)
     elif div_ref == "root":
         ref = HIVreference(subtype="any")  # just for the mapping
-        root_file = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
+        root_file = f"data/BH/intermediate_files/{region}_nt_muts.json"
         raw_mask = tools.non_root_mask(patient, region, aft, root_file, ref)
         opposite_mask = tools.root_mask(patient, region, aft, root_file, ref)
         div_3D = divergence_matrix(aft, raw_mask, opposite_mask)
