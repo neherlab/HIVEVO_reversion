@@ -402,6 +402,45 @@ def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
     return data
 
 
+def make_data():
+    """
+    Creates the modeling results used for the figures.
+    """
+    import os
+
+    for region in ["pol", "env", "gag"]:
+        original_MSA_path = f"data/BH/alignments/to_HXB2/{region}.fasta"
+        original_tree_path = f"data/BH/intermediate_files/tree_{region}.nwk"
+        root_path = f"data/BH/intermediate_files/{region}_nt_muts.json"
+        consensus_path = f"data/BH/alignments/to_HXB2/{region}_consensus.fasta"
+        original_metadata_path = f"data/BH/raw/{region}_subsampled_metadata.tsv"
+        generated_MSA_folder = f"data/modeling/generated_MSA/{region}_"
+        generated_tree_folder = f"data/modeling/generated_trees/{region}_"
+        rate_dict_path = "data/WH/avg_rate_dict.json"
+        rates = divergence.load_avg_rate_dict(rate_dict_path)
+        rates = rates[region]["founder"]["global"]
+        scaling = round(compute_scaling(original_tree_path, rates), 2)
+        rate_variation = 0
+
+        for p_type in ["3class_binary", "control"]:
+            generated_MSA_path = generated_MSA_folder + p_type + \
+                '_rv_' + str(rate_variation) + "_" + str(scaling) + ".fasta"
+            generated_tree_path = generated_tree_folder + p_type + \
+                '_rv_' + str(rate_variation) + "_" + str(scaling) + ".nwk"
+
+            if os.path.exists(generated_MSA_path):
+                print(f"{generated_MSA_path} already exists, skipping computation.")
+            else:
+                generate_MSA(original_tree_path, root_path, consensus_path,
+                             original_MSA_path, original_metadata_path, generated_MSA_path, rates,
+                             p_type, scaling, rate_variation)
+
+            if os.path.exists(generated_tree_path):
+                print(f"{generated_tree_path} already exists, skipping computation.")
+            else:
+                generate_tree(generated_MSA_path, generated_tree_path)
+
+
 if __name__ == "__main__":
     # --- Choose the region to model ---
     region = "pol"

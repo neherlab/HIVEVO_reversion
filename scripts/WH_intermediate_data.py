@@ -1,5 +1,6 @@
 import trajectory
 import divergence
+import gtr_modeling
 import click
 import shutil
 
@@ -18,6 +19,8 @@ def make_data(folder_path=WH_DATA_FOLDER):
     trajectory.make_intermediate_data(folder_path)
     print("--- Generating divergence data ---")
     divergence.make_intermediate_data(folder_path)
+    print("--- Generating modeling data ---")
+    gtr_modeling.make_intermediate_data()
 
 
 @cli.command()
