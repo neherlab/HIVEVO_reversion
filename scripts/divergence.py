@@ -237,6 +237,7 @@ def average_rate_dict(div_dict, first_idx=0, last_idx=20):
                     for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
                         mean = div_dict[key][key2][key3][key4][key5]["mean"][:last_idx]
                         std = div_dict[key][key2][key3][key4][key5]["std"][:last_idx]
+                        std += 1e-8 # to avoid divide by 0
                         p, pcov = curve_fit(f, time, mean, sigma=std, p0=[1e-3, 1e-3])
                         perr = np.sqrt(np.diag(pcov))
                         if not np.isfinite(perr[0]):
