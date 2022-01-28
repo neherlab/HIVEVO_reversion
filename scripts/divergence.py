@@ -143,7 +143,7 @@ def make_intermediate_data(folder_path):
     print("Computing " + folder_path + "rate_dict.json and " + folder_path + "avg_rate_dict.json")
     rate_dict = make_rate_dict(div_dict)
     avg_rate_dict = average_rate_dict(div_dict)
-    if type(rate_dict["time"]) != "list":
+    if type(rate_dict["time"]) != list:
         rate_dict["time"] = rate_dict["time"].tolist()
         avg_rate_dict["time"] = avg_rate_dict["time"].tolist()
 
