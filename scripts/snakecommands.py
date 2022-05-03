@@ -272,6 +272,29 @@ def reroot_tree(tree, alignment, metadata):
     Phylo.write(ttree._tree, tree, "newick")
 
 
+@cli.command()
+@click.argument("metadata", type=click.Path(exists=True))
+def summary(metadata):
+    """
+    Compute quick statistics from the METADATA file and writes them to the console.
+    """
+    df = pd.read_csv(metadata, sep='\t')
+    nb_total = df.shape[0]
+    nb_B = df["subtype"].value_counts()["B"]
+    nb_C = df["subtype"].value_counts()["C"]
+    print(f"Number of sequences: {nb_total}")
+    print(f"    B     : {nb_B}")
+    print(f"    C     : {nb_C}")
+    print(f"    Others: {nb_total - nb_B - nb_C}")
+    print()
+
+    mean_B = df[df["subtype"]=="B"]["date"].apply(datetime_to_year).mean()
+    mean_C = df[df["subtype"]=="C"]["date"].apply(datetime_to_year).mean()
+    print(f"Mean year for subtype B : {mean_B}")
+    print(f"                      C : {mean_C}")
+    print()
+
+
 def get_mutation_rate(gtr_file, refine_file):
     """
     Returns the mutation rate in mutation per site per year from the GTR model and its corresponding
@@ -299,6 +322,12 @@ def output_JSON(gtr_model, output_file):
     with open(output_file, 'w') as output:
         json.dump(save_dict, output)
 
+def datetime_to_year(str):
+    """
+    Takes datetime format YEAR-XX-XX and converts to year
+    """
+    str = str[:4]
+    return int(str)
 
 if __name__ == '__main__':
     cli()
