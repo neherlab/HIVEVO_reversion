@@ -34,7 +34,7 @@ def fraction_per_region(reference="global"):
                 non_consensus += [np.sum(non_consensus_mask, dtype=int)]
                 fraction_non_consensus += [non_consensus[-1] / (consensus[-1] + non_consensus[-1])]
             elif reference == "root":
-                root_file = f"data/BH/intermediate_files/{region}_1000_nt_muts.json"
+                root_file = f"data/BH/intermediate_files/{region}_nt_muts.json"
                 ref = HIVreference(subtype="any")
                 non_consensus_mask = non_root_mask(patient, region, aft, root_file, ref)
                 consensus_mask = root_mask(patient, region, aft, root_file, ref)
@@ -151,8 +151,8 @@ def non_consensus_to_non_consensus():
 
 if __name__ == "__main__":
     # --- Compute fraction consensus and non consensus from WH data ---
-    fraction_per_region("global")
-    # fraction_per_region("root")
+    # fraction_per_region("global")
+    fraction_per_region("root")
     for region in ["env", "pol", "gag"]:
         print(f"Region {region}")
         fraction_per_site(region, "global")
