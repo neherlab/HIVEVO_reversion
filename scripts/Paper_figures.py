@@ -534,6 +534,7 @@ def make_figure_7(region, text, savefig=False, reference="global"):
     ax2.legend()
     ax2.tick_params(labelleft=False)
 
+    # Right plot
     ax3 = fig.add_subplot(gs[2])
     for ii, reg in enumerate(regions):
         for jj, pos in enumerate(["first", "second", "third"]):
@@ -546,21 +547,118 @@ def make_figure_7(region, text, savefig=False, reference="global"):
             std = ratio*np.sqrt((std_consensus/rate_consensus)**2 + (std_non_consensus/rate_non_consensus)**2)
             if ii == 0:
                 ax3.plot(ii, ratio, markers[jj], color=colors[jj+3], label=["1st", "2nd", "3rd"][jj])
-                ax3.errorbar(ii, ratio, yerr=std ,color=colors[jj+3], capsize=3)
+                ax3.errorbar(ii, ratio, yerr=std, color=colors[jj+3], capsize=3)
             else:
                 ax3.plot(ii, ratio, markers[jj], color=colors[jj+3])
-                ax3.errorbar(ii, ratio, yerr=std ,color=colors[jj+3], capsize=3)
+                ax3.errorbar(ii, ratio, yerr=std, color=colors[jj+3], capsize=3)
 
     ax3.set_ylabel("Rate non-consensus / rate consensus")
-    ax3.set_ylim([0, 40])
     ax3.set_xticks([0, 1, 2])
     ax3.set_xlim([-0.7, 2.7])
     ax3.set_xticklabels(regions, fontsize=9)
     ax3.annotate("C", xy=(0, 1.05), xycoords="axes fraction", fontsize=fontsize_panel_label)
+    ax3.set_yscale("log")
+    # ax3.set_ylim([0, 40])
     ax3.legend()
 
     if savefig:
         plt.savefig("figures/Fig_2.pdf")
+
+
+def make_poster_figures(savefig=False):
+    # Reversion figure
+    reference = "any"  # "any" or "subtypes"
+    figsize = figsize_narrow
+    colors = ["C2", "C5", "C4"]
+
+    trajectory_file = f"data/WH/Trajectory_list_{reference}.json"
+    mean_in_time_file = f"data/WH/bootstrap_mean_dict_{reference}.json"
+
+    # Data loading
+    trajectories = trajectory.load_trajectory_list(trajectory_file)
+    times = trajectory.create_time_bins(400)
+    times = 0.5 * (times[:-1] + times[1:]) / 365  # In years
+    bootstrap_dict = trajectory.load_mean_in_time_dict(mean_in_time_file)
+
+    # Selecting reversion trajectories in [0.4, 0.6] for left pannel
+    freq_ranges = [[0.2, 0.4], [0.4, 0.6], [0.6, 0.8]]
+    trajectories_scheme = [traj for traj in trajectories if traj.reversion]
+    trajectories_scheme = trajectory.offset_trajectories(trajectories_scheme, [0.4, 0.6])
+
+    fig, axs = plt.subplots(ncols=2, nrows=1, figsize=figsize, sharey=True, sharex=True)
+
+    # Plot left
+    for traj in trajectories_scheme:
+        axs[0].plot(traj.t / 365, traj.frequencies, "k-", alpha=0.1, linewidth=0.5)
+
+    mean = bootstrap_dict["rev"]["[0.4, 0.6]"]["mean"]
+    std = bootstrap_dict["rev"]["[0.4, 0.6]"]["std"]
+    axs[0].plot(times, mean, '-', color=colors[1])
+    axs[0].fill_between(times, mean - std, mean + std, color=colors[1], alpha=fill_alpha)
+
+    axs[0].set_xlabel("Time [years]")
+    axs[0].set_ylabel("Frequency")
+    axs[0].set_ylim([-0.03, 1.03])
+    axs[0].set_xlim([-2, 8.5])
+
+    line1, = axs[0].plot([0], [0], "k-")
+    line2, = axs[0].plot([0], [0], "-", color=colors[1])
+    axs[0].legend([line1, line2], ["iSNV trajectory", "Average"], loc="lower right")
+
+    # Plot right
+    for ii, freq_range in enumerate(freq_ranges):
+        for key, line in zip(["rev", "non_rev"], ["-", "--"]):
+            mean = bootstrap_dict[key][str(freq_range)]["mean"]
+            std = bootstrap_dict[key][str(freq_range)]["std"]
+            axs[1].plot(times, mean, line, color=colors[ii])
+            axs[1].fill_between(times, mean - std, mean + std, color=colors[ii], alpha=fill_alpha)
+
+    line1, = axs[1].plot([0], [0], "k-")
+    line2, = axs[1].plot([0], [0], "k--")
+
+    axs[1].set_xlabel("Time [years]")
+    axs[1].set_ylim([-0.03, 1.03])
+    axs[1].legend([line1, line2],
+                  ["reversion", "non-reversion"],
+                  ncol=2, loc="lower right")
+    if savefig:
+        plt.savefig(f"figures/Poster_mean_in_time.pdf")
+
+    # Divergence figure
+    colors = ["C3", "C0", "C1"]
+    lines = ["-", "-", "--"]
+    figsize = figsize_narrow
+    region = "pol"
+    reference = "global"
+    text = [
+        ("94%", [4.1, 0.002]),
+        ("6%", [4.1, 0.031])]
+
+    div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
+    time = div_dict["time"]
+    idxs = time < 5.3  # Time around which some patients stop being followed
+    time = time[idxs]
+
+    fig, axs = plt.subplots(ncols=2, nrows=1, figsize=figsize, sharey=True, sharex=True)
+    # Left plot
+    labels = ["all", "consensus", "non-consensus"]
+    for ii, key in enumerate(["all", "consensus", "non_consensus"]):
+        data = div_dict[region]["founder"][reference][key]["all"]["mean"][idxs]
+        std = div_dict[region]["founder"][reference][key]["all"]["std"][idxs]
+
+        axs[0].plot(time, data, lines[ii], color=colors[ii], label=labels[ii])
+        axs[0].fill_between(time, data + std, data - std, color=colors[ii], alpha=fill_alpha)
+
+    axs[0].text(text[0][1][0], text[0][1][1], text[0][0], color=colors[1])
+    axs[0].text(text[1][1][0], text[1][1][1], text[1][0], color=colors[2])
+    axs[0].set_xlabel("Time [years]")
+    axs[0].set_ylabel("Divergence from founder")
+    axs[0].legend()
+    axs[0].set_xlim([-0.3, 5.5])
+    axs[0].set_ylim([-0.002, 0.062])
+
+    if savefig:
+        plt.savefig(f"figures/Poster_divergence.pdf")
 
 
 if __name__ == '__main__':
@@ -571,6 +669,7 @@ if __name__ == '__main__':
     fig5 = False
     fig6 = False
     fig7 = True
+    fig8 = False
     savefig = True
 
     if fig1:
@@ -638,5 +737,8 @@ if __name__ == '__main__':
                         ("4%", [4.1, 0.065]), ("11%", [4.1, 0.026])]}
         region = "pol"
         make_figure_7(region, text[region], savefig, reference="global")
+
+    if fig8:
+        make_poster_figures(savefig)
 
     plt.show()
