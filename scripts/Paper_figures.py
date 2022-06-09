@@ -196,7 +196,7 @@ def make_figure_3(savefig=False):
 
     # Plot left
     for traj in trajectories_scheme:
-        axs[0].plot(traj.t / 365, traj.frequencies, "k-", alpha=0.2, linewidth=0.5)
+        axs[0].plot(traj.t / 365, traj.frequencies, "k-", alpha=0.15, linewidth=0.5)
 
     mean = bootstrap_dict["rev"]["[0.4, 0.6]"]["mean"]
     std = bootstrap_dict["rev"]["[0.4, 0.6]"]["std"]
@@ -384,7 +384,7 @@ def make_figure_5(savefig=False):
 
     # Plot left
     for traj in trajectories_scheme:
-        axs[0].plot(traj.t / 365, traj.frequencies, "k-", alpha=0.2, linewidth=0.5)
+        axs[0].plot(traj.t / 365, traj.frequencies, "k-", alpha=0.15, linewidth=0.5)
 
     mean = bootstrap_dict["syn"]["[0.4, 0.6]"]["mean"]
     std = bootstrap_dict["syn"]["[0.4, 0.6]"]["std"]
@@ -666,9 +666,9 @@ if __name__ == '__main__':
     fig2 = False
     fig3 = False
     fig4 = False
-    fig5 = False
+    fig5 = True
     fig6 = False
-    fig7 = True
+    fig7 = False
     fig8 = False
     savefig = True
 
