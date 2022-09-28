@@ -119,9 +119,13 @@ def non_consensus_percentages():
     print(means)
 
 
-def non_consensus_to_non_consensus():
-    "Quick and dirty analysis to get an idea of how much reversion VS non-consensus to non-consensus happen"
-    region = "pol"
+def non_consensus_to_non_consensus(region="pol"):
+    """
+    Analysis to measure how much reversion VS non-consensus to non-consensus happen.
+    Returns the ratio of non-consensus->non-consensus mutations to all the mutations 
+    (reversion + non-consensus->non-consensus).
+    """
+
     ref = HIVreference(subtype="any")
 
     patient_names = ["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]
@@ -137,27 +141,39 @@ def non_consensus_to_non_consensus():
         # Set initial nucleotide to 0 frequency
         aft[np.arange(aft.shape[0])[:, np.newaxis, np.newaxis], initial_idx, np.arange(aft.shape[-1])] = 0
         tmp = aft[:, :, non_consensus_mask]
+        # sum the frequency of all nucleotides other than initial since it was set to 0
         tmp = np.sum(tmp, axis=1)
-        full_change += [np.sum(tmp[-1, :])]
+        full_change += [np.sum(tmp[-1, :])]  # sum the values of last time point for all positions
 
-        aft[:, reversion_map] = 0
+        # remove the contribution from reversions and do the same thing again
+        aft[:, reversion_map] = 0 
         tmp = aft[:, :, non_consensus_mask]
         tmp = np.sum(tmp, axis=1)
         non_reversion_change += [np.sum(tmp[-1, :])]
 
-    print(full_change)
-    print(non_reversion_change)
+    # Compute the ratio of non_reversion to total changes (reversion + non_consensus->non_consensus)
+    ratio = np.array(non_reversion_change) / np.array(full_change)
+
+    print()
+    print(f"--- Ratio of non-consensus to non-consensus mutations for {region} ---")
+    print("For patient p1 p2 p3 p4 p5 p6 p8 p9 and p11:")
+    print(ratio)
+    print("Summary statistics:")
+    print(f"    Mean: {np.mean(ratio)}")
+    print(f"    Std:  {np.std(ratio)}")
 
 
 if __name__ == "__main__":
     # --- Compute fraction consensus and non consensus from WH data ---
     # fraction_per_region("global")
-    fraction_per_region("root")
-    for region in ["env", "pol", "gag"]:
-        print(f"Region {region}")
-        fraction_per_site(region, "global")
-        # fraction_per_site(region, "root")
+    # fraction_per_region("root")
+    # for region in ["env", "pol", "gag"]:
+    #     print(f"Region {region}")
+    #     fraction_per_site(region, "global")
+    # fraction_per_site(region, "root")
 
     # --- Compute fraction non consensus in between host data ---
-    non_consensus_percentages()
-    # non_consensus_to_non_consensus()
+    # non_consensus_percentages()
+    non_consensus_to_non_consensus("env")
+    non_consensus_to_non_consensus("pol")
+    non_consensus_to_non_consensus("gag")
