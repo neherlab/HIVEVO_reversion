@@ -88,7 +88,7 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
     if reference == "subtypes" or consensus == "subtype":
         patient_names.remove("p1")  # p1 is subtype AE
         if patient_names == ["p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]:
-            subtypes =       ["B", "B",   "B", "B",  "C", "B", "B", "B"]
+            subtypes = ["B", "B",   "B", "B",  "C", "B", "B", "B"]
         else:
             raise ValueError("Must be the regular patients to compute divergence to subtype")
 
@@ -152,6 +152,8 @@ def bootstrap_divergence_in_time(region, reference, consensus, nb_bootstrap=10, 
             bootstrapped_dict[key][key2] = {}
             bootstrapped_dict[key][key2]["mean"] = np.mean(means[key][key2], axis=0)
             bootstrapped_dict[key][key2]["std"] = np.std(means[key][key2], axis=0)
+            bootstrapped_dict[key][key2]["rates"] = [
+                divergence.get_rate_from_divergence(time, mean) for mean in means[key][key2]]
 
     return time, bootstrapped_dict
 
@@ -160,7 +162,7 @@ def make_bootstrap_div_dict(nb_bootstrap=100):
     """
     Computes the average divergence in time over patients.
     Returns a dictionary of the format:
-        divergence[env/pol/gag][founder/any/subtypes/root][global/subtype/root][all/consensus/non_consensus][all/first/second/third][mean/std]
+        divergence[env/pol/gag][founder/any/subtypes/root][global/subtype/root][all/consensus/non_consensus][all/first/second/third][mean/std/rates]
     There is also the entry for the time vector : divergence[time]
     """
     div_dict = {}
@@ -220,4 +222,4 @@ if __name__ == '__main__':
     # plt.grid()
     # plt.show()
 
-    bootstrap_divergence_in_time("pol", "founder", "global")
+    t, div_dict = bootstrap_divergence_in_time("pol", "founder", "global")

@@ -92,7 +92,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     # WH plot references
     idxs = time < 5.3  # Time around which some patients stop being followed
     time = time[idxs]
-    rate_dict = divergence.load_avg_rate_dict("data/WH/avg_rate_dict.json")
+    rate_dict = divergence.load_avg_rate_dict("data/WH/rate_dict.json")
     keys = ["root", "subtypes", "founder"]
     for key in keys:
         data = div_dict[region][key]["global"]["all"]["all"]["mean"][idxs]
@@ -484,7 +484,7 @@ def make_figure_7(region, text, savefig=False, reference="global"):
     regions = ["pol", "env", "gag"]
 
     div_dict = divergence.load_div_dict("data/WH/bootstrap_div_dict.json")
-    rate_dict = divergence.load_avg_rate_dict("data/WH/avg_rate_dict.json")
+    rate_dict = divergence.load_avg_rate_dict("data/WH/rate_dict.json")
     time = div_dict["time"]
     idxs = time < 5.3  # Time around which some patients stop being followed
     time = time[idxs]
@@ -662,11 +662,11 @@ def make_poster_figures(savefig=False):
 
 
 if __name__ == '__main__':
-    fig1 = False
+    fig1 = True
     fig2 = False
     fig3 = False
     fig4 = False
-    fig5 = True
+    fig5 = False
     fig6 = False
     fig7 = False
     fig8 = False

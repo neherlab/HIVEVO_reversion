@@ -1,10 +1,12 @@
 """
 Main file related to the divergence over time intermediate data.
 """
+from more_itertools import last
 import numpy as np
 import filenames
 import tools
 import json
+from scipy.optimize import curve_fit
 
 from hivevo.patients import Patient
 from hivevo.HIVreference import HIVreference
@@ -20,6 +22,20 @@ def divergence_matrix(aft, raw_mask, opposite_mask):
         div[ii, :, :] = raw_mask * aft[ii, :, :] + opposite_mask * (1 - aft[ii, :, :])
 
     return div
+
+
+def get_rate_from_divergence(time, div, first_idx=2, last_idx=20):
+    """
+    Computes the evolution rate from the divergence (slope of the divergence) by 1st order fit between 
+    first_idx and last_idx.
+    """
+    def f(x, a, b): return a * x + b  # linear fit function
+
+    # Fit the divergence
+    p, _ = curve_fit(f, time[first_idx:last_idx+1], div[first_idx:last_idx+1], p0=[1e-3, 1e-3])
+
+    # Return the slope only (parameter a)
+    return p[0]
 
 
 def divergence_in_time(patient, region, aft, div_ref):
@@ -140,33 +156,13 @@ def make_intermediate_data(folder_path):
         with open(folder_path + "bootstrap_div_dict.json", "w") as f:
             json.dump(div_dict, f, indent=4)
 
-    print("Computing " + folder_path + "rate_dict.json and " + folder_path + "avg_rate_dict.json")
+    print("Computing " + folder_path + "rate_dict.json")
     rate_dict = make_rate_dict(div_dict)
-    avg_rate_dict = average_rate_dict(div_dict)
     if type(rate_dict["time"]) != list:
         rate_dict["time"] = rate_dict["time"].tolist()
-        avg_rate_dict["time"] = avg_rate_dict["time"].tolist()
-
-    for key in ["env", "pol", "gag"]:  # Region
-        for key2 in rate_dict[key].keys():  # Reference to which compute the divergence
-            for key3 in rate_dict[key][key2].keys():  # Reference to define consensus and non-consensus
-                for key4 in rate_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
-                    for key5 in rate_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        # mean, low, high (mean, mean-std, mean+std)
-                        for key6 in rate_dict[key][key2][key3][key4][key5].keys():
-                            # Converting numpy to list for .json compatibility
-                            rate_dict[key][key2][key3][key4][key5][key6] = \
-                                rate_dict[key][key2][key3][key4][key5][key6].tolist()
-                        for key6 in avg_rate_dict[key][key2][key3][key4][key5].keys():
-                            # Converting numpy to list for .json compatibility
-                            avg_rate_dict[key][key2][key3][key4][key5][key6] = \
-                                avg_rate_dict[key][key2][key3][key4][key5][key6].tolist()
 
     with open(folder_path + "rate_dict" + ".json", "w") as f:
         json.dump(rate_dict, f, indent=4)
-
-    with open(folder_path + "avg_rate_dict" + ".json", "w") as f:
-        json.dump(avg_rate_dict, f, indent=4)
 
 
 def load_div_dict(filename):
@@ -198,51 +194,25 @@ def load_div_dict(filename):
 
 def make_rate_dict(div_dict):
     """
-    Creates a dictionary with the rates computed from the derivative of the divergence dictionary.
+    Compute the evolution rates and its standard deviation from the bootstrapped divergence values.
     """
     import copy
-
-    rate_dict = copy.deepcopy(div_dict)
-    for key in ["env", "pol", "gag"]:  # Region
-        for key2 in div_dict[key].keys():  # Reference to which compute the divergence
-            for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
-                for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
-                    for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        rate_dict[key][key2][key3][key4][key5] = {}
-                        mean = np.array(div_dict[key][key2][key3][key4][key5]["mean"])
-                        std = div_dict[key][key2][key3][key4][key5]["std"]
-                        dt = div_dict["time"][1] - rate_dict["time"][0]
-
-                        rate_dict[key][key2][key3][key4][key5]["low"] = np.gradient(mean - std, dt)
-                        rate_dict[key][key2][key3][key4][key5]["mean"] = np.gradient(mean, dt)
-                        rate_dict[key][key2][key3][key4][key5]["high"] = np.gradient(mean + std, dt)
-    return rate_dict
-
-
-def average_rate_dict(div_dict, first_idx=0, last_idx=20):
-    """
-    Average the rates for the rate dictionary between 0 and 2000 days (by default). Returns a dictionary
-    with the same structure but with scalars instead of vectors at the leafs.
-    """
-    import copy
-    from scipy.optimize import curve_fit
 
     fit_dict = copy.deepcopy(div_dict)
-    time = div_dict["time"][:last_idx]
+    time = div_dict["time"]
     def f(x, a, b): return a * x + b  # function to fit
     for key in ["env", "pol", "gag"]:  # Region
         for key2 in div_dict[key].keys():  # Reference to which compute the divergence
             for key3 in div_dict[key][key2].keys():  # Reference to define consensus and non-consensus
                 for key4 in div_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
                     for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        mean = div_dict[key][key2][key3][key4][key5]["mean"][first_idx:last_idx]
-                        std = div_dict[key][key2][key3][key4][key5]["std"][first_idx:last_idx]
-                        p, _ = curve_fit(f, time, mean, p0=[1e-3, 1e-3])
-                        p_minus, _ = curve_fit(f, time, mean-std, p0=[1e-3, 1e-3])
-                        p_plus, _ = curve_fit(f, time, mean+std, p0=[1e-3, 1e-3])
+                        mean = div_dict[key][key2][key3][key4][key5]["mean"]
+                        std = np.std(np.array(div_dict[key][key2][key3][key4]
+                                     [key5]["rates"])*365)  # originally in days
+                        rate = get_rate_from_divergence(time, mean)
                         fit_dict[key][key2][key3][key4][key5] = {}
-                        fit_dict[key][key2][key3][key4][key5]["rate"] = p[0]
-                        fit_dict[key][key2][key3][key4][key5]["std"] = ((p[0]-p_minus[0]) + (p_plus[0]-p[0]))/2
+                        fit_dict[key][key2][key3][key4][key5]["rate"] = rate
+                        fit_dict[key][key2][key3][key4][key5]["std"] = std
 
     return fit_dict
 
@@ -282,7 +252,8 @@ if __name__ == '__main__':
     # div = mean_divergence_in_time(patient, region, aft, "root", HIVreference(subtype="any"))
 
     make_intermediate_data("data/WH/")
-    # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    # div_dict = load_div_dict("data/WH_test/bootstrap_div_dict.json")
+    # rate_dict = average_rate_dict(div_dict)
 
     # Mutation rate plot
     # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
