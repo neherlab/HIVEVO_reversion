@@ -251,8 +251,8 @@ if __name__ == '__main__':
     # aft = patient.get_allele_frequency_trajectories(region)
     # div = mean_divergence_in_time(patient, region, aft, "root", HIVreference(subtype="any"))
 
-    make_intermediate_data("data/WH/")
-    # div_dict = load_div_dict("data/WH_test/bootstrap_div_dict.json")
+    # make_intermediate_data("data/WH/")
+    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
     # rate_dict = average_rate_dict(div_dict)
 
     # Mutation rate plot
@@ -284,4 +284,18 @@ if __name__ == '__main__':
     # for jj, label in enumerate(["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]):
     #     plt.plot([0], [0], lines[0], color=colors[jj], label=label)
     # plt.legend()
+    # plt.show()
+
+    # import matplotlib.pyplot as plt
+    # patient_names=["p1", "p2", "p3", "p4", "p5", "p6", "p8", "p9", "p11"]
+    # region = "pol"
+    # div_ref = "founder"
+    # plt.figure()
+    # for patient_name in patient_names:
+    #     patient = Patient.load(patient_name)
+    #     aft = patient.get_allele_frequency_trajectories(region)
+    #     div_dict = mean_divergence_in_time(patient, region, aft, div_ref, HIVreference(subtype="any"))
+    #     plt.plot(patient.ysi ,div_dict["all"]["all"])
+    # plt.ylim([0,0.14])
+    # plt.xlim([0,5.5])
     # plt.show()

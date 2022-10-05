@@ -120,7 +120,7 @@ def p_3class_homogeneous(consensus_seq, rates):
 
 def p_3class_binary(consensus_seq, rates, ratio=0.85):
     """
-    Returns the p matrix for a 3 class homogeneous model.
+    Returns the p matrix for a 3 class binary model.
     """
     def p_consensus(rate_consensus, rate_non_consensus):
         return rate_non_consensus / (rate_consensus + rate_non_consensus)
@@ -176,7 +176,7 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
     tree = ttree._tree
 
     consensus_seq = get_reference_sequence(consensus_path)
-    # Replaces N by A, it's not exact but I have a 4 letter alphabet for now
+    # Replaces N by A, not exact but we have a 4 letter alphabet. It does not impact the results significantly
     consensus_seq[consensus_seq == "N"] = "A"
 
     myGTR = define_GTR(consensus_seq, p_type, scaling, rates, rate_variation)
