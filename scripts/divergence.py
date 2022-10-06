@@ -208,7 +208,7 @@ def make_rate_dict(div_dict):
                     for key5 in div_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
                         mean = div_dict[key][key2][key3][key4][key5]["mean"]
                         std = np.std(np.array(div_dict[key][key2][key3][key4]
-                                     [key5]["rates"])*365)  # originally in days
+                                              [key5]["rates"])*365)  # originally in days
                         rate = get_rate_from_divergence(time, mean)
                         fit_dict[key][key2][key3][key4][key5] = {}
                         fit_dict[key][key2][key3][key4][key5]["rate"] = rate

@@ -670,7 +670,7 @@ if __name__ == '__main__':
     fig6 = False
     fig7 = False
     fig8 = False
-    savefig = True
+    savefig = False
 
     if fig1:
         text = {

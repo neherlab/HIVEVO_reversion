@@ -222,4 +222,4 @@ if __name__ == '__main__':
     # plt.grid()
     # plt.show()
 
-    t, div_dict = bootstrap_divergence_in_time("pol", "founder", "global")
+    # t, div_dict = bootstrap_divergence_in_time("pol", "founder", "global")
