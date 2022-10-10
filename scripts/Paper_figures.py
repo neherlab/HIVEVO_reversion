@@ -18,6 +18,7 @@ fontsize_panel_label = 12
 def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     from gtr_modeling import get_RTT
     from Bio import Phylo
+    from bootstrap_BH import load_bootstrap
     colors = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9"]
     figsize = figsize_narrow if region == "pol" else figsize_wide
 
@@ -31,8 +32,13 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
                  "B": f"data/BH/alignments/to_HXB2/{region}_B_consensus.fasta",
                  "C": f"data/BH/alignments/to_HXB2/{region}_C_consensus.fasta"}
 
+    bootstrap_files = {"root": f"data/BH/bootstraps/{region}_root_bootstrap.json",
+                 "subtypes": f"data/BH/bootstraps/{region}_subtypes_bootstrap.json",
+                 "RTT": f"data/BH/bootstraps/{region}_RTT_bootstrap.json"}
+
     tree_file = f"data/BH/intermediate_files/tree_{region}.nwk"
     alignment_file = f"data/BH/alignments/to_HXB2/{region}.fasta"
+    fit_err = np.std(load_bootstrap(bootstrap_files["RTT"])["rates"])
 
     ii = 0
     lengths, dates = get_RTT(Phylo.read(tree_file, "newick"))
@@ -43,9 +49,8 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     axs[0].plot(dates, lengths, '.', label="RTT", color=colors[ii])
     axs[0].fill_between(dates, ranges[:, 0], ranges[:, 1], color=colors[ii], alpha=fill_alpha)
     axs[0].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
-    # axs[ii].fill_between(dates, lengths + errors, lengths - errors, alpha=fill_alpha, color=colors[ii])
     axs[0].text(text_pos[0][0], text_pos[0][1],
-                f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
+                f"$\\propto {round(fit[0]*1e4,1)} \pm {round(fit_err*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
     axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction", fontsize=fontsize_panel_label)
     ii += 1
 
@@ -76,11 +81,13 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
         dist["all"] = dist["all"][ind]
         years = years[ind]
         fit = np.polyfit(years, dist["all"], deg=1)
+        fit_err = np.std(load_bootstrap(bootstrap_files[key])["rates"])
         axs[0].plot(years, dist["all"], '.', color=colors[ii], label=key)
-        axs[0].fill_between(years, ranges["all"][ind, 0], ranges["all"][ind, 1], color=colors[ii], alpha=0.1)
+        # axs[0].fill_between(years, ranges["all"][ind, 0], ranges["all"][ind, 1], color=colors[ii], alpha=0.1)
+        axs[0].fill_between(years, dist["all"] - std["all"][ind], dist["all"] + std["all"][ind], color=colors[ii], alpha=0.1)
         axs[0].plot(years, np.polyval(fit, years), "-", color=colors[ii])
         axs[0].text(text_pos[ii][0], text_pos[ii][1],
-                    f"$\\propto {round(fit[0]*1e4,1)}\\cdot 10^{{-4}} t$", color=colors[ii])
+                    f"$\\propto {round(fit[0]*1e4,1)} \pm {round(fit_err*1e4,1)} \\cdot 10^{{-4}}$", color=colors[ii])
         ii += 1
 
     axs[0].set_xlabel("Sample date")
@@ -102,7 +109,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
         fit2 = rate_dict[region][key]["global"]["all"]["all"]["rate"]
         fit2_std = rate_dict[region][key]["global"]["all"]["all"]["std"]
         axs[1].text(text_pos[ii][0], text_pos[ii][1],
-                    f"$\\propto{round(fit2*1e4,1)} \pm {round(fit2_std*1e4,1)} \\cdot 10^{{-4}} t$",
+                    f"$\\propto{round(fit2*1e4,1)} \pm {round(fit2_std*1e4,1)} \\cdot 10^{{-4}}$",
                     color=colors[ii - 2])
         ii += 1
 
@@ -675,20 +682,20 @@ if __name__ == '__main__':
     if fig1:
         text = {
             "env": [(2000, 0.192),
-                    (2000, 0.135),
+                    (2000, 0.14),
                     (2000, 0.045),
                     (1.2, 0.072),
                     (1.2, 0.058),
                     (1.2, 0.028)],
             "pol": [(1995, 0.087),
-                    (1995, 0.055),
+                    (1995, 0.056),
                     (1995, 0.02),
                     (1.2, 0.072),
                     (1.2, 0.042),
                     (1.2, 0.01)],
             "gag": [(2000, 0.125),
                     (2000, 0.072),
-                    (2000, 0.03),
+                    (2000, 0.028),
                     (1.2, 0.085),
                     (1.2, 0.047),
                     (1.2, 0.0165)]}
