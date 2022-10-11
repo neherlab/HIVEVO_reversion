@@ -51,7 +51,10 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     axs[0].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
     axs[0].text(text_pos[0][0], text_pos[0][1],
                 f"$\\propto {round(fit[0]*1e4,1)} \pm {round(fit_err*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
-    axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction", fontsize=fontsize_panel_label)
+    if region == "pol":
+        axs[0].annotate("C", xy=(0, 1.05), xycoords="axes fraction", fontsize=fontsize_panel_label)
+    else:
+        axs[0].annotate("A", xy=(0, 1.05), xycoords="axes fraction", fontsize=fontsize_panel_label)
     ii += 1
 
     for key in ["root", "subtypes"]:
@@ -93,7 +96,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     axs[0].set_xlabel("Sample date")
     axs[0].set_ylabel("Distance")
     axs[0].set_ylim(ylim)
-    axs[0].legend()
+    # axs[0].legend()
     axs[0].ticklabel_format(axis="x", style="plain")
 
     # WH plot references
@@ -101,6 +104,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     time = time[idxs]
     rate_dict = divergence.load_avg_rate_dict("data/WH/rate_dict.json")
     keys = ["root", "subtypes", "founder"]
+    axs[1].plot([0], [0], "-", color=colors[0], label="RTT")
     for key in keys:
         data = div_dict[region][key]["global"]["all"]["all"]["mean"][idxs]
         std = div_dict[region][key]["global"]["all"]["all"]["std"][idxs]
@@ -116,9 +120,17 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     axs[1].set_xlabel("Time [years]")
     if not sharey:
         axs[1].set_ylabel("Divergence")
-    axs[1].legend()
+
+    if region == "env":
+        axs[1].legend(loc="lower right")
+    else:
+        axs[1].legend(loc="upper right")
+
     axs[1].set_xlim([-0.3, 5.5])
-    axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction", fontsize=fontsize_panel_label)
+    if region == "pol":
+        axs[1].annotate("D", xy=(0, 1.05), xycoords="axes fraction", fontsize=fontsize_panel_label)
+    else:
+        axs[1].annotate("B", xy=(0, 1.05), xycoords="axes fraction", fontsize=fontsize_panel_label)
     plt.tight_layout()
     if savefig:
         fig.savefig(f"figures/Distance_{region}.pdf")
@@ -668,6 +680,51 @@ def make_poster_figures(savefig=False):
         plt.savefig(f"figures/Poster_divergence.pdf")
 
 
+def make_JK_model_schematic(real_mu = 10.3e-4, savefig=False):
+    """
+    Function to generate panel A of fig 1. Uses treetime to compute the outcome we would have from a Jukes
+    Cantor model with rates that are gamma distributed with parameter 2. 
+    """
+    from treetime import GTR_site_specific
+    from scipy.stats import gamma
+
+    L = 1000
+    t_plot = np.arange(1980, 2021)
+    mu = gamma.rvs(2, size=L, random_state=123) / 2 # Gamma distribution with parameter 2
+    W = np.ones((4, 4))
+    # W = np.array([[0., 0.763, 2.902, 0.391], # Same as I use for fig4 modeling, doesn't make a big difference
+    #               [0.763, 0., 0.294, 3.551],
+    #               [2.902, 0.294, 0., 0.317],
+    #               [0.391, 3.551, 0.317, 0.]])
+    p = np.ones((4, L))*0.25 # no bias for reversions.
+
+    myGTR = GTR_site_specific.custom(mu, p, W, alphabet="nuc_nogap", approximate=False)
+    myGTR.mu *= real_mu / myGTR.average_rate().mean()
+
+
+    # dates = {"root": 1914, "subtypes": 1970,"founder": 1980}  # estimates from tree
+    dates = {"root": 1925, "subtypes": 1965, "founder": 1980}  # estimates to match t = 1980
+    distances = {"root": [], "subtypes": [], "founder": []}
+
+    for key in dates:
+        for t in t_plot:
+            tmp = 1 - myGTR.expQt(t-dates[key])[0, 0, :]
+            distances[key] += [np.mean(tmp)]
+
+    plt.figure(figsize=(2, 1.5))
+    plt.plot(t_plot, (t_plot - dates["root"])*real_mu, label="RTT")
+    for key in dates:
+        plt.plot(t_plot, distances[key], label=key)
+
+    plt.xlabel("Year")
+    plt.ylabel("Distance")
+    plt.xlim([1978, 2022])
+    plt.ylim([0, 0.14])
+    plt.ticklabel_format(axis="x", style="plain")
+
+    if savefig:
+        plt.savefig(f"figures/JC_schematic.pdf")
+
 if __name__ == '__main__':
     fig1 = True
     fig2 = False
@@ -677,7 +734,8 @@ if __name__ == '__main__':
     fig6 = False
     fig7 = False
     fig8 = False
-    savefig = False
+    fig9 = True
+    savefig = True
 
     if fig1:
         text = {
@@ -747,5 +805,12 @@ if __name__ == '__main__':
 
     if fig8:
         make_poster_figures(savefig)
+
+    if fig9:
+        mu = 10.3e-4
+        make_JK_model_schematic(mu, savefig)
+
+
+
 
     plt.show()

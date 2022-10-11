@@ -162,8 +162,7 @@ def p_3class_binary(consensus_seq, rates, ratio=0.85):
 def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path, rates,
                  p_type="homogeneous", scaling=1.3, rate_variation=0):
     """
-    Generates an MSA based on a homogeneous (same for all site) model for the reversion and non-reversion
-    rates.
+    Generates an MSA based on the chosen model (p_type) and the reversion and non-reversion rates.
     """
 
     root_seq = get_reference_sequence(root_path)
@@ -201,7 +200,7 @@ def define_GTR(consensus_seq, p_type, scaling, rates, rate_variation=0):
     else:
         mu = np.ones(L)
     W = np.array([[0., 0.763, 2.902, 0.391],
-                  [0.763, 0., 0.294, 3.551],
+             [0.763, 0., 0.294, 3.551],
                   [2.902, 0.294, 0., 0.317],
                   [0.391, 3.551, 0.317, 0.]])
 
