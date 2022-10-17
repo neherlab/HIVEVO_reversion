@@ -15,7 +15,7 @@ fill_alpha = 0.15
 fontsize_panel_label = 12
 
 
-def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
+def make_figure_1CD(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     from gtr_modeling import get_RTT
     from Bio import Phylo
     from bootstrap_BH import load_bootstrap
@@ -33,8 +33,8 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
                  "C": f"data/BH/alignments/to_HXB2/{region}_C_consensus.fasta"}
 
     bootstrap_files = {"root": f"data/BH/bootstraps/{region}_root_bootstrap.json",
-                 "subtypes": f"data/BH/bootstraps/{region}_subtypes_bootstrap.json",
-                 "RTT": f"data/BH/bootstraps/{region}_RTT_bootstrap.json"}
+                       "subtypes": f"data/BH/bootstraps/{region}_subtypes_bootstrap.json",
+                       "RTT": f"data/BH/bootstraps/{region}_RTT_bootstrap.json"}
 
     tree_file = f"data/BH/intermediate_files/tree_{region}.nwk"
     alignment_file = f"data/BH/alignments/to_HXB2/{region}.fasta"
@@ -49,8 +49,10 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
     axs[0].plot(dates, lengths, '.', label="RTT", color=colors[ii])
     axs[0].fill_between(dates, ranges[:, 0], ranges[:, 1], color=colors[ii], alpha=fill_alpha)
     axs[0].plot(dates, np.polyval(fit, dates), "-", linewidth=1, color=colors[ii])
-    axs[0].text(text_pos[0][0], text_pos[0][1],
-                f"$\\propto {round(fit[0]*1e4,1)} \pm {round(fit_err*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
+    axs[0].text(
+        text_pos[0][0],
+        text_pos[0][1],
+        f"$\\propto {round(fit[0]*1e4,1)} \pm {round(fit_err*1e4,1)}\\cdot 10^{{-4}}$", color=colors[ii])
     if region == "pol":
         axs[0].annotate("C", xy=(0, 1.05), xycoords="axes fraction", fontsize=fontsize_panel_label)
     else:
@@ -69,10 +71,11 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
             # Averaging the subtypes distance
             for key2 in dist.keys():
                 idxs = np.isin(years, years2)
-                dist[key2][idxs] = (nb[idxs] * dist[key2][idxs] + nb2 *
-                                    dist2[key2]) / (nb[idxs] + nb2)
-                ranges[key2][idxs] = ((nb[idxs] * ranges[key2][idxs].T + nb2 *
-                                       ranges2[key2].T) / (nb[idxs] + nb2)).T
+                idxs2 = np.isin(years2, years)
+                dist[key2][idxs] = (nb[idxs] * dist[key2][idxs] + nb2[idxs2] *
+                                    dist2[key2][idxs2]) / (nb[idxs] + nb2[idxs2])
+                ranges[key2][idxs] = ((nb[idxs] * ranges[key2][idxs].T + nb2[idxs2] *
+                                       ranges2[key2][idxs2].T) / (nb[idxs] + nb2[idxs2])).T
 
         else:
             reference_sequence = get_reference_sequence(ref_files[key])
@@ -87,10 +90,17 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
         fit_err = np.std(load_bootstrap(bootstrap_files[key])["rates"])
         axs[0].plot(years, dist["all"], '.', color=colors[ii], label=key)
         # axs[0].fill_between(years, ranges["all"][ind, 0], ranges["all"][ind, 1], color=colors[ii], alpha=0.1)
-        axs[0].fill_between(years, dist["all"] - std["all"][ind], dist["all"] + std["all"][ind], color=colors[ii], alpha=0.1)
+        axs[0].fill_between(
+            years, dist["all"] - std["all"][ind],
+            dist["all"] + std["all"][ind],
+            color=colors[ii],
+            alpha=0.1)
         axs[0].plot(years, np.polyval(fit, years), "-", color=colors[ii])
-        axs[0].text(text_pos[ii][0], text_pos[ii][1],
-                    f"$\\propto {round(fit[0]*1e4,1)} \pm {round(fit_err*1e4,1)} \\cdot 10^{{-4}}$", color=colors[ii])
+        axs[0].text(
+            text_pos[ii][0],
+            text_pos[ii][1],
+            f"$\\propto {round(fit[0]*1e4,1)} \pm {round(fit_err*1e4,1)} \\cdot 10^{{-4}}$", color=colors
+            [ii])
         ii += 1
 
     axs[0].set_xlabel("Sample date")
@@ -136,7 +146,7 @@ def make_figure_1(region, text_pos, ylim, sharey, cutoff=1977, savefig=False):
         fig.savefig(f"figures/Distance_{region}.pdf")
 
 
-def make_figure_2(region, text, savefig=False, reference="global"):
+def make_figure_S3S4(region, text, savefig=False, reference="global"):
     colors = ["C3", "C0", "C1", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
     lines = ["-", "-", "--"]
     figsize = figsize_wide
@@ -217,8 +227,8 @@ def make_figure_3(savefig=False):
     for traj in trajectories_scheme:
         axs[0].plot(traj.t / 365, traj.frequencies, "k-", alpha=0.15, linewidth=0.5)
 
-    mean = bootstrap_dict["rev"]["[0.4, 0.6]"]["mean"]
-    std = bootstrap_dict["rev"]["[0.4, 0.6]"]["std"]
+    mean = bootstrap_dict["rev"]["all"]["[0.4, 0.6]"]["mean"]
+    std = bootstrap_dict["rev"]["all"]["[0.4, 0.6]"]["std"]
     axs[0].plot(times, mean, '-', color=colors[1])
     axs[0].fill_between(times, mean - std, mean + std, color=colors[1], alpha=fill_alpha)
 
@@ -235,8 +245,8 @@ def make_figure_3(savefig=False):
     # Plot right
     for ii, freq_range in enumerate(freq_ranges):
         for key, line in zip(["rev", "non_rev"], ["-", "--"]):
-            mean = bootstrap_dict[key][str(freq_range)]["mean"]
-            std = bootstrap_dict[key][str(freq_range)]["std"]
+            mean = bootstrap_dict[key]["all"][str(freq_range)]["mean"]
+            std = bootstrap_dict[key]["all"][str(freq_range)]["std"]
             axs[1].plot(times, mean, line, color=colors[ii])
             axs[1].fill_between(times, mean - std, mean + std, color=colors[ii], alpha=fill_alpha)
 
@@ -377,7 +387,7 @@ def make_figure_4(region, text, limits, savefig, colors=["C0", "C1", "C2", "C3"]
         plt.savefig(f"figures/RTT_modeling_{region}.pdf")
 
 
-def make_figure_5(savefig=False):
+def make_figure_S7(savefig=False):
     """
     Plot for equivalant of the reversion in time figure but using synonymous / non-synonymous in this case.
     """
@@ -405,8 +415,8 @@ def make_figure_5(savefig=False):
     for traj in trajectories_scheme:
         axs[0].plot(traj.t / 365, traj.frequencies, "k-", alpha=0.15, linewidth=0.5)
 
-    mean = bootstrap_dict["syn"]["[0.4, 0.6]"]["mean"]
-    std = bootstrap_dict["syn"]["[0.4, 0.6]"]["std"]
+    mean = bootstrap_dict["all"]["syn"]["[0.4, 0.6]"]["mean"]
+    std = bootstrap_dict["all"]["syn"]["[0.4, 0.6]"]["std"]
     axs[0].plot(times, mean, '-', color=colors[1])
     axs[0].fill_between(times, mean - std, mean + std, color=colors[1], alpha=fill_alpha)
 
@@ -423,8 +433,8 @@ def make_figure_5(savefig=False):
     # Plot right
     for ii, freq_range in enumerate(freq_ranges):
         for key, line in zip(["syn", "non_syn"], ["-", "--"]):
-            mean = bootstrap_dict[key][str(freq_range)]["mean"]
-            std = bootstrap_dict[key][str(freq_range)]["std"]
+            mean = bootstrap_dict["all"][key][str(freq_range)]["mean"]
+            std = bootstrap_dict["all"][key][str(freq_range)]["std"]
             axs[1].plot(times, mean, line, color=colors[ii])
             axs[1].fill_between(times, mean - std, mean + std, color=colors[ii], alpha=fill_alpha)
 
@@ -446,7 +456,7 @@ def make_figure_5(savefig=False):
         plt.savefig(f"figures/mean_in_time_syn_{reference}.pdf")
 
 
-def make_figure_6(savefig):
+def make_figure_S6(savefig):
     """
     Plot for the details about mean in time
     """
@@ -468,10 +478,10 @@ def make_figure_6(savefig):
 
     fig, axs = plt.subplots(ncols=3, nrows=1, figsize=figsize, sharey=True, sharex=True)
     for yy, region in enumerate(regions):
-        for ii, key in enumerate(bootstrap_dicts["pol"]["rev"].keys()):
+        for ii, key in enumerate(bootstrap_dicts["pol"]["rev"]["all"].keys()):
             for jj, key2 in enumerate(["rev", "non_rev"]):
-                mean = bootstrap_dicts[region][key2][key]["mean"]
-                std = bootstrap_dicts[region][key2][key]["std"]
+                mean = bootstrap_dicts[region][key2]["all"][key]["mean"]
+                std = bootstrap_dicts[region][key2]["all"][key]["std"]
                 axs[yy].plot(times, mean, lines[jj], color=colors[ii])
                 axs[yy].fill_between(times, mean - std, mean + std, color=colors[ii], alpha=fill_alpha)
 
@@ -486,7 +496,7 @@ def make_figure_6(savefig):
 
     axs[2].legend([line3, line4, line5, line1, line2],
                   ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "rev", "non-rev"],
-                  ncol=2)
+                  ncol=2, loc="lower right")
     axs[0].set_ylim([-0.03, 1.03])
     axs[0].set_ylabel("Frequency")
 
@@ -494,7 +504,7 @@ def make_figure_6(savefig):
         plt.savefig(f"figures/Mean_in_time_details.pdf")
 
 
-def make_figure_7(region, text, savefig=False, reference="global"):
+def make_figure_2(region, text, savefig=False, reference="global"):
     colors = ["C3", "C0", "C1", "C2", "C4", "C5", "C6", "C7", "C8", "C9"]
     lines = ["-", "-", "--"]
     markers = ["o", "<", "s"]
@@ -610,8 +620,8 @@ def make_poster_figures(savefig=False):
     for traj in trajectories_scheme:
         axs[0].plot(traj.t / 365, traj.frequencies, "k-", alpha=0.1, linewidth=0.5)
 
-    mean = bootstrap_dict["rev"]["[0.4, 0.6]"]["mean"]
-    std = bootstrap_dict["rev"]["[0.4, 0.6]"]["std"]
+    mean = bootstrap_dict["rev"]["all"]["[0.4, 0.6]"]["mean"]
+    std = bootstrap_dict["rev"]["all"]["[0.4, 0.6]"]["std"]
     axs[0].plot(times, mean, '-', color=colors[1])
     axs[0].fill_between(times, mean - std, mean + std, color=colors[1], alpha=fill_alpha)
 
@@ -627,8 +637,8 @@ def make_poster_figures(savefig=False):
     # Plot right
     for ii, freq_range in enumerate(freq_ranges):
         for key, line in zip(["rev", "non_rev"], ["-", "--"]):
-            mean = bootstrap_dict[key][str(freq_range)]["mean"]
-            std = bootstrap_dict[key][str(freq_range)]["std"]
+            mean = bootstrap_dict[key]["all"][str(freq_range)]["mean"]
+            std = bootstrap_dict[key]["all"][str(freq_range)]["std"]
             axs[1].plot(times, mean, line, color=colors[ii])
             axs[1].fill_between(times, mean - std, mean + std, color=colors[ii], alpha=fill_alpha)
 
@@ -680,7 +690,7 @@ def make_poster_figures(savefig=False):
         plt.savefig(f"figures/Poster_divergence.pdf")
 
 
-def make_JK_model_schematic(real_mu = 10.3e-4, savefig=False):
+def make_figure_1A(real_mu=10.3e-4, savefig=False):
     """
     Function to generate panel A of fig 1. Uses treetime to compute the outcome we would have from a Jukes
     Cantor model with rates that are gamma distributed with parameter 2. 
@@ -690,17 +700,16 @@ def make_JK_model_schematic(real_mu = 10.3e-4, savefig=False):
 
     L = 1000
     t_plot = np.arange(1980, 2021)
-    mu = gamma.rvs(2, size=L, random_state=123) / 2 # Gamma distribution with parameter 2
+    mu = gamma.rvs(2, size=L, random_state=123) / 2  # Gamma distribution with parameter 2
     W = np.ones((4, 4))
     # W = np.array([[0., 0.763, 2.902, 0.391], # Same as I use for fig4 modeling, doesn't make a big difference
     #               [0.763, 0., 0.294, 3.551],
     #               [2.902, 0.294, 0., 0.317],
     #               [0.391, 3.551, 0.317, 0.]])
-    p = np.ones((4, L))*0.25 # no bias for reversions.
+    p = np.ones((4, L))*0.25  # no bias for reversions.
 
     myGTR = GTR_site_specific.custom(mu, p, W, alphabet="nuc_nogap", approximate=False)
     myGTR.mu *= real_mu / myGTR.average_rate().mean()
-
 
     # dates = {"root": 1914, "subtypes": 1970,"founder": 1980}  # estimates from tree
     dates = {"root": 1925, "subtypes": 1965, "founder": 1980}  # estimates to match t = 1980
@@ -725,44 +734,77 @@ def make_JK_model_schematic(real_mu = 10.3e-4, savefig=False):
     if savefig:
         plt.savefig(f"figures/JC_schematic.pdf")
 
+
+def make_figure_S8(savefig):
+    "Mean in time figure for syn+rev syn+non-rev, non-syn+rev non-syn+non-rev."
+
+    mean_dict = trajectory.load_mean_in_time_dict("data/WH/bootstrap_mean_dict_any.json")
+    time = trajectory.create_time_bins(400)
+    time = 0.5 * (time[:-1] + time[1:]) / 365  # In years
+
+    import matplotlib.pyplot as plt
+    fig, axs = plt.subplots(ncols=2, nrows=1, sharey=True, sharex=True, figsize=figsize_wide)
+    freq_ranges = [[0.2, 0.4], [0.4, 0.6], [0.6, 0.8]]
+    colors = ["C0", "C1", "C2", "C4"]
+
+    for jj, key2 in enumerate(["syn", "non_syn"]):
+        for ii, freq_range in enumerate(freq_ranges):
+            for key, line in zip(["rev", "non_rev"], ["-", "--"]):
+                mean = mean_dict[key][key2][str(freq_range)]["mean"]
+                std = mean_dict[key][key2][str(freq_range)]["std"]
+                axs[jj].plot(time, mean, line, color=colors[ii])
+                axs[jj].fill_between(time, mean - std, mean + std, color=colors[ii], alpha=fill_alpha)
+        axs[jj].set_xlabel("Time [years]")
+
+    axs[0].set_ylabel("Frequency")
+    axs[0].set_title("Synonymous")
+    axs[1].set_title("Non-synonymous")
+
+    line1, = axs[1].plot([0], [0], "k-")
+    line2, = axs[1].plot([0], [0], "k--")
+    line3, = axs[1].plot([0], [0], "-", color=colors[0])
+    line4, = axs[1].plot([0], [0], "-", color=colors[1])
+    line5, = axs[1].plot([0], [0], "-", color=colors[2])
+
+    axs[1].set_xlabel("Time [years]")
+    axs[1].set_ylim([-0.03, 1.03])
+    axs[1].legend([line3, line4, line5, line1, line2],
+                  ["[0.2, 0.4]", "[0.4, 0.6]", "[0.6, 0.8]", "reversion", "non-reversion"],
+                  ncol=2, loc="lower right")
+
+    if savefig:
+        plt.savefig(f"figures/Mean_in_time_syn_rev.pdf")
+
+
 if __name__ == '__main__':
-    fig1 = True
+    fig1A = False
+    fig1 = False
     fig2 = False
     fig3 = False
     fig4 = False
-    fig5 = False
-    fig6 = False
-    fig7 = False
-    fig8 = False
-    fig9 = True
-    savefig = True
+    figS3S4 = False
+    figS6 = False
+    figS7 = False
+    figS8 = False
+    figPoster = False
+
+    savefig = False
+
+    if fig1A:
+        mu = 10.3e-4
+        make_figure_1A(mu, savefig)
 
     if fig1:
         text = {
-            "env": [(2000, 0.192),
-                    (2000, 0.14),
-                    (2000, 0.045),
-                    (1.2, 0.072),
-                    (1.2, 0.058),
-                    (1.2, 0.028)],
-            "pol": [(1995, 0.087),
-                    (1995, 0.056),
-                    (1995, 0.02),
-                    (1.2, 0.072),
-                    (1.2, 0.042),
-                    (1.2, 0.01)],
-            "gag": [(2000, 0.125),
-                    (2000, 0.072),
-                    (2000, 0.028),
-                    (1.2, 0.085),
-                    (1.2, 0.047),
-                    (1.2, 0.0165)]}
+            "env": [(2000, 0.192), (2000, 0.14), (2000, 0.045), (1.2, 0.072), (1.2, 0.058), (1.2, 0.028)],
+            "pol": [(1995, 0.087), (1995, 0.056), (1995, 0.02), (1.2, 0.072), (1.2, 0.042), (1.2, 0.01)],
+            "gag": [(2000, 0.125), (2000, 0.072), (2000, 0.028), (1.2, 0.085), (1.2, 0.047), (1.2, 0.0165)]}
 
         ylim = {"env": [0, 0.28], "pol": [0, 0.142], "gag": [0, 0.18]}
         sharey = {"env": False, "pol": True, "gag": True}
 
         for region in ["env", "pol", "gag"]:
-            make_figure_1(region, text[region], ylim[region], sharey[region], savefig=savefig)
+            make_figure_1CD(region, text[region], ylim[region], sharey[region], savefig=savefig)
 
     if fig2:
         text = {"env": [("92%", [4.1, 0.001]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.145]),
@@ -771,8 +813,8 @@ if __name__ == '__main__':
                         ("2%", [4.1, 0.111]), ("11%", [4.1, 0.023])],
                 "gag": [("93%", [4.1, -0.002]), ("7%", [4.1, 0.078]), ("5%", [4.1, 0.122]),
                         ("4%", [4.1, 0.065]), ("11%", [4.1, 0.026])]}
-        for region in ["env", "pol", "gag"]:
-            make_figure_2(region, text[region], savefig, reference="global")
+        region = "pol"
+        make_figure_2(region, text[region], savefig, reference="global")
 
     if fig3:
         make_figure_3(savefig)
@@ -787,30 +829,26 @@ if __name__ == '__main__':
         for region in ["env", "pol", "gag"]:
             make_figure_4(region, text[region], limits[region], savefig)
 
-    if fig5:
-        make_figure_5(savefig)
-
-    if fig6:
-        make_figure_6(savefig)
-
-    if fig7:
+    if figS3S4:
         text = {"env": [("92%", [4.1, 0.001]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.145]),
                         ("6%", [4.1, 0.085]), ("12%", [4.1, 0.042])],
                 "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.054]), ("4%", [4.1, 0.048]),
                         ("2%", [4.1, 0.111]), ("11%", [4.1, 0.023])],
                 "gag": [("93%", [4.1, -0.002]), ("7%", [4.1, 0.078]), ("5%", [4.1, 0.122]),
                         ("4%", [4.1, 0.065]), ("11%", [4.1, 0.026])]}
-        region = "pol"
-        make_figure_7(region, text[region], savefig, reference="global")
+        for region in ["env", "pol", "gag"]:
+            make_figure_S3S4(region, text[region], savefig, reference="global")
 
-    if fig8:
+    if figS6:
+        make_figure_S6(savefig)
+
+    if figS7:
+        make_figure_S7(savefig)
+
+    if figS8:
+        make_figure_S8(savefig)
+
+    if figPoster:
         make_poster_figures(savefig)
-
-    if fig9:
-        mu = 10.3e-4
-        make_JK_model_schematic(mu, savefig)
-
-
-
 
     plt.show()
