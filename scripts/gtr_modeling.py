@@ -401,11 +401,18 @@ def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
     return data
 
 
-def make_intermediate_data():
+def make_intermediate_data(folder_path):
     """
     Creates the modeling results used for the figures.
     """
     import os
+
+    if not os.path.exists(folder_path + "/generated_MSA/"):
+        os.mkdir(folder_path + "/generated_MSA/")
+
+    if not os.path.exists(folder_path + "/generated_trees/"):
+        os.mkdir(folder_path + "/generated_trees/")
+    
 
     for region in ["pol", "env", "gag"]:
         original_MSA_path = f"data/BH/alignments/to_HXB2/{region}.fasta"
@@ -413,9 +420,9 @@ def make_intermediate_data():
         root_path = f"data/BH/intermediate_files/{region}_nt_muts.json"
         consensus_path = f"data/BH/alignments/to_HXB2/{region}_consensus.fasta"
         original_metadata_path = f"data/BH/raw/{region}_subsampled_metadata.tsv"
-        generated_MSA_folder = f"data/modeling/generated_MSA/{region}_"
-        generated_tree_folder = f"data/modeling/generated_trees/{region}_"
-        rate_dict_path = "data/WH/avg_rate_dict.json"
+        generated_MSA_folder = folder_path + f"generated_MSA/{region}_"
+        generated_tree_folder = folder_path + f"generated_trees/{region}_"
+        rate_dict_path = "data/WH/rate_dict.json"
         rates = divergence.load_avg_rate_dict(rate_dict_path)
         rates = rates[region]["founder"]["global"]
         scaling = round(compute_scaling(original_tree_path, rates), 2)
@@ -442,7 +449,7 @@ def make_intermediate_data():
 
 if __name__ == "__main__":
     # --- Choose the region to model ---
-    region = "pol"
+    region = "env"
 
     # --- Defining relevant files for the analysis ---
     original_MSA_path = f"data/BH/alignments/to_HXB2/{region}.fasta"
@@ -453,7 +460,7 @@ if __name__ == "__main__":
     generated_MSA_folder = f"data/modeling/generated_MSA/{region}_"
     generated_tree_folder = f"data/modeling/generated_trees/{region}_"
     optimized_tree_folder = f"data/modeling/optimized_trees/{region}_"
-    rate_dict_path = "data/WH/avg_rate_dict.json"
+    rate_dict_path = "data/WH/rate_dict.json"
     rates = divergence.load_avg_rate_dict(rate_dict_path)
     rates = rates[region]["founder"]["global"]
 
@@ -462,7 +469,7 @@ if __name__ == "__main__":
     # p_type = "binary"
     # p_type = "3class_homogeneous"
     # p_type = "3class_binary"
-    p_type = "control"
+    # p_type = "control"
 
     regenerate = True
     optimize = False
@@ -470,7 +477,8 @@ if __name__ == "__main__":
 
     scaling = round(compute_scaling(original_tree_path, rates), 2)
 
-    for p_type in ["3class_binary", "control"]:
+    # for p_type in ["3class_binary", "control"]:
+    for p_type in ["3class_binary"]:
         # for rate_variation in [0, 1, 2]:
         for rate_variation in [0]:
 
@@ -511,14 +519,16 @@ if __name__ == "__main__":
                 compare_RTT(original_tree_path, generated_tree_path)
                 plt.show()
 
-    # # --- Rate variation analysis ---
-    # rate_variation = 0  # (shape parameter of gamma distribution, set to 0 for no rate variation)
-    # distances = get_branch_length(consensus_path, ["3class_binary", "control"], 1.58, rates, [0, 1, 2])
-    # plt.figure()
-    # line_styles = ['-', '--', '-.']
-    # for pi, p in enumerate(["3class_binary", "control"]):
-    #     for r in [0, 1, 2]:
-    #         plt.plot(distances['time'], distances[(p, r)], c=f'C{pi}', ls=line_styles[r])
-    # plt.ylabel('distance')
-    # plt.xlabel('time')
-    # plt.show()
+    # --- Rate variation analysis ---
+    rate_variation = 0  # (shape parameter of gamma distribution, set to 0 for no rate variation)
+    distances = get_branch_length(consensus_path, ["3class_binary", "control"], 1.58, rates, [0, 1, 2])
+    plt.figure()
+    line_styles = ['-', '--', '-.']
+    for pi, p in enumerate(["3class_binary", "control"]):
+        for r in [0, 1, 2]:
+            plt.plot(distances['time'], distances[(p, r)], c=f'C{pi}', ls=line_styles[r])
+    plt.ylabel('distance')
+    plt.xlabel('time')
+    plt.show()
+
+    # make_intermediate_data("data/modeling/")
