@@ -50,22 +50,31 @@ def make_bootstrap_mean_dict(trajectory_list, nb_bootstrap=10):
     """
     Generates the dictionary for bootstrapped mean frequency in time. Does it for all regions, the 3 frequency
     windows and rev / non_rev mutations. The trajectory list should contain the trajectories from all patients
-    Keys are the following : dict["rev"/"non_rev"]["[0.2,0.4]","[0.4,0.6]","[0.6,0.8]"]
+    Keys are the following : dict["rev"/"non_rev/all"]["syn"/"non_syn"/"all"]["[0.2,0.4]","[0.4,0.6]","[0.6,0.8]"]
     """
-    bootstrap_dict = {"rev": {}, "non_rev": {}, "syn": {}, "non_syn": {}}
-    for mut_type in ["rev", "non_rev", "syn", "non_syn"]:
-        for freq_range in [[0.2, 0.4], [0.4, 0.6], [0.6, 0.8]]:
-            if mut_type == "rev":
-                trajectories = [traj for traj in trajectory_list if traj.reversion]
-            elif mut_type == "non_rev":
-                trajectories = [traj for traj in trajectory_list if ~traj.reversion]
-            elif mut_type == "syn":
-                trajectories = [traj for traj in trajectory_list if traj.synonymous]
-            elif mut_type == "non_syn":
-                trajectories = [traj for traj in trajectory_list if ~traj.synonymous]
+    bootstrap_dict = {"rev": {"syn": {}, "non_syn": {}, "all": {}},
+                      "non_rev": {"syn": {}, "non_syn": {}, "all": {}},
+                      "all": {"syn": {}, "non_syn": {}, "all": {}}}
 
-            times, mean, std = bootstrap_mean_in_time(trajectories, freq_range, nb_bootstrap)
-            bootstrap_dict[mut_type][str(freq_range)] = {"mean": mean, "std": std}
+    for key in bootstrap_dict.keys():
+        if key == "rev":
+            trajectories = [traj for traj in trajectory_list if traj.reversion]
+        elif key == "non_rev":
+            trajectories = [traj for traj in trajectory_list if  not traj.reversion]
+        elif key == "all":
+            trajectories = trajectory_list
+
+        for key2 in bootstrap_dict[key].keys():
+            if key2 == "syn":
+                tmp = [traj for traj in trajectories if traj.synonymous]
+            elif key2 == "non_syn":
+                tmp = [traj for traj in trajectories if not traj.synonymous]
+            elif key2 == "all":
+                tmp = trajectories
+
+            for freq_range in [[0.2, 0.4], [0.4, 0.6], [0.6, 0.8]]:
+                times, mean, std = bootstrap_mean_in_time(tmp, freq_range, nb_bootstrap)
+                bootstrap_dict[key][key2][str(freq_range)] = {"mean": mean, "std": std}
 
     return bootstrap_dict, times
 
@@ -223,3 +232,24 @@ if __name__ == '__main__':
     # plt.show()
 
     # t, div_dict = bootstrap_divergence_in_time("pol", "founder", "global")
+
+    # trajectories = trajectory.load_trajectory_list("data/WH_test/Trajectory_list_any.json")
+    # mean_dict, time = make_bootstrap_mean_dict(trajectories, 10)
+    mean_dict = trajectory.load_mean_in_time_dict("data/WH_test/bootstrap_mean_dict_any.json")
+    time = trajectory.create_time_bins(400)
+    time = 0.5 * (time[:-1] + time[1:]) / 365  # In years
+
+    import matplotlib.pyplot as plt
+    fig, axs = plt.subplots(ncols=2, nrows=1, sharey=True, sharex=True)
+    freq_ranges = [[0.2, 0.4], [0.4, 0.6], [0.6, 0.8]]
+    colors = ["C0", "C1", "C2", "C4"]
+
+    for ii, freq_range in enumerate(freq_ranges):
+        for key, line in zip(["rev", "non_rev"], ["-", "--"]):
+            for jj, key2 in enumerate(["syn", "non_syn"]):
+                mean = mean_dict[key][key2][str(freq_range)]["mean"]
+                std = mean_dict[key][key2][str(freq_range)]["std"]
+                axs[jj].plot(time, mean, line, color=colors[ii])
+                axs[jj].fill_between(time, mean - std, mean + std, color=colors[ii], alpha=0.3)
+
+    plt.show()

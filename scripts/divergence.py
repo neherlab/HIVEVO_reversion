@@ -217,23 +217,23 @@ def make_rate_dict(div_dict):
     return fit_dict
 
 
-def load_rate_dict(filename):
-    """
-    Loads the dictionary containing the rates over time (as vectors). Same format as divergence dictionary.
-    """
-    with open(filename, "r") as f:
-        rate_dict = json.load(f)
+# def load_rate_dict(filename):
+#     """
+#     Loads the dictionary containing the rates over time (as vectors). Same format as divergence dictionary.
+#     """
+#     with open(filename, "r") as f:
+#         rate_dict = json.load(f)
 
-    rate_dict["time"] = np.array(rate_dict["time"])
+#     rate_dict["time"] = np.array(rate_dict["time"])
 
-    for key in ["env", "pol", "gag"]:  # Region
-        for key2 in rate_dict[key].keys():  # Reference to which compute the divergence
-            for key3 in rate_dict[key][key2].keys():  # Reference to define consensus and non-consensus
-                for key4 in rate_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
-                    for key5 in rate_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
-                        rate_dict[key][key2][key3][key4][key5] = np.array(
-                            rate_dict[key][key2][key3][key4][key5])
-    return rate_dict
+#     for key in ["env", "pol", "gag"]:  # Region
+#         for key2 in rate_dict[key].keys():  # Reference to which compute the divergence
+#             for key3 in rate_dict[key][key2].keys():  # Reference to define consensus and non-consensus
+#                 for key4 in rate_dict[key][key2][key3].keys():  # all, consensus or non_consensus sites
+#                     for key5 in rate_dict[key][key2][key3][key4].keys():  # all, first, second, third sites
+#                         rate_dict[key][key2][key3][key4][key5] = np.array(
+#                             rate_dict[key][key2][key3][key4][key5])
+#     return rate_dict
 
 
 def load_avg_rate_dict(filename):
@@ -251,8 +251,8 @@ if __name__ == '__main__':
     # aft = patient.get_allele_frequency_trajectories(region)
     # div = mean_divergence_in_time(patient, region, aft, "root", HIVreference(subtype="any"))
 
-    # make_intermediate_data("data/WH/")
-    div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
+    make_intermediate_data("data/WH/")
+    # div_dict = load_div_dict("data/WH/bootstrap_div_dict.json")
     # rate_dict = average_rate_dict(div_dict)
 
     # Mutation rate plot
