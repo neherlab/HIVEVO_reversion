@@ -1,5 +1,5 @@
 """
-Script used to test the bootstrapping estimates for the rates of fig 1 BH. It is used to estimate the errors
+Script used to do the bootstrapping estimates for the rates of fig 1 BH. It is used to estimate the errors
 on the rates.
 """
 
@@ -114,7 +114,7 @@ def bootstrap_mean_distance_in_time(sequences_names, alignment_file, reference_s
 
     gap_mask = get_gap_mask(alignment_array)
     distance_matrix = (alignment_array != reference_sequence)[:, gap_mask]
-    distance_vector = np.sum(distance_matrix, axis=1, dtype=int) / distance_matrix.shape[-1]
+    distance_vector = np.nansum(distance_matrix, axis=1, dtype=int) / distance_matrix.shape[-1]
 
     years = []
     distances = []
@@ -131,8 +131,9 @@ def bootstrap_mean_distance_in_time(sequences_names, alignment_file, reference_s
     average_distance = []
     nb_seq = []
     for date in time:
-        average_distance += [np.mean(distances[years == date])]
+        average_distance += [np.nanmean(distances[years == date])]
         nb_seq += [distances[years == date].shape[0]]
+        
     average_distance = np.array(average_distance)
 
     return time, average_distance, nb_seq
@@ -142,9 +143,13 @@ def make_root_bootstrap(region, output_folder, nb_bootstrap=100, cutoff_date=198
     """
     Creates the file for the root bootstrap.
     """
-    file_path = f"visualisation/{region}.json"  # Uses the output of augur to relate clades
+    file_path = f"data/BH/visualisation/{region}.json"  # Uses the output of augur to relate clades
     root_path = f"data/BH/intermediate_files/{region}_nt_muts.json"
     alignment_file = f"data/BH/alignments/to_HXB2/{region}.fasta"
+
+    assert os.path.exists(file_path), f"{file_path} does not exist. Did you run snakemake analysis ?"
+    assert os.path.exists(root_path), f"{root_path} does not exist. Did you run snakemake analysis ?"
+    assert os.path.exists(alignment_file), f"{alignment_file} does not exist. Did you run snakemake analysis ?"
 
     # Load the tree and ref sequence
     with open(file_path, "r") as f:
@@ -182,10 +187,15 @@ def make_subtypes_bootstrap(region, output_folder, nb_bootstrap=100, cutoff_date
     """
     Creates the file for the subtype bootstrap.
     """
-    file_path = f"visualisation/{region}.json"  # Uses the output of augur to relate clades
+    file_path = f"data/BH/visualisation/{region}.json"  # Uses the output of augur to relate clades
     subtype_B_path = f"data/BH/alignments/to_HXB2/{region}_B_consensus.fasta"
     subtype_C_path = f"data/BH/alignments/to_HXB2/{region}_C_consensus.fasta"
     alignment_file = f"data/BH/alignments/to_HXB2/{region}.fasta"
+
+    assert os.path.exists(file_path), f"{file_path} does not exist. Did you run snakemake analysis ?"
+    assert os.path.exists(subtype_B_path), f"{subtype_B_path} does not exist. Did you run snakemake analysis ?"
+    assert os.path.exists(subtype_C_path), f"{subtype_C_path} does not exist. Did you run snakemake analysis ?"
+    assert os.path.exists(alignment_file), f"{alignment_file} does not exist. Did you run snakemake analysis ?"
 
     # Load the tree and ref sequence
     with open(file_path, "r") as f:
@@ -226,8 +236,9 @@ def make_subtypes_bootstrap(region, output_folder, nb_bootstrap=100, cutoff_date
     years = years_B
     for ii in range(nb_bootstrap):
         idxs = np.isin(years_B, years_C)  # This is because subtype B is seen in more years than subtype C
-        distances[ii][idxs] = (nb_seq_B[ii][idxs] * distances_B[ii][idxs] + nb_seq_C[ii] *
-                               distances_C[ii]) / (nb_seq_B[ii][idxs] + nb_seq_C[ii])
+        idxs2 = np.isin(years_C, years_B)
+        distances[ii][idxs] = (nb_seq_B[ii][idxs] * distances_B[ii][idxs] + nb_seq_C[ii][idxs2] *
+                               distances_C[ii][idxs2]) / (nb_seq_B[ii][idxs] + nb_seq_C[ii][idxs2])
 
     # Compute the evolution rate of these bootstrap
     rates = []
@@ -245,8 +256,11 @@ def make_RTT_bootstrap(region, output_folder, nb_bootstrap=100, cutoff_date=1980
     """
     Creates the file for the RTT bootstrap.
     """
-    file_path = f"visualisation/{region}.json"  # Uses the output of augur to relate clades
+    file_path = f"data/BH/visualisation/{region}.json"  # Uses the output of augur to relate clades
     tree_path = f"data/BH/intermediate_files/tree_{region}.nwk"
+
+    assert os.path.exists(file_path), f"{file_path} does not exist. Did you run snakemake analysis ?"
+    assert os.path.exists(tree_path), f"{tree_path} does not exist. Did you run snakemake analysis ?"
 
     # Load the tree.json
     with open(file_path, "r") as f:
@@ -309,12 +323,43 @@ def load_bootstrap(file_path):
     return bootstrap_dict
 
 
+def make_intermediate_data(folder_path):
+    """
+    Creates the necessary BH bootstrap data to compute the errors on the rates of figure 1 S1 and S2.
+    """
+
+    folder_path += "/bootstraps/"
+
+    if not os.path.exists(folder_path ):
+        os.mkdir(folder_path)
+
+    for region in ["env", "pol", "gag"]:
+        print(f"Making bootstrap data for region {region}")
+        if os.path.exists(folder_path + region + "_root_bootstrap.json"):
+            print("  " + folder_path + region + "_root_bootstrap.json already exists, skipping computation.")
+        else:
+            print(f"  Computing root bootstrap")
+            make_root_bootstrap(region, folder_path , nb_bootstrap=100)
+
+        if os.path.exists(folder_path + region + "_subtypes_bootstrap.json"):
+            print("  " + folder_path + region + "_subtypes_bootstrap.json already exists, skipping computation.")
+        else:
+            print(f"  Computing subtype bootstrap")
+            make_subtypes_bootstrap(region, folder_path , nb_bootstrap=100)
+
+        if os.path.exists(folder_path + region + "_RTT_bootstrap.json"):
+            print("  " + folder_path + region + "_RTT_bootstrap.json already exists, skipping computation.")
+        else:
+            print(f"  Computing  RTT bootstrap")
+            make_RTT_bootstrap(region, folder_path , nb_bootstrap=100)
+
+
 if __name__ == "__main__":
     from scipy.stats import scoreatpercentile
-    region = "gag"
-    make_root_bootstrap(region, "data/BH/bootstraps/", nb_bootstrap=100)
-    make_subtypes_bootstrap(region, "data/BH/bootstraps/", nb_bootstrap=100)
-    make_RTT_bootstrap(region, "data/BH/bootstraps/", nb_bootstrap=100)
+    region = "pol"
+    make_root_bootstrap(region, "data/BH/bootstraps/", nb_bootstrap=1)
+    make_subtypes_bootstrap(region, "data/BH/bootstraps/", nb_bootstrap=1)
+    make_RTT_bootstrap(region, "data/BH/bootstraps/", nb_bootstrap=1)
 
     # root_bootstrap = load_bootstrap("data/BH/bootstraps/pol_root_bootstrap.json")
     # subtypes_bootstrap = load_bootstrap("data/BH/bootstraps/pol_subtypes_bootstrap.json")
@@ -340,5 +385,5 @@ if __name__ == "__main__":
     # plt.ylabel("Distance")
     # plt.show()
 
-    # file_path = f"visualisation/pol.json"
+    # file_path = f"data/BH/visualisation/pol.json"
     # subtree_length_statistics(file_path)

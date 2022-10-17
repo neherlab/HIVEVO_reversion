@@ -6,13 +6,6 @@ wildcard_constraints:
     subtype = "(B|C)",
     position = "(1st|2nd|3rd)"
 
-rule all:
-    input:
-        auspice_jsons = expand("visualisation/{region}.json", region=REGIONS),
-        branch_length_files = expand(
-            "data/BH/intermediate_files/branch_lengths_{region}.json", region=REGIONS),
-        gtr_files = expand("data/BH/mutation_rates/{region}.json", region=REGIONS)
-
 
 rule figure_data:
     message:
@@ -26,6 +19,7 @@ rule figure_data:
         root_files = expand("data/BH/intermediate_files/{region}_nt_muts.json", region=REGIONS),
         tree_files = expand("data/BH/intermediate_files/tree_{region}.nwk", region=REGIONS),
         alignment_files = expand("data/BH/alignments/to_HXB2/{region}.fasta", region=REGIONS),
+        visualisation_files = expand("data/BH/visualisation/{region}.json", region=REGIONS),
 
 
 rule lanl_metadata:
@@ -227,7 +221,7 @@ rule export:
         branch_lengths = rules.refine.output.node_data,
         nt_muts = rules.ancestral.output.node_data
     output:
-        auspice_json = "visualisation/{region}.json"
+        auspice_json = "data/BH/visualisation/{region}.json"
     shell:
         """
         augur export v2 \
@@ -314,7 +308,7 @@ rule clean:
         rm data/BH/raw/*subsampled* -f
         rm data/BH/alignments/to_HXB2/* -f
         rm data/BH/intermediate_files/* -f
-        rm visualisation/* -f
+        rm data/BH/visualisation/* -f
         rm data/BH/gtr/* -f
         rm data/BH/mutation_rates/* -f
         rm data/BH/branch_lengths/* -f
