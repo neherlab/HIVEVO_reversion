@@ -7,10 +7,11 @@ wildcard_constraints:
     position = "(1st|2nd|3rd)"
 
 
-rule figure_data:
+rule all:
     message:
         """
-        Creating the files for the BH distance in time figure left panel (figure 1 5 and 6).
+        Creating the files for the BH distance in time figure left panel (figure 1 5 and 6) and the modeling
+        (fig 4 S9 and S10).
         """
     input:
         consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_consensus.fasta", region=REGIONS),
