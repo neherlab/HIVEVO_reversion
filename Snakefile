@@ -298,7 +298,7 @@ rule HXB2_regions:
         HXB2_gag = "data/BH/reference/HXB2_gag.fasta"
     shell:
         """
-        python scripts/HXB2_region_sequence.py
+        python scripts/snakecommands.py hxb2-regions {input.HXB2_original}
         """
 
 rule clean:

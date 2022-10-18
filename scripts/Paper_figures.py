@@ -778,23 +778,23 @@ def make_figure_S8(savefig):
 
 if __name__ == '__main__':
     fig1A = False
-    fig1 = False
+    fig1CD = False
     fig2 = False
     fig3 = False
-    fig4 = False
+    fig4 = True
     figS3S4 = False
     figS6 = False
     figS7 = False
     figS8 = False
     figPoster = False
 
-    savefig = False
+    savefig = True
 
     if fig1A:
-        mu = 10.3e-4
+        mu = 11.0e-4
         make_figure_1A(mu, savefig)
 
-    if fig1:
+    if fig1CD:
         text = {
             "env": [(2000, 0.192), (2000, 0.14), (2000, 0.045), (1.2, 0.072), (1.2, 0.058), (1.2, 0.028)],
             "pol": [(1995, 0.087), (1995, 0.056), (1995, 0.02), (1.2, 0.072), (1.2, 0.042), (1.2, 0.01)],
@@ -820,8 +820,8 @@ if __name__ == '__main__':
         make_figure_3(savefig)
 
     if fig4:
-        text = {"pol": [(2003, 0.07), (2003, 0.24), (2003, 0.145)],
-                "gag": [(2003, 0.1), (2003, 0.37), (2003, 0.24)],
+        text = {"pol": [(2003, 0.07), (2003, 0.26), (2003, 0.16)],
+                "gag": [(2003, 0.1), (2003, 0.37), (2003, 0.22)],
                 "env": [(2003, 0.3), (2003, 0.52), (2003, 0.1)]}
         limits = {"pol": (0.03, 0.23),
                   "gag": (0.06, 0.3),

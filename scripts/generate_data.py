@@ -44,8 +44,10 @@ def make_data():
 
 @cli.command()
 def clean_data():
-    "Removes all the intermediate data generated for the WH analysis."
+    "Removes all the intermediate data generated."
     shutil.rmtree(WH_DATA_FOLDER)
+    shutil.rmtree(BH_DATA_FOLDER + "bootstraps/")
+    shutil.rmtree(MODELING_DATA_FOLDER)
 
 
 if __name__ == '__main__':
