@@ -6,8 +6,9 @@ The raw files being too heavy for a github repository, you will have to download
 
 ## Figure plots
 All the figures are plotted using the `Paper_figures.py` script.
+You will have to uncompress the intermediate data as explained in the following seciton.
 ## Working with the intermediate files
-`data_mini` contains the minimal data necessary to run the figures in compressed format. 
+`data_mini/` contains the minimal data necessary to run the figures in compressed format. 
 One can use the `unpack_data.sh` script to uncompress it. 
 With this you should be able to redo the figures using the script `scripts/Paper_figures.py`
 
