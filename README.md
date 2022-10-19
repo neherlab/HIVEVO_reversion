@@ -18,7 +18,7 @@ You will have to uncompress the intermediate data as explained in the following 
 This section is intended for people who wish to work with the intermediate data used for the paper.
 Due to size issues, the intermediate data is saved in a compressed format in `data.tar.xz/`.
 One can use the `unpack_data.sh` script to uncompress it, which will generate the `data/` folder.
-This can be done with the command `./unpack_data.sh` on Linux distributions.
+This can be done with the command `bash unpack_data.sh` on Linux distributions.
 
 This data contains:
 - The raw and subsampled sequences for the BH analysis for the different regions and their metadata in `data/BH/raw/`
