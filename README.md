@@ -8,16 +8,18 @@ The raw files being too heavy for a github repository, you will have to download
 All the figures are plotted using the `Paper_figures.py` script.
 You will have to uncompress the intermediate data as explained in the following seciton.
 ## Working with the intermediate files
-This section is intended for people who which to work with the intermediate data used for the paper.
-Due to size issues, the intermediate data is saved in a compressed format in `data_mini/`.
+This section is intended for people who wish to work with the intermediate data used for the paper.
+Due to size issues, the intermediate data is saved in a compressed format in `data.tar.xz/`.
 One can use the `unpack_data.sh` script to uncompress it, which will generate the `data/` folder.
 This can be done with the command `./unpack_data.sh` on Linux distributions.
 
 This data contains:
-- The subsampled sequences for the BH analysis for the different regions and their metadata in `data/BH/raw/`
+- The raw and subsampled sequences for the BH analysis for the different regions and their metadata in `data/BH/raw/`
 - The alignments for these sequences in `data/BH/alignments/to_HXB2/`
 - The trees and TreeTime files in `data/BH/intermediate_files/`
 - The reference HXB2 sequence in `data/BH/reference/`
+- The bootstrap dictionnaries for the error rate estimate in `data/BH/bootstraps/`
+- The files necessary for visualisation with `nextstrain` in `data/BH/visualisation`. Can be used with the `nextstrain view data/BH/visualisation` command
 - The dictionnaries used for the WH analysis in `data/WH/`
 - The MSAs generated for the modeling part in `data/modeling/generated_MSA/`
 - The trees generated for the modeling part in `data/modeling/generate_trees/`
