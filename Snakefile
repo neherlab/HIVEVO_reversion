@@ -315,4 +315,5 @@ rule clean:
         rm data/BH/branch_lengths/* -f
         rm log/* -f
         rm data/BH/raw/*metadata* -f
+        python scripts/generate_data.py clean-data
         """
