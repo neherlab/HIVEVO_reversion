@@ -4,6 +4,7 @@ Main scripts that define trajectories and the creation of the related intermedia
 import json
 import copy
 import numpy as np
+import os
 
 import filenames
 import tools
@@ -209,7 +210,7 @@ def create_all_patient_trajectories(region, ref_subtype="any", patient_names=[])
 
     Args:
         region (str): Region to analyse ['env', 'pol', 'gag'].
-        ref_subtype (str): Which consensus to use, either 'any' (global consensus) or 'subtypes' consensus.
+        ref_subtype (str): Which consensus to use, either 'any' (global consensus) or² 'subtypes' consensus.
         patient_names (list(str)): Names of the patients, all except p7 and p10 by default.
 
     Returns:
@@ -245,7 +246,7 @@ def make_intermediate_data(folder_path):
     import bootstrap
     import os
     traj_list_names = ["Trajectory_list_subtypes", "Trajectory_list_any"]
-    ref_subtypes = ["subtypes", "any"]
+    ref_subtypes = ["any", "subtypes"]
 
     # From all the trajectories combined
     for name, ref_subtype in zip(traj_list_names, ref_subtypes):
@@ -271,8 +272,11 @@ def make_intermediate_data(folder_path):
             # json formating of numpy arrays
             for key1 in bootstrap_dict.keys():
                 for key2 in bootstrap_dict[key1].keys():
-                    bootstrap_dict[key1][key2]["mean"] = bootstrap_dict[key1][key2]["mean"].tolist()
-                    bootstrap_dict[key1][key2]["std"] = bootstrap_dict[key1][key2]["std"].tolist()
+                    for key3 in bootstrap_dict[key1][key2].keys():
+                        bootstrap_dict[key1][key2][key3]["mean"] = bootstrap_dict[key1][key2][key3][
+                            "mean"].tolist()
+                        bootstrap_dict[key1][key2][key3]["std"] = bootstrap_dict[key1][key2][key3][
+                            "std"].tolist()
 
             print(f"Saving mean in time for {ref_subtype}")
             with open(folder_path + "bootstrap_mean_dict_" + ref_subtype + ".json", "w") as f:
@@ -291,8 +295,11 @@ def make_intermediate_data(folder_path):
             # json formating of numpy arrays
             for key1 in bootstrap_dict.keys():
                 for key2 in bootstrap_dict[key1].keys():
-                    bootstrap_dict[key1][key2]["mean"] = bootstrap_dict[key1][key2]["mean"].tolist()
-                    bootstrap_dict[key1][key2]["std"] = bootstrap_dict[key1][key2]["std"].tolist()
+                    for key3 in bootstrap_dict[key1][key2].keys():
+                        bootstrap_dict[key1][key2][key3]["mean"] = bootstrap_dict[key1][key2][key3][
+                            "mean"].tolist()
+                        bootstrap_dict[key1][key2][key3]["std"] = bootstrap_dict[key1][key2][key3][
+                            "std"].tolist()
 
             print(f"Saving mean in time for {region}")
             with open(folder_path + f"bootstrap_mean_dict_{region}.json", "w") as f:
@@ -329,6 +336,8 @@ def load_trajectory_list(filename):
         list(Trajectory): List of trajectories from the savefile.
 
     """
+    assert os.path.exists(filename), f"{filename} does not exist."
+
     with open(filename, "r") as f:
         trajectories = json.load(f)
 
@@ -430,8 +439,9 @@ def load_mean_in_time_dict(filename):
 
     for key1 in mean_in_time.keys():
         for key2 in mean_in_time[key1].keys():
-            mean_in_time[key1][key2]["mean"] = np.array(mean_in_time[key1][key2]["mean"])
-            mean_in_time[key1][key2]["std"] = np.array(mean_in_time[key1][key2]["std"])
+            for key3 in mean_in_time[key1][key2].keys():
+                mean_in_time[key1][key2][key3]["mean"] = np.array(mean_in_time[key1][key2][key3]["mean"])
+                mean_in_time[key1][key2][key3]["std"] = np.array(mean_in_time[key1][key2][key3]["std"])
     return mean_in_time
 
 

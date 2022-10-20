@@ -6,18 +6,12 @@ wildcard_constraints:
     subtype = "(B|C)",
     position = "(1st|2nd|3rd)"
 
+
 rule all:
-    input:
-        auspice_jsons = expand("visualisation/{region}.json", region=REGIONS),
-        branch_length_files = expand(
-            "data/BH/intermediate_files/branch_lengths_{region}.json", region=REGIONS),
-        gtr_files = expand("data/BH/mutation_rates/{region}.json", region=REGIONS)
-
-
-rule figure_data:
     message:
         """
-        Creating the files for the BH distance in time figure left panel (figure 1 5 and 6).
+        Creating the files for the BH distance in time figure left panel (figure 1 5 and 6) and the modeling
+        (fig 4 S9 and S10).
         """
     input:
         consensus_sequences = expand("data/BH/alignments/to_HXB2/{region}_consensus.fasta", region=REGIONS),
@@ -26,6 +20,7 @@ rule figure_data:
         root_files = expand("data/BH/intermediate_files/{region}_nt_muts.json", region=REGIONS),
         tree_files = expand("data/BH/intermediate_files/tree_{region}.nwk", region=REGIONS),
         alignment_files = expand("data/BH/alignments/to_HXB2/{region}.fasta", region=REGIONS),
+        visualisation_files = expand("data/BH/visualisation/{region}.json", region=REGIONS),
 
 
 rule lanl_metadata:
@@ -227,7 +222,7 @@ rule export:
         branch_lengths = rules.refine.output.node_data,
         nt_muts = rules.ancestral.output.node_data
     output:
-        auspice_json = "visualisation/{region}.json"
+        auspice_json = "data/BH/visualisation/{region}.json"
     shell:
         """
         augur export v2 \
@@ -304,7 +299,7 @@ rule HXB2_regions:
         HXB2_gag = "data/BH/reference/HXB2_gag.fasta"
     shell:
         """
-        python scripts/HXB2_region_sequence.py
+        python scripts/snakecommands.py hxb2-regions {input.HXB2_original}
         """
 
 rule clean:
@@ -314,10 +309,11 @@ rule clean:
         rm data/BH/raw/*subsampled* -f
         rm data/BH/alignments/to_HXB2/* -f
         rm data/BH/intermediate_files/* -f
-        rm visualisation/* -f
+        rm data/BH/visualisation/* -f
         rm data/BH/gtr/* -f
         rm data/BH/mutation_rates/* -f
         rm data/BH/branch_lengths/* -f
         rm log/* -f
         rm data/BH/raw/*metadata* -f
+        python scripts/generate_data.py clean-data
         """

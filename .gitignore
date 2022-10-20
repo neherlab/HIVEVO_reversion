@@ -1,5 +1,7 @@
 figures/
 data/
+data_mini_old/
+data_mini/
 scripts/__pycache__
 .snakemake
 visualisation/

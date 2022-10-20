@@ -12,6 +12,8 @@ from Bio.Alphabet import SingleLetterAlphabet
 from Bio.Align import MultipleSeqAlignment
 from treetime import TreeAnc, TreeTime
 from treetime.utils import parse_dates
+import filenames
+from hivevo.patients import Patient
 
 
 @click.group()
@@ -293,6 +295,21 @@ def summary(metadata):
     print(f"Mean year for subtype B : {mean_B}")
     print(f"                      C : {mean_C}")
     print()
+
+
+@cli.command()
+@click.argument("sequence", type=click.Path(exists=True))
+def hxb2_regions(sequence):
+    """
+    Split the HXB2 sequence by region.
+    """
+    ref_sequence = SeqIO.read(sequence, format="fasta")
+    for region in ["env", "pol", "gag"]:
+        patient = Patient.load("p1")  # choice of patient is irrelevant for this
+        map = patient.map_to_external_reference(region)
+        region_seq = ref_sequence[map[0, 0]:map[-1, 0]+1]
+        with open(f"data/BH/reference/HXB2_{region}.fasta", "w") as f:
+            SeqIO.write(region_seq, f, "fasta")
 
 
 def get_mutation_rate(gtr_file, refine_file):

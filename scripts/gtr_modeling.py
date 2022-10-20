@@ -120,7 +120,7 @@ def p_3class_homogeneous(consensus_seq, rates):
 
 def p_3class_binary(consensus_seq, rates, ratio=0.85):
     """
-    Returns the p matrix for a 3 class homogeneous model.
+    Returns the p matrix for a 3 class binary model.
     """
     def p_consensus(rate_consensus, rate_non_consensus):
         return rate_non_consensus / (rate_consensus + rate_non_consensus)
@@ -162,8 +162,7 @@ def p_3class_binary(consensus_seq, rates, ratio=0.85):
 def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path, rates,
                  p_type="homogeneous", scaling=1.3, rate_variation=0):
     """
-    Generates an MSA based on a homogeneous (same for all site) model for the reversion and non-reversion
-    rates.
+    Generates an MSA based on the chosen model (p_type) and the reversion and non-reversion rates.
     """
 
     root_seq = get_reference_sequence(root_path)
@@ -176,7 +175,7 @@ def generate_MSA(tree_path, root_path, consensus_path, MSA, metadata, save_path,
     tree = ttree._tree
 
     consensus_seq = get_reference_sequence(consensus_path)
-    # Replaces N by A, it's not exact but I have a 4 letter alphabet for now
+    # Replaces N by A, not exact but we have a 4 letter alphabet. It does not impact the results significantly
     consensus_seq[consensus_seq == "N"] = "A"
 
     myGTR = define_GTR(consensus_seq, p_type, scaling, rates, rate_variation)
@@ -201,7 +200,7 @@ def define_GTR(consensus_seq, p_type, scaling, rates, rate_variation=0):
     else:
         mu = np.ones(L)
     W = np.array([[0., 0.763, 2.902, 0.391],
-                  [0.763, 0., 0.294, 3.551],
+             [0.763, 0., 0.294, 3.551],
                   [2.902, 0.294, 0., 0.317],
                   [0.391, 3.551, 0.317, 0.]])
 
@@ -402,11 +401,18 @@ def get_branch_length(consensus_seq, p_types, scaling, rates, rate_variations):
     return data
 
 
-def make_intermediate_data():
+def make_intermediate_data(folder_path):
     """
     Creates the modeling results used for the figures.
     """
     import os
+
+    if not os.path.exists(folder_path + "/generated_MSA/"):
+        os.mkdir(folder_path + "/generated_MSA/")
+
+    if not os.path.exists(folder_path + "/generated_trees/"):
+        os.mkdir(folder_path + "/generated_trees/")
+    
 
     for region in ["pol", "env", "gag"]:
         original_MSA_path = f"data/BH/alignments/to_HXB2/{region}.fasta"
@@ -414,9 +420,9 @@ def make_intermediate_data():
         root_path = f"data/BH/intermediate_files/{region}_nt_muts.json"
         consensus_path = f"data/BH/alignments/to_HXB2/{region}_consensus.fasta"
         original_metadata_path = f"data/BH/raw/{region}_subsampled_metadata.tsv"
-        generated_MSA_folder = f"data/modeling/generated_MSA/{region}_"
-        generated_tree_folder = f"data/modeling/generated_trees/{region}_"
-        rate_dict_path = "data/WH/avg_rate_dict.json"
+        generated_MSA_folder = folder_path + f"generated_MSA/{region}_"
+        generated_tree_folder = folder_path + f"generated_trees/{region}_"
+        rate_dict_path = "data/WH/rate_dict.json"
         rates = divergence.load_avg_rate_dict(rate_dict_path)
         rates = rates[region]["founder"]["global"]
         scaling = round(compute_scaling(original_tree_path, rates), 2)
@@ -443,7 +449,7 @@ def make_intermediate_data():
 
 if __name__ == "__main__":
     # --- Choose the region to model ---
-    region = "pol"
+    region = "env"
 
     # --- Defining relevant files for the analysis ---
     original_MSA_path = f"data/BH/alignments/to_HXB2/{region}.fasta"
@@ -454,7 +460,7 @@ if __name__ == "__main__":
     generated_MSA_folder = f"data/modeling/generated_MSA/{region}_"
     generated_tree_folder = f"data/modeling/generated_trees/{region}_"
     optimized_tree_folder = f"data/modeling/optimized_trees/{region}_"
-    rate_dict_path = "data/WH/avg_rate_dict.json"
+    rate_dict_path = "data/WH/rate_dict.json"
     rates = divergence.load_avg_rate_dict(rate_dict_path)
     rates = rates[region]["founder"]["global"]
 
@@ -463,7 +469,7 @@ if __name__ == "__main__":
     # p_type = "binary"
     # p_type = "3class_homogeneous"
     # p_type = "3class_binary"
-    p_type = "control"
+    # p_type = "control"
 
     regenerate = True
     optimize = False
@@ -471,7 +477,8 @@ if __name__ == "__main__":
 
     scaling = round(compute_scaling(original_tree_path, rates), 2)
 
-    for p_type in ["3class_binary", "control"]:
+    # for p_type in ["3class_binary", "control"]:
+    for p_type in ["3class_binary"]:
         # for rate_variation in [0, 1, 2]:
         for rate_variation in [0]:
 
@@ -512,14 +519,16 @@ if __name__ == "__main__":
                 compare_RTT(original_tree_path, generated_tree_path)
                 plt.show()
 
-    # # --- Rate variation analysis ---
-    # rate_variation = 0  # (shape parameter of gamma distribution, set to 0 for no rate variation)
-    # distances = get_branch_length(consensus_path, ["3class_binary", "control"], 1.58, rates, [0, 1, 2])
-    # plt.figure()
-    # line_styles = ['-', '--', '-.']
-    # for pi, p in enumerate(["3class_binary", "control"]):
-    #     for r in [0, 1, 2]:
-    #         plt.plot(distances['time'], distances[(p, r)], c=f'C{pi}', ls=line_styles[r])
-    # plt.ylabel('distance')
-    # plt.xlabel('time')
-    # plt.show()
+    # --- Rate variation analysis ---
+    rate_variation = 0  # (shape parameter of gamma distribution, set to 0 for no rate variation)
+    distances = get_branch_length(consensus_path, ["3class_binary", "control"], 1.58, rates, [0, 1, 2])
+    plt.figure()
+    line_styles = ['-', '--', '-.']
+    for pi, p in enumerate(["3class_binary", "control"]):
+        for r in [0, 1, 2]:
+            plt.plot(distances['time'], distances[(p, r)], c=f'C{pi}', ls=line_styles[r])
+    plt.ylabel('distance')
+    plt.xlabel('time')
+    plt.show()
+
+    # make_intermediate_data("data/modeling/")
