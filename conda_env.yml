@@ -1,4 +1,4 @@
-name: hivevo
+name: HIV_reversion
 channels:
   - anaconda
   - conda-forge
@@ -288,4 +288,4 @@ dependencies:
   - zipp=3.5.0=pyhd8ed1ab_0
   - zlib=1.2.12=h166bdaf_1
   - zstd=1.5.0=ha95c52a_0
-prefix: /home/valentin/miniconda3/envs/hivevo
+prefix: /home/valentin/miniconda3/envs/HIV_reversion
