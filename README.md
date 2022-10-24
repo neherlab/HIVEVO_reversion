@@ -8,7 +8,7 @@ The raw files being too heavy for a github repository, you will have to download
 The codes in this repo needs a couple of over package to run.
 These dependencies can be installed using conda and the provided `conda_env.yaml` file (you will need to install conda first).
 We recommend installing the conda environment using mamba, otherwise it might take a very long time to do so.
-Install mamba with `conda activate base` and `conda install mamba`.
+Install mamba with `conda activate base; conda install mamba; mamba update --all`.
 Then install the environment using `mamba env create -f conda_env.yml`.
 This will create a conda environment named `HIV_reversion`.
 You need to activate this environment using `conda activate HIV_reversion` before using the scripts in this repository.
