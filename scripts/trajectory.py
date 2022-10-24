@@ -246,7 +246,7 @@ def make_intermediate_data(folder_path):
     import bootstrap
     import os
     traj_list_names = ["Trajectory_list_subtypes", "Trajectory_list_any"]
-    ref_subtypes = ["any", "subtypes"]
+    ref_subtypes = ["subtypes", "any"]
 
     # From all the trajectories combined
     for name, ref_subtype in zip(traj_list_names, ref_subtypes):
