@@ -19,7 +19,7 @@ You will have to uncompress the intermediate data as explained in the following 
 ## Working with the intermediate files
 This section is intended for people who wish to work with the intermediate data used for the paper.
 Due to size issues, the intermediate data is saved in a compressed format in `data.tar.xz/`.
-One can use the `unpack_data.sh` script to uncompress it, which will generate the `data/` folder.
+One can use the `unpack_data.sh` script to uncompress it, which will generate the `data/` folder and touch the files with snakemake.
 This can be done with the command `bash unpack_data.sh` on Linux distributions.
 
 This data contains:
