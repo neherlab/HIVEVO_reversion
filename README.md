@@ -15,7 +15,7 @@ You need to activate this environment using `conda activate HIV_reversion` befor
 
 ## Figure plots
 All the figures are plotted using the `Paper_figures.py` script.
-You will have to uncompress the intermediate data as explained in the following seciton.
+You will have to uncompress the intermediate data as explained in the following section.
 ## Working with the intermediate files
 This section is intended for people who wish to work with the intermediate data used for the paper.
 Due to size issues, the intermediate data is saved in a compressed format in `data.tar.xz/`.
@@ -34,7 +34,7 @@ This data contains:
 - The trees generated for the modeling part in `data/modeling/generate_trees/`
 
 ## Working with the raw files
-This section is intended for people that which to regenerate the intermediate files. This is computationaly intensive and will take several hours on a regular laptop.
+This section is intended for people that which to regenerate the intermediate files. This is computationally intensive and will take several hours on a regular laptop.
 One can remove the intermediate files provided using `snakemake clean --cores 1` and regenerate them as explained in the following sections.
 ### Generate between host data
 For the between host analysis, make sure the raw data is in the `data/BH/raw` folder, then use snakemake to execute the rule `all`. 
