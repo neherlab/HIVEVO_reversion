@@ -52,7 +52,7 @@ def divergence_in_time(patient, region, aft, div_ref):
                           initial_idx, np.arange(aft.shape[-1])]
         aft_initial = np.squeeze(aft_initial)
         raw_mask = np.zeros(aft.shape[-1])
-        opposite_mask = aft_initial[0]
+        opposite_mask = np.ones(aft.shape[-1])
         div_3D = divergence_matrix(aft, raw_mask, opposite_mask)
     elif div_ref == "root":
         ref = HIVreference(subtype="any")  # just for the mapping

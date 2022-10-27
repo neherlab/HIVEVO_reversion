@@ -778,11 +778,11 @@ def make_figure_S8(savefig):
 
 if __name__ == '__main__':
     fig1A = False
-    fig1CD = False
-    fig2 = False
+    fig1CD = True
+    fig2 = True
     fig3 = False
-    fig4 = True
-    figS3S4 = False
+    fig4 = False
+    figS3S4 = True
     figS6 = False
     figS7 = False
     figS8 = False
