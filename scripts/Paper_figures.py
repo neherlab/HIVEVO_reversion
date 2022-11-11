@@ -715,7 +715,7 @@ def make_figure_1B(real_mu=11e-4, savefig=False):
         myGTR.mu *= real_mu / myGTR.average_rate().mean()
 
         # dates = {"root": 1914, "subtypes": 1970,"founder": 1980}  # estimates from tree
-        dates = {"root": 1925, "subtypes": 1965, "founder": 1980}  # estimates to match t = 1980
+        dates = {"root": 1915, "subtypes": 1965, "founder": 1980}  # estimates to match t = 1980
         distances = {"root": [], "subtypes": [], "founder": []}
 
         for key in dates:
