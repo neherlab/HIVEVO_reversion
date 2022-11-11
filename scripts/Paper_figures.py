@@ -690,7 +690,7 @@ def make_poster_figures(savefig=False):
         plt.savefig(f"figures/Poster_divergence.pdf")
 
 
-def make_figure_1A(real_mu=10.3e-4, savefig=False):
+def make_figure_1B(real_mu=11e-4, savefig=False):
     """
     Function to generate panel A of fig 1. Uses treetime to compute the outcome we would have from a Jukes
     Cantor model with rates that are gamma distributed with parameter 2.
@@ -725,7 +725,9 @@ def make_figure_1A(real_mu=10.3e-4, savefig=False):
 
         plt.plot(t_plot, (t_plot - dates["root"])*real_mu, label="RTT", c='C0')
         for ki, key in enumerate(dates):
-            plt.plot(t_plot, (t_plot - dates[key])*real_mu, c='k', alpha=0.2)
+            # Expectation without any saturations (for root it's the RTT curve)
+            if key != "root":
+                plt.plot(t_plot, (t_plot - dates[key])*real_mu, c='k', alpha=0.5)
             plt.plot(t_plot, distances[key], label=key, c=f'C{ki+1}', ls=ls)
 
     plt.xlabel("Year")
@@ -785,15 +787,15 @@ if __name__ == '__main__':
         description="plot figures",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("--figures", type=str, nargs="+", default=['fig1A, fig1CD'], help="which figures")
+    parser.add_argument("--figures", type=str, nargs="+", default=['fig1B, fig1CD'], help="which figures")
     parser.add_argument("--save-figures", action='store_true', help="save figures to file")
     args = parser.parse_args()
 
     savefig = args.save_figures
 
-    if 'fig1A' in args.figures:
+    if 'fig1B' in args.figures:
         mu = 11.0e-4
-        make_figure_1A(mu, savefig)
+        make_figure_1B(mu, savefig)
 
     if 'fig1CD' in args.figures:
         text = {
