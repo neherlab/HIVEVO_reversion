@@ -693,37 +693,40 @@ def make_poster_figures(savefig=False):
 def make_figure_1A(real_mu=10.3e-4, savefig=False):
     """
     Function to generate panel A of fig 1. Uses treetime to compute the outcome we would have from a Jukes
-    Cantor model with rates that are gamma distributed with parameter 2. 
+    Cantor model with rates that are gamma distributed with parameter 2.
     """
     from treetime import GTR_site_specific
     from scipy.stats import gamma
 
     L = 1000
     t_plot = np.arange(1980, 2021)
-    mu = gamma.rvs(2, size=L, random_state=123) / 2  # Gamma distribution with parameter 2
-    W = np.ones((4, 4))
-    # W = np.array([[0., 0.763, 2.902, 0.391], # Same as I use for fig4 modeling, doesn't make a big difference
-    #               [0.763, 0., 0.294, 3.551],
-    #               [2.902, 0.294, 0., 0.317],
-    #               [0.391, 3.551, 0.317, 0.]])
-    p = np.ones((4, L))*0.25  # no bias for reversions.
-
-    myGTR = GTR_site_specific.custom(mu, p, W, alphabet="nuc_nogap", approximate=False)
-    myGTR.mu *= real_mu / myGTR.average_rate().mean()
-
-    # dates = {"root": 1914, "subtypes": 1970,"founder": 1980}  # estimates from tree
-    dates = {"root": 1925, "subtypes": 1965, "founder": 1980}  # estimates to match t = 1980
-    distances = {"root": [], "subtypes": [], "founder": []}
-
-    for key in dates:
-        for t in t_plot:
-            tmp = 1 - myGTR.expQt(t-dates[key])[0, 0, :]
-            distances[key] += [np.mean(tmp)]
-
     plt.figure(figsize=(2, 1.5))
-    plt.plot(t_plot, (t_plot - dates["root"])*real_mu, label="RTT")
-    for key in dates:
-        plt.plot(t_plot, distances[key], label=key)
+    line_styles = ['-', '--', ':']
+    for ls,gamma_val in zip(line_styles, [2]):
+        mu = gamma.rvs(gamma_val, size=L, random_state=123)  # Gamma distribution with parameter 2
+        W = np.ones((4, 4))
+        # W = np.array([[0., 0.763, 2.902, 0.391], # Same as I use for fig4 modeling, doesn't make a big difference
+        #               [0.763, 0., 0.294, 3.551],
+        #               [2.902, 0.294, 0., 0.317],
+        #               [0.391, 3.551, 0.317, 0.]])
+        p = np.ones((4, L))*0.25  # no bias for reversions.
+
+        myGTR = GTR_site_specific.custom(mu, p, W, alphabet="nuc_nogap", approximate=False)
+        myGTR.mu *= real_mu / myGTR.average_rate().mean()
+
+        # dates = {"root": 1914, "subtypes": 1970,"founder": 1980}  # estimates from tree
+        dates = {"root": 1925, "subtypes": 1965, "founder": 1980}  # estimates to match t = 1980
+        distances = {"root": [], "subtypes": [], "founder": []}
+
+        for key in dates:
+            for t in t_plot:
+                tmp = 1 - myGTR.expQt(t-dates[key])[0, 0, :]
+                distances[key] += [np.mean(tmp)]
+
+        plt.plot(t_plot, (t_plot - dates["root"])*real_mu, label="RTT", c='C0')
+        for ki, key in enumerate(dates):
+            plt.plot(t_plot, (t_plot - dates[key])*real_mu, c='k', alpha=0.2)
+            plt.plot(t_plot, distances[key], label=key, c=f'C{ki+1}', ls=ls)
 
     plt.xlabel("Year")
     plt.ylabel("Distance")
@@ -777,24 +780,22 @@ def make_figure_S8(savefig):
 
 
 if __name__ == '__main__':
-    fig1A = False
-    fig1CD = True
-    fig2 = True
-    fig3 = False
-    fig4 = False
-    figS3S4 = True
-    figS6 = False
-    figS7 = False
-    figS8 = False
-    figPoster = False
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="plot figures",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument("--figures", type=str, nargs="+", default=['fig1A, fig1CD'], help="which figures")
+    parser.add_argument("--save-figures", action='store_true', help="save figures to file")
+    args = parser.parse_args()
 
-    savefig = True
+    savefig = args.save_figures
 
-    if fig1A:
+    if 'fig1A' in args.figures:
         mu = 11.0e-4
         make_figure_1A(mu, savefig)
 
-    if fig1CD:
+    if 'fig1CD' in args.figures:
         text = {
             "env": [(2000, 0.192), (2000, 0.14), (2000, 0.045), (1.2, 0.072), (1.2, 0.058), (1.2, 0.028)],
             "pol": [(1995, 0.087), (1995, 0.056), (1995, 0.02), (1.2, 0.072), (1.2, 0.042), (1.2, 0.01)],
@@ -806,7 +807,7 @@ if __name__ == '__main__':
         for region in ["env", "pol", "gag"]:
             make_figure_1CD(region, text[region], ylim[region], sharey[region], savefig=savefig)
 
-    if fig2:
+    if 'fig2' in args.figures:
         text = {"env": [("92%", [4.1, 0.001]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.145]),
                         ("6%", [4.1, 0.085]), ("12%", [4.1, 0.042])],
                 "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.054]), ("4%", [4.1, 0.048]),
@@ -816,10 +817,10 @@ if __name__ == '__main__':
         region = "pol"
         make_figure_2(region, text[region], savefig, reference="global")
 
-    if fig3:
+    if 'fig3' in args.figures:
         make_figure_3(savefig)
 
-    if fig4:
+    if 'fig4' in args.figures:
         text = {"pol": [(2003, 0.07), (2003, 0.26), (2003, 0.16)],
                 "gag": [(2003, 0.1), (2003, 0.37), (2003, 0.22)],
                 "env": [(2003, 0.3), (2003, 0.52), (2003, 0.1)]}
@@ -829,7 +830,7 @@ if __name__ == '__main__':
         for region in ["env", "pol", "gag"]:
             make_figure_4(region, text[region], limits[region], savefig)
 
-    if figS3S4:
+    if 'figS3S4' in args.figures:
         text = {"env": [("92%", [4.1, 0.001]), ("8%", [4.1, 0.062]), ("7%", [4.1, 0.145]),
                         ("6%", [4.1, 0.085]), ("12%", [4.1, 0.042])],
                 "pol": [("94%", [4.1, -0.002]), ("6%", [4.1, 0.054]), ("4%", [4.1, 0.048]),
@@ -839,16 +840,16 @@ if __name__ == '__main__':
         for region in ["env", "pol", "gag"]:
             make_figure_S3S4(region, text[region], savefig, reference="global")
 
-    if figS6:
+    if 'figS6' in args.figures:
         make_figure_S6(savefig)
 
-    if figS7:
+    if 'figS7' in args.figures:
         make_figure_S7(savefig)
 
-    if figS8:
+    if 'figS8' in args.figures:
         make_figure_S8(savefig)
 
-    if figPoster:
+    if 'figPoster' in args.figures:
         make_poster_figures(savefig)
 
     plt.show()

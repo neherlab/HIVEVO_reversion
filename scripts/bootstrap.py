@@ -235,7 +235,7 @@ if __name__ == '__main__':
 
     # trajectories = trajectory.load_trajectory_list("data/WH_test/Trajectory_list_any.json")
     # mean_dict, time = make_bootstrap_mean_dict(trajectories, 10)
-    mean_dict = trajectory.load_mean_in_time_dict("data/WH_test/bootstrap_mean_dict_any.json")
+    mean_dict = trajectory.load_mean_in_time_dict("data/WH/bootstrap_mean_dict_any.json")
     time = trajectory.create_time_bins(400)
     time = 0.5 * (time[:-1] + time[1:]) / 365  # In years
 
