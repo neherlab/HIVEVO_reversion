@@ -34,7 +34,7 @@ This data contains:
 - The trees generated for the modeling part in `data/modeling/generate_trees/`
 
 ## Working with the raw files
-This section is intended for people that which to regenerate the intermediate files. This is computationally intensive and will take several hours on a regular laptop.
+This section is intended for people that wish to regenerate the intermediate files. This is computationally intensive and will take several hours on a regular laptop.
 One can remove the intermediate files provided using `snakemake clean --cores 1` and regenerate them as explained in the following sections.
 ### Generate between host data
 For the between host analysis, make sure the raw data is in the `data/BH/raw` folder, then use snakemake to execute the rule `all`. 
